@@ -1,21 +1,22 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react'
+import {connect} from 'react-redux'
+import {addGUN, removeGUN, addGUNAsync} from './index.redux'
 
-class App extends Component {
-  render() {
+@connect(
+  state=>({num:state}),
+  {addGUN, removeGUN, addGUNAsync}
+)
+class App extends React.Component{
+  render(){
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+      <div>
+        <button onClick = {this.props.addGUN}>增加武器</button>
+        <button onClick = {this.props.removeGUN}>减少武器</button>
+        <button onClick = {this.props.addGUNAsync}>延迟发放</button>
+        <h1>目前有武器{this.props.num}把.</h1>
       </div>
-    );
+    )
   }
 }
 
-export default App;
+export default App
