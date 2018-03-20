@@ -52,13 +52,11 @@ ReactDom.render(
 						<Link to='/123'>123</Link>
 					</li>
 				</ul>
-				<Switch>
 					{/*只渲染第一个匹配的Route*/}
 					<Route path='/' exact component={App}></Route>
 					<Route path='/two' component={Two}></Route>
 					<Route path='/three' component={Three}></Route>
-					<Redirect from='/123' to='/three'></Redirect>
-				</Switch>
+					<Redirect to='/three'></Redirect>
 			</div>
 		</BrowserRouter>
 	</Provider>),

@@ -4,6 +4,7 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
+
 Redux+React Router+Node.js全栈开发笔记;
 
 
@@ -163,7 +164,7 @@ console.log(obj);
 
 控制台显示:
 1
-		 [object Object] {
+     [object Object] {
 name: "song",
 song2: 2,
 test: function (){window.runnerWindow.proxyConsole.log(4);},
@@ -236,50 +237,50 @@ const mongoose = require('mongoose')
 const DB_URL = 'mongodb://127.0.0.1:27017/esna'
 mongoose.connect(DB_URL)
 mongoose.connection.on('connected',function(){
-	console.log('mongo connect success')
+  console.log('mongo connect success')
 })
 
 //新建一个文档模型('表'), 文档名为user, 文档内容定义在mongoose.Schema对象的参数中;
 const User = mongoose.model('user', new mongoose.Schema({
-	user:{type:String,require:true},
-	age:{type:Number,require:true}
+  user:{type:String,require:true},
+  age:{type:Number,require:true}
 }))
 
 //新增数据;
 // User.create({
-// 	user:'imooc',
-// 	age:18
+//  user:'imooc',
+//  age:18
 // },function(err, doc){
-// 	if(!err){
-// 		console.log(doc)
-// 	}else{
-// 		console.log(err)
-// 	}
+//  if(!err){
+//    console.log(doc)
+//  }else{
+//    console.log(err)
+//  }
 // })
 
 //删除数据;
 // User.remove({age:18},function(err,doc){
-// 	console.log(doc)
+//  console.log(doc)
 // })
 
 //更新数据;
 // User.update({'age':'18'},{'$set':{user:'x'}},function(err,doc){
-// 	console.log(doc)
+//  console.log(doc)
 // })
 
 //新建app;
 const app = express();
 
 app.get('/',function(req,res){
-	res.send('<h1>Hello world</h1>')
+  res.send('<h1>Hello world</h1>')
 })
 app.get('/data',function(req,res){
-	User.find({},function(err,doc){
-		res.json(doc)
-	})
+  User.find({},function(err,doc){
+    res.json(doc)
+  })
 })
 app.listen(9093,function(){
-	console.log('Node app start at port 9093')
+  console.log('Node app start at port 9093')
 })
 
 
@@ -290,8 +291,8 @@ app.listen(9093,function(){
 ……
 //新建一个文档模型('表'), 文档名为user, 文档内容定义在一个新的mongoose.Schema对象中;
 const User = mongoose.model('user', new mongoose.Schema({
-	user:{type:String,require:true},
-	age:{type:Number,require:true}
+  user:{type:String,require:true},
+  age:{type:Number,require:true}
 }))
 ……
 
@@ -305,14 +306,14 @@ find和findOne用来查询数据;
 ……
 //新增数据;
 User.create({
-	user:'imooc',
-	age:18
+  user:'imooc',
+  age:18
 },function(err, doc){
-	if(!err){
-		console.log(doc)
-	}else{
-		console.log(err)
-	}
+  if(!err){
+    console.log(doc)
+  }else{
+    console.log(err)
+  }
 })
 ……
 
@@ -326,9 +327,9 @@ ValidationError: user validation failed: age: Cast to Number failed for value "a
 (9)查询数据;
 ……
 app.get('/data',function(req,res){
-	User.find({},function(err,doc){
-		res.json(doc)
-	})
+  User.find({},function(err,doc){
+    res.json(doc)
+  })
 })
 ……
 
@@ -339,7 +340,7 @@ app.get('/data',function(req,res){
 (10)删除数据;
 ……
 User.remove({age:18},function(err,doc){
-	console.log(doc)
+  console.log(doc)
 })
 ……
 
@@ -349,7 +350,7 @@ User.remove({age:18},function(err,doc){
 (11)更新数据;
 ……
 User.update({'user':'imooc'},{'$set':{age:26}},function(err,doc){
-	console.log(doc)
+  console.log(doc)
 })
 ……
 
@@ -1017,14 +1018,14 @@ render(){
 import {createStore} from 'redux'
 
 function counter(state=0, action){
-	switch(action.type){
-		case '增加武器':
-			return state+1
-		case '减少武器':
-			return state-1
-		default:
-			return 10
-	}
+  switch(action.type){
+    case '增加武器':
+      return state+1
+    case '减少武器':
+      return state-1
+    default:
+      return 10
+  }
 }
 
 const store = createStore(counter)
@@ -1034,8 +1035,8 @@ const init = store.getState()
 console.log(init);
 
 function listener(){
-	const current = store.getState()
-	console.log(`目前有${current}把武器.`)
+  const current = store.getState()
+  console.log(`目前有${current}把武器.`)
 }
 
 store.subscribe(listener)
@@ -1063,22 +1064,22 @@ const REMOVE_GUN = '减少武器'
 
 //reducer;
 export function counter(state=0, action){
-	switch(action.type){
-		case ADD_GUN:
-			return state+1
-		case REMOVE_GUN:
-			return state-1
-		default:
-			return 10
-	}
+  switch(action.type){
+    case ADD_GUN:
+      return state+1
+    case REMOVE_GUN:
+      return state-1
+    default:
+      return 10
+  }
 }
 
 //action creator;
 export function addGUN(){
-	return {type:ADD_GUN}
+  return {type:ADD_GUN}
 }
 export function removeGUN(){
-	return {type:REMOVE_GUN}
+  return {type:REMOVE_GUN}
 }
 
 
@@ -1093,7 +1094,7 @@ import {counter} from './index.redux'
 const store = createStore(counter)
 
 function render(){
-	ReactDom.render(<App store={store}/>, document.getElementById('root'))
+  ReactDom.render(<App store={store}/>, document.getElementById('root'))
 
 }
 
@@ -1178,7 +1179,7 @@ import {counter, addGUN, removeGUN} from './index.redux'
 const store = createStore(counter)
 
 function render(){
-	ReactDom.render(<App store={store} addGUN={addGUN} removeGUN={removeGUN} />, document.getElementById('root'))
+  ReactDom.render(<App store={store} addGUN={addGUN} removeGUN={removeGUN} />, document.getElementById('root'))
 
 }
 
@@ -1220,11 +1221,11 @@ index.redux.js;
 
 ……
 export function addGUNAsync(){
-	return dispatch=>{
-		setTimeout(()=>{
-			dispatch(addGUN())
-		},2000)
-	}
+  return dispatch=>{
+    setTimeout(()=>{
+      dispatch(addGUN())
+    },2000)
+  }
 }
 
 
@@ -1234,7 +1235,7 @@ src/index.js;
 import {counter, addGUN, removeGUN, addGUNAsync} from './index.redux'
 ……
 function render(){
-	ReactDom.render(<App store={store} addGUN={addGUN} addGUNAsync={addGUNAsync} removeGUN={removeGUN} />, document.getElementById('root'))
+  ReactDom.render(<App store={store} addGUN={addGUN} addGUNAsync={addGUNAsync} removeGUN={removeGUN} />, document.getElementById('root'))
 
 }
 
@@ -1266,8 +1267,8 @@ const addGUNAsync = this.props.addGUNAsync;
 import {createStore, applyMiddleware, compose} from 'redux'
 ……
 const store = createStore(counter, compose(
-	applyMiddleware(thunk),
-	window.devToolsExtension?window.devToolsExtension():f=>f
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
 ))
 
 修改createStore的参数为上例中的这样, 就可以在developer tools中的redux控制台观察应用中redux相关的数据变化了;
@@ -1307,15 +1308,15 @@ import App from './App'
 import {counter} from './index.redux'
 
 const store = createStore(counter, compose(
-	applyMiddleware(thunk),
-	window.devToolsExtension?window.devToolsExtension():f=>f
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
 ))
 
 ReactDom.render(
-	(<Provider store={store}>
-		<App />	
-	</Provider>),
-	document.getElementById('root')
+  (<Provider store={store}>
+    <App /> 
+  </Provider>),
+  document.getElementById('root')
 )
 
 
@@ -1357,29 +1358,29 @@ const REMOVE_GUN = '减少武器'
 
 //reducer;
 export function counter(state=0, action){
-	switch(action.type){
-		case ADD_GUN:
-			return state+1
-		case REMOVE_GUN:
-			return state-1
-		default:
-			return 10
-	}
+  switch(action.type){
+    case ADD_GUN:
+      return state+1
+    case REMOVE_GUN:
+      return state-1
+    default:
+      return 10
+  }
 }
 
 //action creator;
 export function addGUN(){
-	return {type:ADD_GUN}
+  return {type:ADD_GUN}
 }
 export function removeGUN(){
-	return {type:REMOVE_GUN}
+  return {type:REMOVE_GUN}
 }
 export function addGUNAsync(){
-	return dispatch=>{
-		setTimeout(()=>{
-			dispatch(addGUN())
-		},2000)
-	}
+  return dispatch=>{
+    setTimeout(()=>{
+      dispatch(addGUN())
+    },2000)
+  }
 }
 
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
@@ -1441,6 +1442,218 @@ ES6/ES7/ES8笔记中: ‘136.修饰器；’相关内容;
 
 
 
-<4.8>React-router4;
+<4.8-4.9>React-router4;
+
+React-router4是最新版本, 与之前的React-router2不兼容, 浏览器和RN(React Native)均兼容;
+从React-router4开始, react-router就被拆分为了两个库, 这里安装的react-router-dom是针对浏览器端的;
+
+ (1)安装;
+
+$ npm install react-router-dom —save
+
+
+(2)基本使用实例;
+
+src/index.js;
+
+……
+import {BrowserRouter, Route, Link} from 'react-router-dom'
+……
+function Two(){
+  return <h2>two</h2>
+}
+function Three(){
+  return <h2>three</h2>
+}
+
+const store = createStore(counter, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <div>
+        <ul>
+          <li>
+            <Link to='/'>one</Link>
+          </li>
+          <li>
+            <Link to='/two'>two</Link>
+          </li>
+          <li>
+            <Link to='/three'>three</Link>
+          </li>
+        </ul>
+        <Route path='/' component={App}></Route>
+        <Route path='/two' component={Two}></Route>
+        <Route path='/three' component={Three}></Route>
+      </div>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+需要注意的是, BrowserRouter组件中也只能包含一个根元素, 所以上例中使用了一个<div></div>将其中内容包了起来;
+上例在浏览器中显示为:
+
+￼
+￼
+
+可以发现, 当点击了指向’/two’或者’/three’的Link时同样显示了’/’根目录Route的内容, 这是因为’/’默认并非是完全匹配的, 也就是说’/two’或者’/three’也同时匹配了’/’, 属于正则匹配(但是这样的正则规则只适用于’/‘, 如果是类似: ‘/two’和’/two2’这样的路径是不会同时匹配的); 解决办法是在<Route path='/' component={App}></Route>中添加一个exact属性:
+<Route path='/' exact component={App}></Route>
+
+页面显示为:
+￼
+
+需要注意的是, react-router4与react-router2不同的是, 默认情况下不是找到匹配路由规则就停止查找, 而是继续查找并渲染所有匹配规则的路由组件, 也就是说如果上例中路由改为:
+……
+<Route path='/' exact component={App}></Route>
+<Route path='/two' component={Two}></Route>
+<Route path='/three' component={Three}></Route>
+<Route path='/three' component={Two}></Route>
+……
+
+那么访问’/three’时页面中会同时渲染Three和Two组件, 上例中如果给<Route path='/three' component={Three}></Route>添加exact属性也不会影响最后结果, 因为确实是完全匹配了’/three’, 只是同时存在两个’/three’这样的路由规则; 
+
+
+(3)Route的path属性中使用’/:’;
+
+src/index.js;
+
+……
+class Test extends React.Component{
+  constructor(props){
+    super(props)
+    console.log(this.props)
+  }
+  render(){
+    return <h2>TEST</h2>
+  }
+}
+……
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <div>
+        <ul>
+          <li>
+            <Link to='/'>one</Link>
+          </li>
+          <li>
+            <Link to='/two'>two</Link>
+          </li>
+          <li>
+            <Link to='/three'>three</Link>
+          </li>
+        </ul>
+        <Route path='/' exact component={App}></Route>
+        <Route path='/:location' component={Test}></Route>
+      </div>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+ 
+上例在浏览器中显示:
+￼
+
+可以发现, 在Route使用类似: <Route path='/:location' component={Test}></Route> 这种方式定义path后, Test组件的props属性的match属性中将会与不在path中使用’/:’的Route定义有一些不同, 前者的params属性中的值是一个以path中’/:’后指定的字符串为key, 实际匹配路由地址中字符串为value的对象, 而后者是一个空对象;
+
+下图是直接访问’/test’, 并且匹配到了path=‘/test’的Route的情况:
+￼
+
+那么根据上面显示的传入组件props属性中的这些内容可以发现, 在组件中使用this.props.match.params.location就可以获取实际路由地址中匹配Route组件中path属性’/:’后的字符串了;
+还可以发现, this.props.history中的location属性与this.props.location属性相同;
+
+需要注意的是, 使用组件中this.props.history.push/replace方法可以触发react-router的路由系统, 但是如果直接使用类似: window.history.pushState({},null,'/two'); 这样的方式只会更改浏览器地址栏地址, 而不会触发react-router的路由系统;
+
+
+(4)Redirect;
+
+在 react-router4 中, <Redirect>组件有from和to属性, from 属性仅用于<Redirect>处于<Switch> 组件中的时候使用, 如果脱离<Switch>单独使用, 那么在不使用react-router4的Link组件或者Route对应component的this.props.history.push/replace()方法来跳转的情况下, 手动修改浏览器地址栏跳转或者重新刷新页面则一定会跳转到Redirect组件指定的路由; 如果使用了Link组件或者Route对应component的this.props.history.push/replace()方法, 则会直接忽略Redirect组件(不过以上所说的情况都会在console报错: Warning: You tried to redirect to the same route you're currently on: … 之后会解释报错的具体原因);
+当它位于<Switch>语句中时, 只有在其他路由不匹配或者匹配from属性指定路径的情况下, 才会渲染Redirect组件; 
+
+
+(5)Switch;
+
+src/index.js;
+
+……
+class Test extends React.Component{
+  render(){
+    return <h2>TEST {this.props.match.params.location}</h2>
+  }
+}
+……
+<Route path='/' exact component={App}></Route>
+<Route path='/two' component={Two}></Route>
+<Route path='/three' component={Three}></Route>
+<Route path='/:location' component={Test}></Route>
+……
+
+上例在浏览器中显示:
+￼
+￼
+
+可以发现, 当路径不匹配任何路由规则时就会触发Test组件渲染, 但是上例的问题是, 点击two或者three按钮同时也会渲染Test组件;
+解决方法(给Route组件添加exact无法解决这个问题)是使用Switch组件, 因为Switch组件只会去渲染其中第一个匹配的路由;
+
+src/index.js;
+
+……
+        <Switch>
+          {/*只渲染第一个匹配的Route*/}
+          <Route path='/' exact component={App}></Route>
+          <Route path='/two' component={Two}></Route>
+          <Route path='/three' component={Three}></Route>
+          <Route path='/:location' component={Test}></Route>
+        </Switch>
+……
+
+￼
+
+
+src/index.js;
+
+……
+        <Switch>
+          {/*只渲染第一个匹配的Route*/}
+          <Route path='/' exact component={App}></Route>
+          <Route path='/two' component={Two}></Route>
+          <Route path='/three' component={Three}></Route>
+          <Redirect from='/123' to='/three'></Redirect>
+        </Switch>
+……
+
+上例在页面加载后点击<Link to='/123'>123</Link> 会跳转到 <Route path='/three' component={Three}></Route>并渲染Three组件, 而如果在地址栏输入一个不存在匹配的路径, 如:/12345, 那么不会渲染任何component; 
+如果将上例中Redirect组件中的from属性删除, 那么无论是点击<Link to='/123'>123</Link>还是在地址栏输入一个不存在匹配的路径都会跳转到<Route path='/three' component={Three}></Route>并渲染Three组件;
+
+需要注意的是, 如果将上例中路由改为:
+……
+        <Switch>
+          {/*只渲染第一个匹配的Route*/}
+          <Redirect to='/three'></Redirect>
+          <Route path='/' exact component={App}></Route>
+          <Route path='/two' component={Two}></Route>
+          <Route path='/three' component={Three}></Route>
+        </Switch>
+……
+
+那么console中会报错:
+Warning: You tried to redirect to the same route you're currently on: "/three"
+这是因为路由形成了死循环, 当进入Switch组件后, 直接重定向到"/three", 然后又会进入一次路由, 再次重定向, 进入路由...
+所以需要将Switch中的没有指定from属性的Redirect组件放在其它路由组件的最后(并且to属性必须与之前已存在的某个Route组件path属性匹配, 不然会进入死循环), 如果Switch中的Redirect组件指定了from属性, 并且from属性与to属性不同(如果相同又会进入死循环), 那么它可以放在任意顺序的位置;
+
+
+<4.10-4.12>react-router 4 与 Redux配合使用;
+
+应用实例1;
+
+(1)在src中新建Auth.js, Auth.redux.js和Dashboard.js文件;
+
+
+
 
 
