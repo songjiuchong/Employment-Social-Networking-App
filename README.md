@@ -5,6 +5,7 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
+
 Redux+React Router+Node.js全栈开发笔记;
 
 
@@ -1385,7 +1386,7 @@ export function addGUNAsync(){
 
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
 
-更多内容可以参考: Redux笔记中: ’21.React-Redux 的用法;’ 相关内容;
+更多内容可以参考: Redux笔记中: ’21.React-Redux 的用法;’ 相关内容和 ’25.<Provider>组件’ 中 ‘React-Redux自动生成的容器组件的代码’ 相关内容;
 
 
 
@@ -1646,14 +1647,672 @@ Warning: You tried to redirect to the same route you're currently on: "/three"
 这是因为路由形成了死循环, 当进入Switch组件后, 直接重定向到"/three", 然后又会进入一次路由, 再次重定向, 进入路由...
 所以需要将Switch中的没有指定from属性的Redirect组件放在其它路由组件的最后(并且to属性必须与之前已存在的某个Route组件path属性匹配, 不然会进入死循环), 如果Switch中的Redirect组件指定了from属性, 并且from属性与to属性不同(如果相同又会进入死循环), 那么它可以放在任意顺序的位置;
 
+如果将上例中路由改为:
+……
+        <Switch>
+          {/*只渲染第一个匹配的Route*/}
+          <Route path='/' component={App}></Route>
+          <Route path='/two' component={Two}></Route>
+          <Route path='/three' component={Three}></Route>
+        </Switch>
+……
+
+那么如果访问’/two’也会进入第一个路由并且渲染App组件, 而且不会再继续查找, 除非给<Route path='/' component={App}></Route>添加exact属性, 那么访问’/two’就会进入第二个路由;
+
 
 <4.10-4.12>react-router 4 与 Redux配合使用;
 
-应用实例1;
+应用实例;
 
 (1)在src中新建Auth.js, Auth.redux.js和Dashboard.js文件;
 
+ src/index.js;
 
+import React from 'react'
+import ReactDom from 'react-dom'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {
+  BrowserRouter, 
+  Route, 
+  Link, 
+  Redirect, 
+  Switch
+} from 'react-router-dom'
+
+import {counter} from './index.redux'
+import Auth from './Auth'
+import Dashboard from './Dashboard'
+
+const store = createStore(counter, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <Switch>
+        <Route path='/login' component={Auth}></Route>
+        <Route path='/dashboard' component={Dashboard}></Route>
+        <Redirect to='/dashboard'></Redirect>
+      </Switch>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+
+Dashboard.js;
+
+import React from 'react'
+import {Link, Route} from 'react-router-dom'
+import App from './App'
+
+function Two(){
+  return <h2>two</h2>
+}
+function Three(){
+  return <h2>three</h2>
+}
+
+class Dashboard extends React.Component{
+  render(){
+    return (
+      <div>
+          <ul>
+            <li>
+              <Link to='/dashboard/'>one</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/two'>two</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/three'>three</Link>
+            </li>
+          </ul>
+          <Route path='/dashboard/' exact component={App}></Route>
+          <Route path='/dashboard/two' component={Two}></Route>
+          <Route path='/dashboard/three' component={Three}></Route>
+      </div>
+    )
+  }
+}
+
+export default Dashboard
+
+这里需要注意的是, 如果将上例Dashboard.js中的路由给为:
+……
+<Route path='/dashboard/' exact component={App}></Route>
+<Route path='/dashboard/two' component={Two}></Route>
+<Route path='/dashboard/two' component={Two}></Route>
+<Route path='/dashboard/three' component={Three}></Route>
+……
+那么访问’dashboard/two’时页面会渲染两遍Two组件, 也就是说此时路由并非出于<Switch>中, 所以可以得知, 父路由如果处于<Switch>组件中, 它的子路由并不会继承<Switch>组件的功能, 需要自己重新设置组件:
+……
+<Switch>
+  <Route path='/dashboard/' exact component={App}></Route>
+  <Route path='/dashboard/two' component={Two}></Route>
+  <Route path='/dashboard/two' component={Two}></Route>
+  <Route path='/dashboard/three' component={Three}></Route>
+</Switch>
+……
+
+
+index.redux.js;
+
+
+const ADD_GUN = '增加武器'
+const REMOVE_GUN = '减少武器'
+
+//reducer;
+export function counter(state=10, action){
+  switch(action.type){
+    case ADD_GUN:
+      return state+1
+    case REMOVE_GUN:
+      return state-1
+    default:
+      return state
+  }
+}
+
+//action creator;
+export function addGUN(){
+  return {type:ADD_GUN}
+}
+export function removeGUN(){
+  return {type:REMOVE_GUN}
+}
+export function addGUNAsync(){
+  return dispatch=>{
+    setTimeout(()=>{
+      dispatch(addGUN())
+    },2000)
+  }
+}
+
+
+Auth.redux.js;
+
+const LOGIN = 'LOGIN'
+const LOGOUT = 'LOGOUT'
+
+export function auth(state={isAuth:false, user:'song'},action){
+  switch(action.type){
+    case LOGIN:
+      return {...state, isAuth:true}
+    case LOGOUT:
+      return {...state, isAuth:false}
+    default:
+      return state
+  }
+}
+
+export function login(){
+  return {type:LOGIN}
+}
+
+export function logout(){
+  return {type:LOGOUT}
+}
+
+
+App.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {addGUN, removeGUN, addGUNAsync} from './index.redux'
+
+@connect(
+  state=>({num:state}),
+  {addGUN, removeGUN, addGUNAsync}
+)
+class App extends React.Component{
+  render(){
+    return (
+      <div>
+        <button onClick = {this.props.addGUN}>增加武器</button>
+        <button onClick = {this.props.removeGUN}>减少武器</button>
+        <button onClick = {this.props.addGUNAsync}>延迟发放</button>
+        <h1>目前有武器{this.props.num}把.</h1>
+      </div>
+    )
+  }
+}
+
+export default App
+
+
+Auth.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {login} from './Auth.redux'
+
+class Auth extends React.Component{
+  render(){
+    return <h2>Auth page</h2>
+  }
+}
+
+export default Auth
+
+
+通过上面的代码可以发现react-router4 路由嵌套的模式;
+
+上例在浏览器中访问’/dashboard/two’后的html结构:
+￼
+
+还有一点需要注意的是, 目前上面的代码中存在了两个不同的reducer(也存在两种不同形式的state), 一个是index.redux.js中的counter, 另一个是Auth.redux.js中的auth, 那么很显然需要将不同的reducer/state合并成一个才能正常使用redux; 
+
+
+(2)使用combineReducers来合并多个reducer;
+
+combineReducers方法的具体机制参考:
+Redux笔记中: ’12.Reducer 的拆分；’ 相关内容;
+
+
+创建一个reducer.js 文件用来合并应用中的所有reducer函数;
+
+import {combineReducers} from 'redux'
+import {counter} from './index.redux'
+import {auth} from './Auth.redux'
+
+export default combineReducers({counter,auth})
+
+
+修改src/index.js;
+
+将 import {counter} from './index.redux' 删除;
+添加 import reducers from './reducer'
+……
+const store = createStore(reducers, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+console.log(store.getState())
+……
+
+需要注意的是, 由于combineReducers方法的机制会改变state对象的结构, 还需要修改App.js:
+……
+@connect(
+  state=>({num:state.counter}),
+  {addGUN, removeGUN, addGUNAsync}
+)
+……
+
+上例在浏览器中加载后, 控制台中显示:
+
+￼
+￼
+
+
+上面显示的对象这就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
+
+
+修改Dashboard.js:
+
+import React from 'react'
+import {Link, Route, Redirect} from 'react-router-dom'
+import {connect} from 'react-redux'
+import {logout} from './Auth.redux'
+import App from './App'
+
+function Two(){
+  return <h2>two</h2>
+}
+function Three(){
+  return <h2>three</h2>
+}
+
+@connect(
+  state=>state.auth,
+  {logout}
+)
+class Dashboard extends React.Component{
+  render(){
+    const redirectToLogin = <Redirect to='/login'></Redirect>
+    const app = (
+      <div>
+          <ul>
+            <li>
+              <Link to='/dashboard/'>one</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/two'>two</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/three'>three</Link>
+            </li>
+          </ul>
+          <Route path='/dashboard/' exact component={App}></Route>
+          <Route path='/dashboard/two' component={Two}></Route>
+          <Route path='/dashboard/three' component={Three}></Route>
+      </div>
+    )
+    return this.props.isAuth ? app: redirectToLogin
+  }
+}
+
+export default Dashboard
+
+
+在浏览器加载页面后由于初始的state.auth.isAuth是false, 所以会自动跳转到’/login’页面:
+￼
+
+
+修改Auth.js, 增加login功能;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {login} from './Auth.redux'
+import {Redirect} from 'react-router-dom'
+
+@connect(
+  state=>state.auth,
+  {login}
+)
+class Auth extends React.Component{
+  render(){
+    return (
+      <div>
+        {this.props.isAuth? <Redirect to='/dashboard'/> : null}
+        <h2>You do not have permission to view this Page.</h2>
+        <button onClick={this.props.login}>login</button>
+      </div>
+    )
+  }
+}
+
+export default Auth
+
+上例在页面加载后首先会跳转到’/login’页面:
+
+￼
+
+点击login按钮后会跳转到’/dashboard’页面;
+因为点击按钮会触发dispatch({type:LOGIN}), 从而更新了state.auth.isAuth为true, 这样会使页面中使用了react-redux的conntect方法的组件被执行forceUpdate方法, 也就是重新执行其render方法更新组件状态, 由于页面中目前只有Auth组件(只有Auth组件被react-redux使用subscribe方法绑定了其forceUpdate函数), 并且其render方法中使用了{this.props.isAuth? <Redirect to='/dashboard'/> : null}逻辑来判断用户登录状态, 所以组件重新render后会直接跳转到’/dashboard’页面; 
+
+
+修改Dashboard.js, 增加logout功能;
+
+……
+  render(){
+    const redirectToLogin = <Redirect to='/login'></Redirect>
+    const app = (
+      <div>
+          <h1>Dashboard</h1>
+          <button onClick={this.props.logout}>logout</button>
+          <ul>
+            <li>
+              <Link to='/dashboard/'>one</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/two'>two</Link>
+            </li>
+            <li>
+              <Link to='/dashboard/three'>three</Link>
+            </li>
+          </ul>
+          <Route path='/dashboard/' exact component={App}></Route>
+          <Route path='/dashboard/two' component={Two}></Route>
+          <Route path='/dashboard/three' component={Three}></Route>
+      </div>
+    )
+    return this.props.isAuth ? app: redirectToLogin
+  }
+……
+
+上例在页面加载后显示: 
+￼
+
+点击logout按钮后会重新render Dashboard组件, 然后跳转到’/login’页面;
+
+
+使用this.props.match属性优化路由路径写法;
+
+修改Dashboard.js;
+……
+  render(){
+    const match = this.props.match
+    console.log(this.props.match)
+    const redirectToLogin = <Redirect to='/login'></Redirect>
+    const app = (
+      <div>
+          <h1>Dashboard</h1>
+          <button onClick={this.props.logout}>logout</button>
+          <ul>
+            <li>
+              <Link to={`${match.url}`}>one</Link>
+            </li>
+            <li>
+              <Link to={`${match.url}/two`}>two</Link>
+            </li>
+            <li>
+              <Link to={`${match.url}/three`}>three</Link>
+            </li>
+          </ul>
+          <Route path={`${match.url}/`} exact component={App}></Route>
+          <Route path={`${match.url}/two`} component={Two}></Route>
+          <Route path={`${match.url}/three`} component={Three}></Route>
+      </div>
+    )
+    return this.props.isAuth ? app: redirectToLogin
+  }
+……
+
+需要注意的是, 类似’/dashboard/’这样以’/‘结尾的路径既能匹配’/dashboard/‘, 又能匹配’/dashboard’这样的路由, 同理,如果路径为’/dashboard’, 那么它同时能匹配路由: ’/dashboard/‘ 和 ’/dashboard‘; 
+
+
+
+5.实际项目需求分析;
+
+<5.1>页面分类:
+
+￼
+
+
+
+<5.2-5.3>前后端联调;
+
+(1)axios;
+Axios 是一个基于 promise 的 HTTP 库, 可以用在浏览器和 node.js 中; 
+
+￼
+
+参考:
+https://www.kancloud.cn/yunye/axios/234845
+https://www.npmjs.com/package/axios
+
+安装:
+$ npm install axios —save
+
+
+(2)配置proxy;
+
+由于目前前端代码是使用之前create-react-app生成的scripts文件夹中的start.js这个server文件来访问(内部其实使用了webpack-dev-server来创建server), 所以localhost:3000已经被占用, 而我们之前创建的server/server.js监听的端口是9093, 所以如果需要在localhost:3000页面中发送AJAX请求访问localhost:9093的资源就存在跨域问题, 这里使用proxy来解决;
+
+修改package.json;
+……
+"eslintConfig": {
+    "extends": "react-app"
+  },
+  "proxy":"http://localhost:9093",
+……
+
+添加proxy相关设置, 这样就使得页面中所有指向localhost:3000的Ajax请求都被转发到9093端口获取数据;
+
+
+(3)测试前后端通信;
+
+修改Auth.js;
+……
+import axios from 'axios'
+……
+class Auth extends React.Component{
+  componentDidMount(){
+    axios.get('/data').then(res=>{
+      console.log(res)
+    })
+  }
+……
+
+页面加载后console中成功获取server.js中返回内容:
+￼
+
+server/server.js:
+……
+￼
+
+
+补充:
+1.关于create-react-app提供的proxy功能;
+create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
+￼
+
+
+如果将Auth.js修改为:
+
+……
+class Auth extends React.Component{
+  constructor(){
+    super()
+    this.state = {data:[]}
+  }
+  componentDidMount(){
+    axios.get('/data').then(res=>{
+      if(res.status === 200){
+        this.setState({data:res.data})
+        console.log(this.state.data) //[......]
+      }
+    })
+  }
+  componentWillUpdate(nextProps, nextState){
+    console.log(this.state.data[0]) //undefined;
+    console.log(nextState.data[0].user) //imooc;
+  }
+  render(){
+    return (
+      <div>
+        <h2>{this.state.data[0]?this.state.data[0].user:'none user'}</h2>
+        {this.props.isAuth? <Redirect to='/dashboard'/> : null}
+        <h2>You do not have permission to view this Page.</h2>
+        <button onClick={this.props.login}>login</button>
+      </div>
+    )
+  }
+}
+……
+
+页面显示为:
+￼
+
+从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后继续执行componentDidMount方法之后的内容;
+
+还有一点需要特别注意: 
+(1)对于原生的React来说, 无论this.setState()方法是否将组件的state更新了(也就是说是否传入了一个与当前state内容不同的值), 都会触发接下去的一系列钩子函数, 包括组件的render方法;
+(2)对于React配合Redux来说, 如果dispatch了一个action, 进过reducer之后最终返回了一个和之前相同的state, 同样会触发所有在store上subscribe的内容;
+(3)但是对于react-redux来说, 如果dispatch方法执行后reducer方法最终返回了一个和之前内容相同的state(深度比较), 那么使用了connect的组件的forceUpdate方法不会被执行, 也就是说这些组件不会被重新render; 实现这个功能的方法可能是react-redux在connect方法封装一个组件时, 在store.subscribe()传入的函数中在this.forceUpdate()之前会先对上一个state(组件第一次加载时会创建一个专门用来保存当前state的属性, 以便之后在subscribe回调函数中与最新的state比较, 如果不同就把新的state赋值给这个属性, 下一次再比较时会重复这个动作)与当前reducer返回的state做一个深度比较, 如果相同就不会再执行this.forceUpdate()方法;
+
+补充:
+1.对象的深度比较:
+function compare(origin, target) {
+    if (typeof target === 'object')    {
+        if (typeof origin !== 'object') return false
+        for (let key of Object.keys(target))
+            if (!compare(origin[key], target[key])) return false
+        return true
+    } else return origin === target
+}
+
+
+修改Auth.redux.js;
+……
+const USER_DATA = 'USER_DATA'
+
+const initState = {
+  isAuth:false,
+  user:'song',
+  age:20
+}
+
+export function auth(state=initState,action){
+  switch(action.type){
+    case LOGIN:
+      return {...state, isAuth:true}
+    case LOGOUT:
+      return {...state, isAuth:false}
+    case USER_DATA:
+      return {...state, user:action.payload.user, age:action.payload.age}
+    default:
+      return state
+  }
+}
+
+export function getUserData(){
+  return dispatch=>{
+    axios.get('/data').then(res=>{
+      if(res.status === 200){
+        dispatch(userData(res.data[0]))
+      }
+    })
+  }
+}
+
+export function userData(data){
+  return {type:USER_DATA, payload:data}
+}
+……
+
+
+修改Auth.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {login, getUserData} from './Auth.redux'
+import {Redirect} from 'react-router-dom'
+
+@connect(
+  state=>state.auth,
+  {login, getUserData}
+)
+class Auth extends React.Component{
+  componentDidMount(){
+    this.props.getUserData()
+  }
+  render(){
+    return (
+      <div>
+        <h2>my name is {this.props.user}, my age is {this.props.age}</h2>
+        {this.props.isAuth? <Redirect to='/dashboard'/> : null}
+        <h2>You do not have permission to view this Page.</h2>
+        <button onClick={this.props.login}>login</button>
+      </div>
+    )
+  }
+}
+
+export default Auth
+
+上例在页面中显示为:
+
+￼
+
+当前数据库中数据为:
+
+￼
+
+这样就完成了react-redux通过ajax获取server中数据库信息并渲染页面;
+
+
+(4)axios的拦截器功能;
+
+在src中创建一个config.js文件用来设置配置;
+
+config.js;
+
+import axios from 'axios'
+import {Toast} from 'antd-mobile'
+
+//拦截请求;
+axios.interceptors.request.use(function(config){
+  Toast.loading('loading...',0)
+  return config
+})
+
+//拦截响应;
+axios.interceptors.response.use(function(config){
+  setTimeout(()=>Toast.hide(),2000)  //为了让loading组件能显示更长时间;
+  return config
+})
+
+
+在index.js中添加:
+……
+import './config'
+……
+
+
+上例在页面中显示:
+￼
+
+
+antd-mobile的Toast组件, 参考:
+https://mobile.ant.design/components/toast-cn/
+
+
+补充:
+1.关于axios设置拦截器的注意点;
+(1)interceptor必须在请求前设置才有效; (2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
+
+var instance = axios.create();
+instance.interceptors.request.use(function () {/*...*/});
+
+
+
+6.登录注册设计;
 
 
 
