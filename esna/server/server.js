@@ -15,16 +15,16 @@ const User = mongoose.model('user', new mongoose.Schema({
 }))
 
 //新增数据;
-User.create({
-	user:'imooc',
-	age:'a'
-},function(err, doc){
-	if(!err){
-		console.log(doc)
-	}else{
-		console.log(err)
-	}
-})
+// User.create({
+// 	user:'imooc',
+// 	age: 18
+// },function(err, doc){
+// 	if(!err){
+// 		console.log(doc)
+// 	}else{
+// 		console.log(err)
+// 	}
+// })
 
 //删除数据;
 // User.remove({age:18},function(err,doc){

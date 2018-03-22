@@ -13,6 +13,7 @@ import {
 import reducers from './reducer'
 import Auth from './Auth'
 import Dashboard from './Dashboard'
+import './config'
 
 const store = createStore(reducers, compose(
 	applyMiddleware(thunk),
@@ -23,7 +24,7 @@ ReactDom.render(
 	(<Provider store={store}>
 		<BrowserRouter>
 			<Switch>
-				<Route path='/login' exact component={Auth}></Route>
+				<Route path='/login' component={Auth}></Route>
 				<Route path='/dashboard' component={Dashboard}></Route>
 				<Redirect to='/dashboard'></Redirect>
 			</Switch>
