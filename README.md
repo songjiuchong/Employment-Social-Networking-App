@@ -6,6 +6,7 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
+
 Redux+React Router+Node.js全栈开发笔记;
 
 
@@ -30,7 +31,7 @@ APP所包含的功能模块:
 
 课程内容可以分成三个部分, 参考下图:
 
-￼
+
 
 
 
@@ -57,14 +58,14 @@ $ sudo npm install -g create-react-app
 $ create-react-app myapp
 
 <3>查看生成的目录内容;
-￼
+
 
 基本结构:
-￼
+
 
 package.json的结构:
 
-￼
+
 
 其中react-scripts中包含了所有webpack和eslint的配置, 相当于一个向外部暴露的黑盒; 之后如果需要自定义相关配置就需要使用eject命令先将其弹出; 
 
@@ -72,12 +73,12 @@ package.json的结构:
 <4>启动项目;
 $ npm start
 
-￼
+
 
 
 <5>浏览器访问localhost:3000 查看调试页面(当修改App.js内容后页面会自动刷新);
 
-￼
+
 
 
 <6>安装第三方库;
@@ -93,28 +94,34 @@ import {createStore} from 'redux';
 
 $ npm run eject
 
-￼
+
 
 需要注意的是, 这个步骤是不可逆的, 一旦选择yes, 那么就会安装一系列原本封装在react-scripts中的依赖, 并且会重新配置package.json;
 
-￼
+
 
 弹出成功后观察文件目录的变化:
 
-￼
+
 
 新增了config和scripts这两个目录, 其中config中是一些jest和webpack相关的配置文件, scripts中是实际执行npm run相关命令时运行的源代码, 之后可以通过node命令来运行;
 
 观察package.json的变化:
 
-￼
+
 
 除了在dependencies中添加了许多原本封装在react-scripts中的第三方依赖, 可以看到还对一些依赖进行了配置;
 
+需要注意的是, package.json文件中关于babel和eslintConfig这样的配置都是相当于代替了.babelrc/.eslintrc 配置文件, 让用户执行babel/eslint 相关命令时无须每次都添加参数, 当然create-react-app会自动在webpack.config相关的配置中设置babel/eslint相关命令的执行条件; 
 
-补充:
+参考:
+https://www.cnblogs.com/zhenwen/archive/2016/07/17/5679589.html (.babelrc)
+https://www.cnblogs.com/ruanyifeng/p/5283708.html (.eslintrc)
 
-￼
+
+补充内容:
+
+
 
 
 
@@ -165,11 +172,13 @@ console.log(obj);
 
 控制台显示:
 1
-     [object Object] {
+    
+[object Object] {
 name: "song",
 song2: 2,
 test: function (){window.runnerWindow.proxyConsole.log(4);},
-test1: test1(){ window.runnerWindow.proxyConsole.log(3)} }
+test1: test1(){ window.runnerWindow.proxyConsole.log(3)}
+}
 
 
 
@@ -285,7 +294,7 @@ app.listen(9093,function(){
 })
 
 
-￼
+
 
 
 (7)定义文档模型(类似于表);
@@ -318,7 +327,7 @@ User.create({
 })
 ……
 
-￼
+
 
 需要注意的是, 虽然之前在创建文档模型时明确指定了user和age属性的type类型和require:true, 但是在新增数据时如果给age传入字符串数字或者不设置age都能成功新增数据(给age传入’18’时会自动转换为数字18), 但是如果给age传入不能转换为数字的字符串时会报错:
 ValidationError: user validation failed: age: Cast to Number failed for value "a" at path "age”……
@@ -334,7 +343,7 @@ app.get('/data',function(req,res){
 })
 ……
 
-￼
+
 需要注意的是, find方法总是返回一个数组, 就算只有一条数据或没有数据, 使用findOne方法就会返回一个对象或者null;
 
 
@@ -374,7 +383,7 @@ $ npm install —save react@next react-dom@next
 
 (1)下图是使用react的JSX语法实际转换为JS执行时的代码:
 
-￼
+
 
 
 (2)修改App.js;
@@ -404,7 +413,7 @@ export default App
 
 需要注意的是, 组件的render方法中只能return一个根标签, 并且如果JSX语句有多行的话需要用()括起; 
 
-￼
+
 
 
 (3)组件之间传递数据;
@@ -442,7 +451,7 @@ export default App
 
 需要注意的是, 如果组件只有render函数, 还可以用函数的形式写组件, 但是不要使用this.props, 因为不是一个类, 直接使用参数props; 
 
-￼
+
 
 
 (4)组件内部state;
@@ -492,7 +501,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 
 需要注意的是, 上例中如果没有在返回的<li></li>元素中添加值唯一的key属性, 虽然程序可以执行, 但是会在console中报错:
@@ -557,7 +566,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 需要注意的是, 除了在constructor中使用this.addSoldier = this.addSoldier.bind(this)来绑定事件回调函数内部的this, 还可以使用箭头函数:
 <button onClick={()=>this.addSoldier()}>add new soldier</button>
@@ -575,9 +584,9 @@ React组件有若干钩子函数, 在组件的不同状态下执行;
 
 参考下图:
 
-￼
 
-￼
+
+
 
 
 需要注意的是, 上图中的Second Render指的是子组件第一次render时的生命周期情况, 与父组件第一次render稍有不同的是, 由于其defaultProps是由父组件传递进来的, 所以不需要执行getDefaultProps函数; 
@@ -766,7 +775,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 上例在点击change mystate按钮后在console中显示:
 
@@ -879,13 +888,13 @@ Warning: App(...): When calling super() in `App`, make sure to pass up the same 
 
 (7)安装react官方推荐的开发插件(chrome);
 
-￼
 
-￼
+
+
 
 安装完毕后再次打开chrome开发者工具, 就会发现新增了debug react项目代码的选项:
 
-￼
+
 
 右侧工具栏还能实时显示选中组件的Props和State;
 
@@ -908,7 +917,7 @@ import 'antd-mobile/dist/antd-mobile.css'
 ……
 
 css文件的路径参考:
-￼
+
 
 然后使用Button组件:
 ……
@@ -923,7 +932,7 @@ https://mobile.ant.design/components/button/
 
 在页面中显示:
 
-￼
+
 
 
 安装并配置babel插件: babel-plugin-import;
@@ -945,7 +954,7 @@ import 'antd/lib/button/style';
 安装:
 $ npm install babel-plugin-import —save-dev
 
-修改package.json, 将babel配置修改为(相当于修改了.babelrc文件):
+修改package.json, 将babel配置修改为(相当于修改了.babelrc文件, 参考:https://www.cnblogs.com/zhenwen/archive/2016/07/17/5679589.html):
 
 "babel": {
     "presets": [
@@ -968,9 +977,9 @@ node_modules/antd-mobile/lib/button/style/css.js
 
 
 babel-plugin-import 用法参考:
-￼
 
-￼
+
+
 
 参考:
 https://www.cnblogs.com/yswz/p/7165031.html
@@ -1006,7 +1015,7 @@ render(){
   }
 ……
 
-￼
+
 
 
 
@@ -1132,7 +1141,7 @@ export default App
 
 上例在页面中加载后显示:
 
-￼
+
 
 点击增加/减少武器按钮会改变文本中显示的数量;
 
@@ -1254,7 +1263,7 @@ const addGUNAsync = this.props.addGUNAsync;
 <4.5>Redux调试工具(chrome);
 
 (1)在chrome中安装Redux DevTools;
-￼
+
 
 安装完成后在chrome的developer tools的选项栏中就会新增Redux选项;
 
@@ -1283,9 +1292,9 @@ Redux笔记中: ’17. applyMiddleware();’里的源码;
 
 参考下图:
 
-￼
-￼
-￼
+
+
+
 
 
 
@@ -1385,6 +1394,11 @@ export function addGUNAsync(){
 }
 
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
+
+被connect方法包装过的组件最后在页面中的结构是类似下图这样的:
+
+
+也就是说connect方法会创建一个新的名为,如: Connect(Auth)这样的组件, 在组件内部做一些相关设置(如: 在componentDidMount方法中设置forceUpdate函数等), 最后在其render方法内获取this.context中的store, 并且将相关内容做为props属性传递给其子组件(UI组件), 也就是开发者自行声明的Auth组件; 
 
 更多内容可以参考: Redux笔记中: ’21.React-Redux 的用法;’ 相关内容和 ’25.<Provider>组件’ 中 ‘React-Redux自动生成的容器组件的代码’ 相关内容;
 
@@ -1499,14 +1513,14 @@ ReactDom.render(
 需要注意的是, BrowserRouter组件中也只能包含一个根元素, 所以上例中使用了一个<div></div>将其中内容包了起来;
 上例在浏览器中显示为:
 
-￼
-￼
+
+
 
 可以发现, 当点击了指向’/two’或者’/three’的Link时同样显示了’/’根目录Route的内容, 这是因为’/’默认并非是完全匹配的, 也就是说’/two’或者’/three’也同时匹配了’/’, 属于正则匹配(但是这样的正则规则只适用于’/‘, 如果是类似: ‘/two’和’/two2’这样的路径是不会同时匹配的); 解决办法是在<Route path='/' component={App}></Route>中添加一个exact属性:
 <Route path='/' exact component={App}></Route>
 
 页面显示为:
-￼
+
 
 需要注意的是, react-router4与react-router2不同的是, 默认情况下不是找到匹配路由规则就停止查找, 而是继续查找并渲染所有匹配规则的路由组件, 也就是说如果上例中路由改为:
 ……
@@ -1558,12 +1572,12 @@ ReactDom.render(
 )
  
 上例在浏览器中显示:
-￼
+
 
 可以发现, 在Route使用类似: <Route path='/:location' component={Test}></Route> 这种方式定义path后, Test组件的props属性的match属性中将会与不在path中使用’/:’的Route定义有一些不同, 前者的params属性中的值是一个以path中’/:’后指定的字符串为key, 实际匹配路由地址中字符串为value的对象, 而后者是一个空对象;
 
 下图是直接访问’/test’, 并且匹配到了path=‘/test’的Route的情况:
-￼
+
 
 那么根据上面显示的传入组件props属性中的这些内容可以发现, 在组件中使用this.props.match.params.location就可以获取实际路由地址中匹配Route组件中path属性’/:’后的字符串了;
 还可以发现, this.props.history中的location属性与this.props.location属性相同;
@@ -1595,8 +1609,8 @@ class Test extends React.Component{
 ……
 
 上例在浏览器中显示:
-￼
-￼
+
+
 
 可以发现, 当路径不匹配任何路由规则时就会触发Test组件渲染, 但是上例的问题是, 点击two或者three按钮同时也会渲染Test组件;
 解决方法(给Route组件添加exact无法解决这个问题)是使用Switch组件, 因为Switch组件只会去渲染其中第一个匹配的路由;
@@ -1613,7 +1627,7 @@ src/index.js;
         </Switch>
 ……
 
-￼
+
 
 
 src/index.js;
@@ -1863,7 +1877,7 @@ export default Auth
 通过上面的代码可以发现react-router4 路由嵌套的模式;
 
 上例在浏览器中访问’/dashboard/two’后的html结构:
-￼
+
 
 还有一点需要注意的是, 目前上面的代码中存在了两个不同的reducer(也存在两种不同形式的state), 一个是index.redux.js中的counter, 另一个是Auth.redux.js中的auth, 那么很显然需要将不同的reducer/state合并成一个才能正常使用redux; 
 
@@ -1905,11 +1919,11 @@ console.log(store.getState())
 
 上例在浏览器中加载后, 控制台中显示:
 
-￼
-￼
 
 
-上面显示的对象这就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
+
+
+上面显示的对象就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
 
 
 修改Dashboard.js:
@@ -1960,7 +1974,7 @@ export default Dashboard
 
 
 在浏览器加载页面后由于初始的state.auth.isAuth是false, 所以会自动跳转到’/login’页面:
-￼
+
 
 
 修改Auth.js, 增加login功能;
@@ -1990,7 +2004,7 @@ export default Auth
 
 上例在页面加载后首先会跳转到’/login’页面:
 
-￼
+
 
 点击login按钮后会跳转到’/dashboard’页面;
 因为点击按钮会触发dispatch({type:LOGIN}), 从而更新了state.auth.isAuth为true, 这样会使页面中使用了react-redux的conntect方法的组件被执行forceUpdate方法, 也就是重新执行其render方法更新组件状态, 由于页面中目前只有Auth组件(只有Auth组件被react-redux使用subscribe方法绑定了其forceUpdate函数), 并且其render方法中使用了{this.props.isAuth? <Redirect to='/dashboard'/> : null}逻辑来判断用户登录状态, 所以组件重新render后会直接跳转到’/dashboard’页面; 
@@ -2026,7 +2040,7 @@ export default Auth
 ……
 
 上例在页面加载后显示: 
-￼
+
 
 点击logout按钮后会重新render Dashboard组件, 然后跳转到’/login’页面;
 
@@ -2071,7 +2085,7 @@ export default Auth
 
 <5.1>页面分类:
 
-￼
+
 
 
 
@@ -2080,7 +2094,7 @@ export default Auth
 (1)axios;
 Axios 是一个基于 promise 的 HTTP 库, 可以用在浏览器和 node.js 中; 
 
-￼
+
 
 参考:
 https://www.kancloud.cn/yunye/axios/234845
@@ -2105,6 +2119,36 @@ $ npm install axios —save
 添加proxy相关设置, 这样就使得页面中所有指向localhost:3000的Ajax请求都被转发到9093端口获取数据;
 
 
+补充:
+1.在package.json中添加的proxy设置会被create-react-app生成的相关文件读取然后配置webpackDevServer:
+
+config/paths.js
+……
+appPublic: resolveApp('public'),
+……
+appPackageJson: resolveApp('package.json'),
+……
+
+scripts/start.js
+……
+const appName = require(paths.appPackageJson).name;
+const urls = prepareUrls(protocol, HOST, port);
+const compiler = createCompiler(webpack, config, appName, urls, useYarn);
+const proxySetting = require(paths.appPackageJson).proxy;
+const proxyConfig = prepareProxy(proxySetting, paths.appPublic);
+const serverConfig = createDevServerConfig(
+      proxyConfig,
+      urls.lanUrlForConfig
+    );
+const devServer = new WebpackDevServer(compiler, serverConfig);
+……
+
+从上面的内容还可以发现, create-react-app在创建WebpackDevServer时会先有一个compile的过程, 就是根据webpack.config中的内容对指定文件进行build; 
+
+所以, create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
+
+
+
 (3)测试前后端通信;
 
 修改Auth.js;
@@ -2120,17 +2164,11 @@ class Auth extends React.Component{
 ……
 
 页面加载后console中成功获取server.js中返回内容:
-￼
+
 
 server/server.js:
 ……
-￼
 
-
-补充:
-1.关于create-react-app提供的proxy功能;
-create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
-￼
 
 
 如果将Auth.js修改为:
@@ -2167,14 +2205,14 @@ class Auth extends React.Component{
 ……
 
 页面显示为:
-￼
 
-从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后继续执行componentDidMount方法之后的内容;
+
+从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
 
 还有一点需要特别注意: 
 (1)对于原生的React来说, 无论this.setState()方法是否将组件的state更新了(也就是说是否传入了一个与当前state内容不同的值), 都会触发接下去的一系列钩子函数, 包括组件的render方法;
-(2)对于React配合Redux来说, 如果dispatch了一个action, 进过reducer之后最终返回了一个和之前相同的state, 同样会触发所有在store上subscribe的内容;
-(3)但是对于react-redux来说, 如果dispatch方法执行后reducer方法最终返回了一个和之前内容相同的state(深度比较), 那么使用了connect的组件的forceUpdate方法不会被执行, 也就是说这些组件不会被重新render; 实现这个功能的方法可能是react-redux在connect方法封装一个组件时, 在store.subscribe()传入的函数中在this.forceUpdate()之前会先对上一个state(组件第一次加载时会创建一个专门用来保存当前state的属性, 以便之后在subscribe回调函数中与最新的state比较, 如果不同就把新的state赋值给这个属性, 下一次再比较时会重复这个动作)与当前reducer返回的state做一个深度比较, 如果相同就不会再执行this.forceUpdate()方法;
+(2)对于React配合Redux来说, 如果dispatch了一个action, 经过reducer之后最终返回了一个和之前内容相同的state, 同样会触发所有在store上subscribe的内容;
+(3)但是对于react-redux来说, 如果dispatch方法执行后reducer方法最终返回了一个和之前内容相同的state(深度比较的结果), 那么使用了connect的组件的forceUpdate方法不会被执行, 也就是说这些组件不会被重新render; 实现这个功能的方法可能是react-redux在connect方法封装一个组件时, 在store.subscribe()传入的函数中在this.forceUpdate()之前会先对上一个state(组件第一次加载时会创建一个专门用来保存当前state的属性, 以便之后在subscribe回调函数中与最新的state比较, 如果不同就把新的state赋值给这个属性, 下一次再比较时会重复这个动作)与当前reducer返回的state做一个深度比较, 如果相同就不会再执行this.forceUpdate()方法;
 
 补充:
 1.对象的深度比较:
@@ -2258,11 +2296,11 @@ export default Auth
 
 上例在页面中显示为:
 
-￼
+
 
 当前数据库中数据为:
 
-￼
+
 
 这样就完成了react-redux通过ajax获取server中数据库信息并渲染页面;
 
@@ -2296,7 +2334,7 @@ import './config'
 
 
 上例在页面中显示:
-￼
+
 
 
 antd-mobile的Toast组件, 参考:
@@ -2305,7 +2343,8 @@ https://mobile.ant.design/components/toast-cn/
 
 补充:
 1.关于axios设置拦截器的注意点;
-(1)interceptor必须在请求前设置才有效; (2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
+(1)interceptor必须在请求前设置才有效;
+(2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
 
 var instance = axios.create();
 instance.interceptors.request.use(function () {/*...*/});
@@ -2313,6 +2352,21 @@ instance.interceptors.request.use(function () {/*...*/});
 
 
 6.登录注册设计;
+
+(1)基于cookie实现用户认证;
+
+express依赖cookie-parser插件来实现对cookie的管理, 安装cookie-parser:
+
+$ npm install cookie-parser —save
+
+
+(2)用户cookie管理;
+
+
+
+(3)
+
+
 
 
 
