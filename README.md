@@ -5,8 +5,6 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
-
-
 Redux+React Router+Node.js全栈开发笔记;
 
 
@@ -31,7 +29,7 @@ APP所包含的功能模块:
 
 课程内容可以分成三个部分, 参考下图:
 
-
+￼
 
 
 
@@ -58,14 +56,14 @@ $ sudo npm install -g create-react-app
 $ create-react-app myapp
 
 <3>查看生成的目录内容;
-
+￼
 
 基本结构:
-
+￼
 
 package.json的结构:
 
-
+￼
 
 其中react-scripts中包含了所有webpack和eslint的配置, 相当于一个向外部暴露的黑盒; 之后如果需要自定义相关配置就需要使用eject命令先将其弹出; 
 
@@ -73,12 +71,12 @@ package.json的结构:
 <4>启动项目;
 $ npm start
 
-
+￼
 
 
 <5>浏览器访问localhost:3000 查看调试页面(当修改App.js内容后页面会自动刷新);
 
-
+￼
 
 
 <6>安装第三方库;
@@ -94,21 +92,21 @@ import {createStore} from 'redux';
 
 $ npm run eject
 
-
+￼
 
 需要注意的是, 这个步骤是不可逆的, 一旦选择yes, 那么就会安装一系列原本封装在react-scripts中的依赖, 并且会重新配置package.json;
 
-
+￼
 
 弹出成功后观察文件目录的变化:
 
-
+￼
 
 新增了config和scripts这两个目录, 其中config中是一些jest和webpack相关的配置文件, scripts中是实际执行npm run相关命令时运行的源代码, 之后可以通过node命令来运行;
 
 观察package.json的变化:
 
-
+￼
 
 除了在dependencies中添加了许多原本封装在react-scripts中的第三方依赖, 可以看到还对一些依赖进行了配置;
 
@@ -121,7 +119,7 @@ https://www.cnblogs.com/ruanyifeng/p/5283708.html (.eslintrc)
 
 补充内容:
 
-
+￼
 
 
 
@@ -172,13 +170,11 @@ console.log(obj);
 
 控制台显示:
 1
-    
-[object Object] {
+     [object Object] {
 name: "song",
 song2: 2,
 test: function (){window.runnerWindow.proxyConsole.log(4);},
-test1: test1(){ window.runnerWindow.proxyConsole.log(3)}
-}
+test1: test1(){ window.runnerWindow.proxyConsole.log(3)} }
 
 
 
@@ -294,7 +290,7 @@ app.listen(9093,function(){
 })
 
 
-
+￼
 
 
 (7)定义文档模型(类似于表);
@@ -327,7 +323,7 @@ User.create({
 })
 ……
 
-
+￼
 
 需要注意的是, 虽然之前在创建文档模型时明确指定了user和age属性的type类型和require:true, 但是在新增数据时如果给age传入字符串数字或者不设置age都能成功新增数据(给age传入’18’时会自动转换为数字18), 但是如果给age传入不能转换为数字的字符串时会报错:
 ValidationError: user validation failed: age: Cast to Number failed for value "a" at path "age”……
@@ -343,7 +339,7 @@ app.get('/data',function(req,res){
 })
 ……
 
-
+￼
 需要注意的是, find方法总是返回一个数组, 就算只有一条数据或没有数据, 使用findOne方法就会返回一个对象或者null;
 
 
@@ -383,7 +379,7 @@ $ npm install —save react@next react-dom@next
 
 (1)下图是使用react的JSX语法实际转换为JS执行时的代码:
 
-
+￼
 
 
 (2)修改App.js;
@@ -413,7 +409,7 @@ export default App
 
 需要注意的是, 组件的render方法中只能return一个根标签, 并且如果JSX语句有多行的话需要用()括起; 
 
-
+￼
 
 
 (3)组件之间传递数据;
@@ -451,7 +447,7 @@ export default App
 
 需要注意的是, 如果组件只有render函数, 还可以用函数的形式写组件, 但是不要使用this.props, 因为不是一个类, 直接使用参数props; 
 
-
+￼
 
 
 (4)组件内部state;
@@ -501,7 +497,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 
 需要注意的是, 上例中如果没有在返回的<li></li>元素中添加值唯一的key属性, 虽然程序可以执行, 但是会在console中报错:
@@ -566,7 +562,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 需要注意的是, 除了在constructor中使用this.addSoldier = this.addSoldier.bind(this)来绑定事件回调函数内部的this, 还可以使用箭头函数:
 <button onClick={()=>this.addSoldier()}>add new soldier</button>
@@ -584,9 +580,9 @@ React组件有若干钩子函数, 在组件的不同状态下执行;
 
 参考下图:
 
+￼
 
-
-
+￼
 
 
 需要注意的是, 上图中的Second Render指的是子组件第一次render时的生命周期情况, 与父组件第一次render稍有不同的是, 由于其defaultProps是由父组件传递进来的, 所以不需要执行getDefaultProps函数; 
@@ -775,7 +771,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 上例在点击change mystate按钮后在console中显示:
 
@@ -888,13 +884,13 @@ Warning: App(...): When calling super() in `App`, make sure to pass up the same 
 
 (7)安装react官方推荐的开发插件(chrome);
 
+￼
 
-
-
+￼
 
 安装完毕后再次打开chrome开发者工具, 就会发现新增了debug react项目代码的选项:
 
-
+￼
 
 右侧工具栏还能实时显示选中组件的Props和State;
 
@@ -917,7 +913,7 @@ import 'antd-mobile/dist/antd-mobile.css'
 ……
 
 css文件的路径参考:
-
+￼
 
 然后使用Button组件:
 ……
@@ -932,7 +928,7 @@ https://mobile.ant.design/components/button/
 
 在页面中显示:
 
-
+￼
 
 
 安装并配置babel插件: babel-plugin-import;
@@ -977,9 +973,9 @@ node_modules/antd-mobile/lib/button/style/css.js
 
 
 babel-plugin-import 用法参考:
+￼
 
-
-
+￼
 
 参考:
 https://www.cnblogs.com/yswz/p/7165031.html
@@ -1015,7 +1011,7 @@ render(){
   }
 ……
 
-
+￼
 
 
 
@@ -1141,7 +1137,7 @@ export default App
 
 上例在页面中加载后显示:
 
-
+￼
 
 点击增加/减少武器按钮会改变文本中显示的数量;
 
@@ -1263,7 +1259,7 @@ const addGUNAsync = this.props.addGUNAsync;
 <4.5>Redux调试工具(chrome);
 
 (1)在chrome中安装Redux DevTools;
-
+￼
 
 安装完成后在chrome的developer tools的选项栏中就会新增Redux选项;
 
@@ -1292,9 +1288,9 @@ Redux笔记中: ’17. applyMiddleware();’里的源码;
 
 参考下图:
 
-
-
-
+￼
+￼
+￼
 
 
 
@@ -1396,7 +1392,7 @@ export function addGUNAsync(){
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
 
 被connect方法包装过的组件最后在页面中的结构是类似下图这样的:
-
+￼
 
 也就是说connect方法会创建一个新的名为,如: Connect(Auth)这样的组件, 在组件内部做一些相关设置(如: 在componentDidMount方法中设置forceUpdate函数等), 最后在其render方法内获取this.context中的store, 并且将相关内容做为props属性传递给其子组件(UI组件), 也就是开发者自行声明的Auth组件; 
 
@@ -1513,14 +1509,14 @@ ReactDom.render(
 需要注意的是, BrowserRouter组件中也只能包含一个根元素, 所以上例中使用了一个<div></div>将其中内容包了起来;
 上例在浏览器中显示为:
 
-
-
+￼
+￼
 
 可以发现, 当点击了指向’/two’或者’/three’的Link时同样显示了’/’根目录Route的内容, 这是因为’/’默认并非是完全匹配的, 也就是说’/two’或者’/three’也同时匹配了’/’, 属于正则匹配(但是这样的正则规则只适用于’/‘, 如果是类似: ‘/two’和’/two2’这样的路径是不会同时匹配的); 解决办法是在<Route path='/' component={App}></Route>中添加一个exact属性:
 <Route path='/' exact component={App}></Route>
 
 页面显示为:
-
+￼
 
 需要注意的是, react-router4与react-router2不同的是, 默认情况下不是找到匹配路由规则就停止查找, 而是继续查找并渲染所有匹配规则的路由组件, 也就是说如果上例中路由改为:
 ……
@@ -1572,12 +1568,12 @@ ReactDom.render(
 )
  
 上例在浏览器中显示:
-
+￼
 
 可以发现, 在Route使用类似: <Route path='/:location' component={Test}></Route> 这种方式定义path后, Test组件的props属性的match属性中将会与不在path中使用’/:’的Route定义有一些不同, 前者的params属性中的值是一个以path中’/:’后指定的字符串为key, 实际匹配路由地址中字符串为value的对象, 而后者是一个空对象;
 
 下图是直接访问’/test’, 并且匹配到了path=‘/test’的Route的情况:
-
+￼
 
 那么根据上面显示的传入组件props属性中的这些内容可以发现, 在组件中使用this.props.match.params.location就可以获取实际路由地址中匹配Route组件中path属性’/:’后的字符串了;
 还可以发现, this.props.history中的location属性与this.props.location属性相同;
@@ -1609,8 +1605,8 @@ class Test extends React.Component{
 ……
 
 上例在浏览器中显示:
-
-
+￼
+￼
 
 可以发现, 当路径不匹配任何路由规则时就会触发Test组件渲染, 但是上例的问题是, 点击two或者three按钮同时也会渲染Test组件;
 解决方法(给Route组件添加exact无法解决这个问题)是使用Switch组件, 因为Switch组件只会去渲染其中第一个匹配的路由;
@@ -1627,7 +1623,14 @@ src/index.js;
         </Switch>
 ……
 
+￼
 
+
+需要注意的是, 如果路由使用了<Switch>组件, 那么最后渲染的页面中只包含被匹配的那个Route组件的内容, 如果不使用<Switch>组件, 那么所有Route组件都会被渲染到页面中, 但是只有最终匹配路由的Route组件其中的component会被渲染;
+
+参考下图中页面结构:
+￼
+￼
 
 
 src/index.js;
@@ -1877,7 +1880,7 @@ export default Auth
 通过上面的代码可以发现react-router4 路由嵌套的模式;
 
 上例在浏览器中访问’/dashboard/two’后的html结构:
-
+￼
 
 还有一点需要注意的是, 目前上面的代码中存在了两个不同的reducer(也存在两种不同形式的state), 一个是index.redux.js中的counter, 另一个是Auth.redux.js中的auth, 那么很显然需要将不同的reducer/state合并成一个才能正常使用redux; 
 
@@ -1919,8 +1922,8 @@ console.log(store.getState())
 
 上例在浏览器中加载后, 控制台中显示:
 
-
-
+￼
+￼
 
 
 上面显示的对象就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
@@ -1974,7 +1977,7 @@ export default Dashboard
 
 
 在浏览器加载页面后由于初始的state.auth.isAuth是false, 所以会自动跳转到’/login’页面:
-
+￼
 
 
 修改Auth.js, 增加login功能;
@@ -2004,7 +2007,7 @@ export default Auth
 
 上例在页面加载后首先会跳转到’/login’页面:
 
-
+￼
 
 点击login按钮后会跳转到’/dashboard’页面;
 因为点击按钮会触发dispatch({type:LOGIN}), 从而更新了state.auth.isAuth为true, 这样会使页面中使用了react-redux的conntect方法的组件被执行forceUpdate方法, 也就是重新执行其render方法更新组件状态, 由于页面中目前只有Auth组件(只有Auth组件被react-redux使用subscribe方法绑定了其forceUpdate函数), 并且其render方法中使用了{this.props.isAuth? <Redirect to='/dashboard'/> : null}逻辑来判断用户登录状态, 所以组件重新render后会直接跳转到’/dashboard’页面; 
@@ -2040,7 +2043,7 @@ export default Auth
 ……
 
 上例在页面加载后显示: 
-
+￼
 
 点击logout按钮后会重新render Dashboard组件, 然后跳转到’/login’页面;
 
@@ -2085,7 +2088,7 @@ export default Auth
 
 <5.1>页面分类:
 
-
+￼
 
 
 
@@ -2094,7 +2097,7 @@ export default Auth
 (1)axios;
 Axios 是一个基于 promise 的 HTTP 库, 可以用在浏览器和 node.js 中; 
 
-
+￼
 
 参考:
 https://www.kancloud.cn/yunye/axios/234845
@@ -2116,7 +2119,7 @@ $ npm install axios —save
   "proxy":"http://localhost:9093",
 ……
 
-添加proxy相关设置, 这样就使得页面中所有指向localhost:3000的Ajax请求都被转发到9093端口获取数据;
+添加proxy相关设置, 这样就使得页面中所有指向localhost:3000的请求都被转发到9093端口获取数据;
 
 
 补充:
@@ -2145,8 +2148,10 @@ const devServer = new WebpackDevServer(compiler, serverConfig);
 
 从上面的内容还可以发现, create-react-app在创建WebpackDevServer时会先有一个compile的过程, 就是根据webpack.config中的内容对指定文件进行build; 
 
-所以, create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
+关于const proxyConfig = prepareProxy(proxySetting, paths.appPublic) 这条语句, paths.appPublic返回的是项目下public文件夹的路径信息, 而这里的prepareProxy方法之所以需要传入这第二个参数, 是因为在设置proxy时需要判断请求的是否是public文件夹中的内容, 如果是则不需要代理转发请求, 因为public文件夹中保存的都是webpack-dev-server生成的静态文件, 其中最重要的就是index.html文件, 也就是浏览器向webpack-dev-server(localhost:3000)服务器请求页面时返回的初始html文件(包含<div id="root"></div>这个节点), bundle.js文件就包含在其中; 也就是说, 除了请求localhost:3000服务器中public文件夹下的文件, 其它请求都会被proxy转发; 
 
+所以, create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
+￼
 
 
 (3)测试前后端通信;
@@ -2164,11 +2169,11 @@ class Auth extends React.Component{
 ……
 
 页面加载后console中成功获取server.js中返回内容:
-
+￼
 
 server/server.js:
 ……
-
+￼
 
 
 如果将Auth.js修改为:
@@ -2205,7 +2210,7 @@ class Auth extends React.Component{
 ……
 
 页面显示为:
-
+￼
 
 从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
 
@@ -2296,11 +2301,11 @@ export default Auth
 
 上例在页面中显示为:
 
-
+￼
 
 当前数据库中数据为:
 
-
+￼
 
 这样就完成了react-redux通过ajax获取server中数据库信息并渲染页面;
 
@@ -2334,7 +2339,7 @@ import './config'
 
 
 上例在页面中显示:
-
+￼
 
 
 antd-mobile的Toast组件, 参考:
@@ -2343,8 +2348,7 @@ https://mobile.ant.design/components/toast-cn/
 
 补充:
 1.关于axios设置拦截器的注意点;
-(1)interceptor必须在请求前设置才有效;
-(2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
+(1)interceptor必须在请求前设置才有效; (2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
 
 var instance = axios.create();
 instance.interceptors.request.use(function () {/*...*/});
@@ -2360,13 +2364,680 @@ express依赖cookie-parser插件来实现对cookie的管理, 安装cookie-parser
 $ npm install cookie-parser —save
 
 
-(2)用户cookie管理;
+(2)用户cookie管理流程;
+￼
 
 
+(3)项目文件目录结构以及登录/注册页面基本页面构建;
 
-(3)
+￼
 
 
+src/index.js;
 
+import React from 'react'
+import ReactDom from 'react-dom'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {
+  BrowserRouter, 
+  Route, 
+  Redirect, 
+  Switch
+} from 'react-router-dom'
+
+import Login from './container/login/login'
+import Register from './container/register/register'
+import reducers from './reducer'
+import './config'
+
+const store = createStore(reducers, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <div>
+        <Route path='/login' component={Login}></Route>
+        <Route path='/register' component={Register}></Route>
+      </div>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+
+src/component/logo/logo.js;
+
+import React from 'react'
+import logoImg from './job.png'
+import './logo.css'
+
+class Logo extends React.Component{
+
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+
+export default Logo
+
+
+src/component/logo/logo.css;
+
+.logo-container{
+  margin-top: 50px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+
+src/container/login/login.js;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+
+class Login extends React.Component{
+  constructor(props){
+    super(props)
+    this.register = this.register.bind(this)
+  }
+
+  register(){
+    this.props.history.push('/register')
+  }
+
+  render(){
+    return (
+      <div>
+        <Logo></Logo>
+        <h2>登录页</h2>
+        <WingBlank>
+          <List>
+            <InputItem>用户</InputItem>
+            <InputItem>密码</InputItem>
+          </List>
+          <WhiteSpace />
+          <Button type="primary">登录</Button>
+          <WhiteSpace />
+          <Button onClick={this.register} type="primary">注册</Button>
+        </WingBlank>
+      </div>
+    )
+  }
+}
+
+export default Login
+
+
+src/container/register/register.js;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, Radio, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+
+class Register extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      type: 'genius'
+    }
+  }
+  render(){
+    const RadioItem = Radio.RadioItem
+    return (
+      <div>
+        <Logo></Logo>
+        <List>
+          <InputItem>用户名</InputItem>
+          <WhiteSpace />
+          <InputItem>密码</InputItem>
+          <WhiteSpace />
+          <InputItem>确认密码</InputItem>
+          <WhiteSpace />
+          <RadioItem checked={this.state.type=='genius'}>
+            牛人
+          </RadioItem>
+          <RadioItem checked={this.state.type=='boss'}>
+            BOSS
+          </RadioItem>
+          <WhiteSpace />
+          <Button type="primary">注册</Button>
+        </List>
+      </div>
+    )
+  }
+}
+
+export default Register
+
+
+上面的代码在页面加载后效果为:
+
+访问’/login’;
+￼
+
+点击注册按钮后跳转到’/register’;
+￼
+
+
+antd-mobile组件参考:
+https://mobile.ant.design/components/wing-blank-cn/ (WingBlank: 两翼留白)
+https://mobile.ant.design/components/white-space-cn/ (WhiteSpace: 上下留白)
+https://mobile.ant.design/components/list-cn/ (List: 列表)
+https://mobile.ant.design/components/input-item-cn/ (InputItem: 文本输入)
+https://mobile.ant.design/components/radio-cn/ (Radio: 单选框)
+https://mobile.ant.design/components/button-cn/ (Button: 按钮)
+
+
+(4)路由判断组件;
+
+在component文件夹下新建文件夹authroute, 并在其中添加authroute.js;
+
+import React from 'react'
+import axios from 'axios'
+
+class AuthRoute extends React.Component{
+  componentDidMount(){
+    //获取用户信息;
+    axios.get('/user/info').
+      then(res=>{
+        if(res.status==200){
+          console.log(res.data)
+        }
+      })
+  }
+  render(){
+    return null
+  }
+}
+
+export default AuthRoute
+
+上例说明, 组件的render方法如果不需要渲染任何内容只需要返回null, 这样仍旧会触发componentDidMount钩子函数中的内容;
+
+
+修改src/index.js;
+
+……
+import AuthRoute from './component/authroute/authroute'
+……
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <div>
+        <AuthRoute></AuthRoute>
+        <Route path='/login' component={Login}></Route>
+        <Route path='/register' component={Register}></Route>
+      </div>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+
+修改server/server.js;
+
+const express = require('express')
+const userRouter = require('./user')
+
+//新建app;
+const app = express();
+
+app.use('/user',userRouter)
+
+app.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+上例使用了express的中间件功能将/user的子路由交给user.js路由模块处理;
+
+
+在server文件夹下新建user.js;
+
+const express = require('express')
+const Router = express.Router()
+
+Router.get('/info',function(req,res){
+  return res.json({code:1})
+})
+
+module.exports = Router
+
+
+在server文件夹下新建model.js;
+
+const mongoose = require('mongoose')
+
+//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+const DB_URL = 'mongodb://127.0.0.1:27017/esna'
+mongoose.connect(DB_URL)
+
+上例说明model.js使用来存放数据库相关代码的文件;
+
+
+(5)验证后的跳转;
+
+修改authroute.js;
+
+import React from 'react'
+import axios from 'axios'
+import { withRouter } from ‘react-router-dom'
+
+@withRouter
+class AuthRoute extends React.Component{
+  componentDidMount(){
+    const publicList = ['/login', '/register']
+    const pathname = this.props.location.pathname
+    if(publicList.indexOf(pathname) > -1){
+      return null
+    }
+    //获取用户信息;
+    axios.get('/user/info').
+      then(res=>{
+        if(res.status==200){
+          if(res.data.code==0){
+            //用户通过验证;
+          }else{
+            this.props.history.push('/login')
+          }
+        }
+      })
+  }
+  render(){
+    return null
+  }
+}
+
+export default AuthRoute
+
+上例在页面中访问’/user/info’后由于server返回的json对象中code属性为1, 所以会跳转到’/login’页面, 如果将server返回的json对象中code属性改为0, 那么上例在componentDidMount方法中会通过验证然后直接去访问’/user/info’, 最后页面显示server返回的json对象; 
+
+
+修改src/index.js;
+……
+function Boss(){
+  return <h2>BOSS page</h2>
+}
+……
+      <div>
+        <AuthRoute></AuthRoute>
+        <Route path='/boss' component={Boss}></Route>
+        <Route path='/login' component={Login}></Route>
+        <Route path='/register' component={Register}></Route>
+      </div>
+……
+
+上例中使用了withRouter函数来封装AuthRoute组件, 使得react-router会将当前的路由信息做为props对象传递给AuthRoute组件, 所以在AuthRoute中就可以使用this.props.location.pathname/this.props.history.push等属性或函数了;
+上例在页面加载后如果访问’/boss’, 那么会自动跳转到’/login’, 如果修改server/user.js中的返回内容:
+Router.get('/info',function(req,res){
+  return res.json({code:0})
+})
+那么当访问’/boss’就能在页面中渲染Boss组件的内容了;
+这样就实现了通过AuthRoute组件完成验证用户信息之后跳转;
+
+观察下图可以观察使用了withRouter方法封装AuthRoute组件后的页面结构, 以及传递给AuthRoute组件的props的内容:
+￼
+
+需要注意的是, withRouter方法在react-router2与react-router4中的用法不同, 关于react-router2中的withRouter方法可以参考:
+React-router2笔记中’11.路由的钩子;’里withRouter的相关内容; 
+
+
+(6)注册交互的实现;
+
+修改register.js
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, Radio, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+
+class Register extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      user:'',
+      pwd:'',
+      repeatpwd:'',
+      type: 'genius'
+    }
+    this.handleRegister = this.handleRegister.bind(this)
+  }
+  handleChange(key,val){
+    this.setState({
+      [key]:val 
+    })
+  }
+  handleRegister(){
+    console.log(this.state)
+  }
+  render(){
+    const RadioItem = Radio.RadioItem
+    return (
+      <div>
+        <Logo></Logo>
+        <List>
+          <InputItem onChange={v=>this.handleChange('user',v)}>用户名</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.handleChange('pwd',v)}>密码</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.handleChange('repeatpwd',v)}>确认密码</InputItem>
+          <WhiteSpace />
+          <RadioItem checked={this.state.type=='genius'} 
+          onChange={()=>this.handleChange('type','genius')}>
+            牛人
+          </RadioItem>
+          <RadioItem checked={this.state.type=='boss'}
+          onChange={()=>this.handleChange('type','boss')}>
+            BOSS
+          </RadioItem>
+          <WhiteSpace />
+          <Button type="primary" onClick={this.handleRegister}>注册</Button>
+        </List>
+      </div>
+    )
+  }
+}
+
+export default Register
+
+上例中当用户填写完了所有信息后，Register组件自身的state就包含了这些内容，然后点击注册按钮，就能对用户填写的所有信息进行验证和提交了；
+
+￼
+
+
+从上例中可以发现，Register组件使用了react原生的state来保存状态而非使用redux，这是因为Register组件中的这些状态无需与其他组件共享，并且根据组件解耦的原则，在不需要依赖外部状态的情况下组件本身的状态应该就只保存在组件内部，这样方便被复用；
+
+需要注意的是, react的虚拟Dom树与实际Dom树(这里的实际Dom树其实也是react保存在内存中的虚拟树, 用来与更新后的虚拟树做对比然后将差异更新到实际页面中)对比的机制并非是将虚拟Dom树与当前实时页面中的Dom树结构进行对比, 而是与上一次触发了react的render方法后重新绘制的虚拟Dom树进行对比, 也就是说, 如果用户自行改变了页面中Dom树的内容, 而非通过react的render方法进行修改, 那么react就不会将这个改动保存到实际Dom树中, 如果之后react的render方法再次重新渲染了虚拟Dom树, 由于最终对比的内容中不存在用户自行更改的内容, 那么除非此次虚拟树更新的内容正好与用户自行更改的内容处于相同节点，不然用户的更改就不会被其他内容替换；就像上例中用户每次在InputItem输入框中输入任何内容(InputItem元素的value属性会相应更新)就会触发它的onChange事件更新Register组件的state，从而会重新render Register组件中的所有内容到虚拟dom树中，但是由于与虚拟dom树对比的实际树中并没有包含InputItem元素value属性的更新，所以最终两棵虚拟树对比结果相同，react不会去更新页面, 用户在输入框中的输入会保留下来；
+
+
+(7)注册请求发送;
+
+在src/redux文件夹下创建user.redux.js(用来共享用户相关的数据);
+
+import axios from 'axios'
+
+const REGISTER_SUCCESS = 'REGISTER_SUCCESS'
+const ERROR_MSG = 'ERROR_MSG'
+
+const initState={
+  isAuth:false,
+  msg:'',
+  user:'',
+  pwd:'',
+  type:''
+}
+
+//reducer
+export function user(state=initState,action){
+  switch (action.type){
+    case REGISTER_SUCCESS: 
+      return {...state, msg:'', isAuth:true, ...action.payload }
+    case ERROR_MSG: 
+      return {...state, isAuth:false, msg:action.msg}
+    default:
+      return state
+  }
+}
+
+function registerSuccess(data){
+  return {type:REGISTER_SUCCESS, payload:data}
+}
+function errorMsg(msg){
+  return {msg, type:ERROR_MSG}
+}
+
+//action creator
+export function register({user,pwd,repeatpwd,type}){
+  if(!user||!pwd||!type){
+    return errorMsg('用户信息不完整')
+  }
+  if(pwd!==repeatpwd){
+    return errorMsg('两次输入的密码不同')
+  }
+  return dispatch=>{
+    axios.post('/user/register',{user,pwd,type})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(registerSuccess({user,pwd,type}))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+
+修改src/reducer.js;
+
+import {combineReducers} from 'redux'
+import {user} from './redux/user.redux'
+
+export default combineReducers({user})
+
+
+修改src/container/register/register;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, Radio, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+import {connect} from 'react-redux'
+import {register} from '../../redux/user.redux'
+
+@connect(
+  state=>state.user,
+  {register}
+)
+class Register extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      user:'',
+      pwd:'',
+      repeatpwd:'',
+      type: 'genius'
+    }
+    this.handleRegister = this.handleRegister.bind(this)
+  }
+  handleChange(key,val){
+    this.setState({
+      [key]:val 
+    })
+  }
+  handleRegister(){
+    this.props.register(this.state)
+  }
+  render(){
+    const RadioItem = Radio.RadioItem
+    return (
+      <div>
+        <Logo></Logo>
+        <List>
+          <InputItem onChange={v=>this.handleChange('user',v)}>用户名</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.handleChange('pwd',v)}>密码</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.handleChange('repeatpwd',v)}>确认密码</InputItem>
+          <WhiteSpace />
+          <RadioItem checked={this.state.type=='genius'} 
+          onChange={()=>this.handleChange('type','genius')}>
+            牛人
+          </RadioItem>
+          <RadioItem checked={this.state.type=='boss'}
+          onChange={()=>this.handleChange('type','boss')}>
+            BOSS
+          </RadioItem>
+          <WhiteSpace />
+          <Button type="primary" onClick={this.handleRegister}>注册</Button>
+        </List>
+      </div>
+    )
+  }
+}
+
+export default Register
+
+
+上例在页面加载后用户在’/register’页面输入不同信息下state的变化:
+
+￼
+
+￼
+
+
+在src中新建一个index.css文件;
+
+.error-msg{
+  color:#f50;
+  padding-left: 10px;
+}
+
+
+在register.js中添加显示用户报错信息的元素;
+……
+import '../../index.css'
+……
+        <List>
+          {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+          <InputItem onChange={v=>this.handleChange('user',v)}>用户名</InputItem>
+……
+
+
+在src/index.js中引入index.css;
+……
+import './index.css'
+……
+
+上例在页面加载后测试截图:
+
+￼
+￼
+
+
+(8)数据库模型建立;
+
+修改model.js;
+
+const mongoose = require('mongoose')
+
+//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+const DB_URL = 'mongodb://127.0.0.1:27017/esna'
+mongoose.connect(DB_URL)
+
+const models = {
+  user:{
+    'user':{type:String, require:true},
+    'pwd':{type:String, require:true},
+    'type':{type:String, require:true},
+    //用户头像
+    'avatar':{type:String},
+    //个人简介
+    'desc':{type:String},
+    //职位名
+    'title':{type:String},
+    //Boss需要的两个字段
+    'company':{type:String},
+    'money':{type:String}
+  },
+  chat:{
+  }
+}
+
+for(let m in models){
+  mongoose.model(m, new mongoose.Schema(models[m]))
+}
+
+module.exports = {
+  getModel:function(name){
+    return mongoose.model(name)
+  }
+}
+
+
+(9)服务器端添加解析请求的中间件;
+
+安装body-parser插件和cookie-parser插件;
+
+body-parser是一个HTTP请求体解析中间件，作用是对post请求的请求体进行解析, 使用这个模块可以解析JSON、Raw、文本、URL-encoded格式的请求体，Express框架中就经常使用这个模块做为请求体解析中间件; 需要注意的是对于POST请求的Content-Type是multipart/form-data的情况下，处理相对复杂些，目前body-parser不打算对其进行支持; 
+
+参考:
+https://www.jianshu.com/p/ea0122ad1ac0 
+https://www.cnblogs.com/chyingp/p/nodejs-learning-express-body-parser.html
+
+$ npm install body-parser —save
+$ npm install cookie-parser —save
+
+
+修改server/server.js;
+
+const express = require('express')
+const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
+const userRouter = require('./user')
+
+//新建app;
+const app = express();
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+
+app.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+
+修改server/user.js;
+
+const express = require('express')
+const Router = express.Router()
+const model = require('./model')
+const User = model.getModel('user')
+
+Router.get('/list',function(req,res){
+  User.find({},function(err,doc){
+    return res.json(doc)
+  })
+})
+
+Router.post('/register', function(req,res){
+  console.log(req.body.data)
+  const {user, pwd, type} = req.body.data
+  User.findOne({user},function(err,doc){
+    if(doc){
+      return res.json({code:1, msg:'用户名重复'})
+    }
+    User.create({user,pwd,type},function(e,d){
+      if(e){
+        return res.json({code:1,msg:'后端出错'})
+      }
+      return res.json({code:0})
+    })
+  })
+})
+
+Router.get('/info',function(req,res){
+  return res.json({code:0})
+})
+
+module.exports = Router
+
+上例中在页面中完成注册后再次使用同一个用户名提交注册后就会报错, 说明之前的用户信息已经成功提交到了后端:
+
+￼
+
+
+(10)
 
 
