@@ -10,10 +10,15 @@ import {
 	Switch
 } from 'react-router-dom'
 
+import Login from './container/login/login'
+import Register from './container/register/register'
+import AuthRoute from './component/authroute/authroute'
 import reducers from './reducer'
-import Auth from './Auth'
-import Dashboard from './Dashboard'
 import './config'
+
+function Boss(){
+	return <h2>BOSS page</h2>
+}
 
 const store = createStore(reducers, compose(
 	applyMiddleware(thunk),
@@ -23,11 +28,12 @@ const store = createStore(reducers, compose(
 ReactDom.render(
 	(<Provider store={store}>
 		<BrowserRouter>
-			<Switch>
-				<Route path='/login' component={Auth}></Route>
-				<Route path='/dashboard' component={Dashboard}></Route>
-				<Redirect to='/dashboard'></Redirect>
-			</Switch>
+			<div>
+				<AuthRoute></AuthRoute>
+				<Route path='/boss' component={Boss}></Route>
+				<Route path='/login' component={Login}></Route>
+				<Route path='/register' component={Register}></Route>
+			</div>
 		</BrowserRouter>
 	</Provider>),
 	document.getElementById('root')
