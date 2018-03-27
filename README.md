@@ -239,14 +239,14 @@ server.js;
 const express = require('express')
 const mongoose = require('mongoose')
 
-//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+//连接mongo, 并且使用esna这个数据库(如果不存在会新建);
 const DB_URL = 'mongodb://127.0.0.1:27017/esna'
 mongoose.connect(DB_URL)
 mongoose.connection.on('connected',function(){
   console.log('mongo connect success')
 })
 
-//新建一个文档模型('表'), 文档名为user, 文档内容定义在mongoose.Schema对象的参数中;
+//新建一个集合(‘表’),名为user, 内容定义在mongoose.Schema实例对象中;
 const User = mongoose.model('user', new mongoose.Schema({
   user:{type:String,require:true},
   age:{type:Number,require:true}
@@ -292,17 +292,28 @@ app.listen(9093,function(){
 
 ￼
 
+补充:
+1.mongoDB 数据库概念;
 
-(7)定义文档模型(类似于表);
+MongoDB的一个实例可以拥有一个或多个相互独立的数据库，每个数据库都有自己的集合;
+集合可以看作是拥有动态模式的表;
+文档是MongoDB中基本的数据单元，类似关系型数据库表的行, 是键值对的一个有序集合;
+每个文档都有个特殊的"_id",在文档所属集合中是唯一的;
+
+参考:
+https://blog.csdn.net/lihao__/article/details/76691513
+
+
+(7)定义集合模型(类似于表);
 ……
-//新建一个文档模型('表'), 文档名为user, 文档内容定义在一个新的mongoose.Schema对象中;
+//新建一个集合(‘表’),名为user, 内容定义在mongoose.Schema实例对象中;
 const User = mongoose.model('user', new mongoose.Schema({
   user:{type:String,require:true},
   age:{type:Number,require:true}
 }))
 ……
 
-一个数据库文档对应一个模型, 通过模型对数据库进行操作;
+一个集合对应一个模型, 通过模型对集合进行操作;
 其中, 数据结构通过type:String/Number/...等来定义;
 create, remove, update分别用来增删改操作;
 find和findOne用来查询数据;
@@ -2965,6 +2976,25 @@ module.exports = {
 }
 
 
+需要注意的是, 使用mongoose.model创建新的集合且没有传入collection参数时，Mongoose会通过model name（就是第一个参数），调用utils.toCollectionName方法产生一个collection name，而这个方法会使name变成复数形式(如果本身就是以s结尾的就不会再改变),  如果你不想要这个过程，只要传入collection name参数或设置Schema中的collection name选项, 如:
+
+var schema = new Schema({ name: String }, { collection: 'actor' });
+// or
+schema.set('collection', 'actor');
+// or
+var collectionName = 'actor'
+var M = mongoose.model('Actor', schema, collectionName);
+
+同样, 在查询集合时, 也可以只传入非复数形式的集合名, mongoose会先添加s再去数据库查找(如果数据库中同时存在一个集合名的复数和非复数形式, 那么就会精确匹配), 所以此项目中使用:
+const User = model.getModel('user') 来获取esna数据库中的users集合, 但是在mongodb的terminal操作数据库时, 就需要使用复数形式的名称来查找了, 如:
+use esna
+show collections
+db.users.find()
+
+参考:
+https://blog.csdn.net/azureternite/article/details/52349114
+
+
 (9)服务器端添加解析请求的中间件;
 
 安装body-parser插件和cookie-parser插件;
@@ -3012,8 +3042,7 @@ Router.get('/list',function(req,res){
 })
 
 Router.post('/register', function(req,res){
-  console.log(req.body.data)
-  const {user, pwd, type} = req.body.data
+  const {user, pwd, type} = req.body
   User.findOne({user},function(err,doc){
     if(doc){
       return res.json({code:1, msg:'用户名重复'})
@@ -3033,11 +3062,558 @@ Router.get('/info',function(req,res){
 
 module.exports = Router
 
+
 上例中在页面中完成注册后再次使用同一个用户名提交注册后就会报错, 说明之前的用户信息已经成功提交到了后端:
 
 ￼
 
 
-(10)
+(10)注册跳转/密码加密;
+
+在src文件夹下新建util.js:
+
+export function getRedirectPath({type, avatar}){
+  //根据用户信息返回跳转地址;
+  let url = (type==='boss')?'/boss':'/genius'
+  if(!avatar){
+    url += 'info'
+  }
+  return url
+}
+
+上例中根据用户传入的信息中是否有avatar属性来判断是否需要跳转到用户信息完善页面;
+至于为什么单独将getRedirectPath函数放在src/util.js中而没有直接放在redux/user.redux.js里的原因是, getRedirectPath中并非是处理或者dispatch action的函数只是一个工具类型的函数, redux下的代码应该只包含reducer和action creator相关的内容; 
+
+
+修改user.redux.js;
+……
+//reducer
+export function user(state=initState,action){
+  switch (action.type){
+    case REGISTER_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), isAuth:true, ...action.payload }
+    case ERROR_MSG: 
+      return {...state, isAuth:false, msg:action.msg}
+    default:
+      return state
+  }
+}
+……
+
+
+再次成功注册后可以发现redux的state.user.redirectTo属性更新为了’/bossinfo’: 
+
+￼
+
+
+修改register.js;
+……
+render(){
+    const RadioItem = Radio.RadioItem
+    return (
+      <div>
+        {this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}
+        <Logo></Logo>
+……
+
+上例中在Register组件渲染部分的开头添加了判断是否需要redirect的逻辑, 当用户成功注册后, redux的state.user会更新, 所以Register会被重新render, 继而跳转到了用户完善信息页面;
+
+
+目前用户注册成功后的密码是以明文的形式直接存储在数据库中的, 但是这样显然缺乏安全性, 所以这里需要将密码通过MD5加密后再存储;
+
+这里使用一个第三方库: utility来完成加密(https://www.npmjs.com/package/utility);
+
+$ npm install utility —save
+
+修改server/user.js;
+……
+const utils = require('utility')
+……
+    User.create({user, type, pwd: utils.md5(pwd)},function(e,d){
+      if(e){
+        return res.json({code:1,msg:'后端出错'})
+      }
+      return res.json({code:0})
+    })
+……
+
+重新成功注册后, 观察数据库中存储的用户信息:
+……
+{"_id":"5ab9e71ab7583174ac8c0227","user":"song2","type":"genius","pwd":"202cb962ac59075b964b07152d234b70","__v":0}
+……
+
+
+不过需要注意的是, 虽然md5不可逆（指攻击者不能从哈希值h(x)中逆推出x）而且碰撞几率低（指不能找到两个值x、x’具有相同的哈希值）；然而这种方式也是不安全的，因为只要枚举出所有的常用密码，做成一个索引表，就可以推出来原始密码，这张索引表也被叫做“彩虹表”;
+
+比如反向解密上例中MD5存储的pwd:202cb962ac59075b964b07152d234b70:
+￼
+
+由于密码过于简单, 所以被解密的可能就非常高, 那么除了在注册时硬性规定用户创建的密码要符合一定的复杂度(比如:必须包括大小写, 特殊符号, 数字等), 还可以在服务器端通过密码加盐来增加密码的安全性; 
+
+修改server/user.js;
+……
+    User.create({user, type, pwd: md5Pwd(pwd)},function(e,d){
+      if(e){
+        return res.json({code:1,msg:'后端出错'})
+      }
+      return res.json({code:0})
+    })
+……
+//MD5密码加盐
+function md5Pwd(pwd){
+  const salt = 'songjiuchong_Therapists@!@251511!' 
+  return utils.md5(utils.md5(pwd+salt))
+}
+
+
+再次观察数据库中新增的用户记录:
+{"_id":"5ab9ec6ab616f84a144231b2","user":"song5","type":"boss","pwd":"1addc366314c8bc34466429522c4afdc","__v":0}
+
+可以发现同样使用123做为密码, 得到的pwd是1addc366314c8bc34466429522c4afdc, 现在重新尝试解密:
+￼
+
+上面的结果说明, 通过了密码加盐之后, 数据库存储的pwd已经不会被轻易解密了, 就算被解密, 那解密者也只是获得了utils.md5(utils.md5(pwd+salt))中内层的utils.md5(pwd+salt)的内容, 所以安全性是非常高的;
+
+
+补充:
+1.在线使用MD5算法加密:
+http://www.cmd5.com/
+
+2.密码加盐;
+
+加盐很好理解，就是给原始密码加上特定的字符串，这样给攻击者增加攻击的成本，加盐的关键在于如何选择盐; 
+
+参考:
+https://blog.csdn.net/zp1996323/article/details/54782858
+
+
+(11)登录的实现;
+
+修改redux/user.redux.js;
+
+import axios from 'axios'
+import {getRedirectPath} from '../util'
+const REGISTER_SUCCESS = 'REGISTER_SUCCESS'
+const ERROR_MSG = 'ERROR_MSG'
+const LOGIN_SUCCESS = 'LOGIN_SUCCESS'
+
+const initState={
+  redirectTo:'',
+  isAuth:false,
+  msg:'',
+  user:'',
+  pwd:'',
+  type:''
+}
+
+//reducer
+export function user(state=initState,action){
+  switch (action.type){
+    case REGISTER_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), isAuth:true, ...action.payload }
+    case LOGIN_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), isAuth:true, ...action.payload }
+    case ERROR_MSG: 
+      return {...state, isAuth:false, msg:action.msg}
+    default:
+      return state
+  }
+}
+function loginSuccess(data){
+  return {type:LOGIN_SUCCESS, payload:data}
+}
+function registerSuccess(data){
+  return {type:REGISTER_SUCCESS, payload:data}
+}
+function errorMsg(msg){
+  return {msg, type:ERROR_MSG}
+}
+
+//action creator
+export function login({user, pwd}){
+  if(!user||!pwd){
+    return errorMsg('登录信息不完整')
+  }
+  return dispatch=>{
+    axios.post('/user/login',{user,pwd})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(loginSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+export function register({user,pwd,repeatpwd,type}){
+  if(!user||!pwd||!type){
+    return errorMsg('用户信息不完整')
+  }
+  if(pwd!==repeatpwd){
+    return errorMsg('两次输入的密码不同')
+  }
+  return dispatch=>{
+    axios.post('/user/register',{user,pwd,type})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(registerSuccess({user,pwd,type}))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+
+修改container/login/login.js;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+import {Redirect} from 'react-router-dom'
+import {connect} from 'react-redux'
+import {login} from '../../redux/user.redux'
+
+@connect(
+  state=>state.user,
+  {login}
+)
+class Login extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      user:'',
+      pwd:''
+    }
+    this.register = this.register.bind(this)
+    this.handleLogin = this.handleLogin.bind(this)
+  }
+
+  register(){
+    this.props.history.push('/register')
+  }
+  handleChange(key,val){
+    this.setState({
+      [key]:val 
+    })
+  }
+  handleLogin(){
+    this.props.login(this.state)
+  }
+  render(){
+    return (
+      <div>
+        {this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}
+        <Logo></Logo>
+        <WingBlank>
+          <List>
+            {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+            <InputItem onChange={v=>this.handleChange('user',v)}>用户</InputItem>
+            <InputItem type='password' onChange={v=>this.handleChange('pwd',v)}>密码</InputItem>
+          </List>
+          <WhiteSpace />
+          <Button onClick={this.handleLogin} type="primary">登录</Button>
+          <WhiteSpace />
+          <Button onClick={this.register} type="primary">注册</Button>
+        </WingBlank>
+      </div>
+    )
+  }
+}
+
+export default Login
+
+
+修改server/user.js;
+
+const express = require('express')
+const Router = express.Router()
+const utils = require('utility')
+const model = require('./model')
+const User = model.getModel('user')
+
+Router.get('/list',function(req,res){
+  User.find({},function(err,doc){
+    return res.json(doc)
+  })
+})
+
+Router.post('/login',function(req,res){
+  const {user, pwd} = req.body
+  User.findOne({user, pwd:md5Pwd(pwd)},{pwd:0,__v:0,_id:0},function(err,doc){
+    if(!doc){
+      return res.json({code:1, msg:'用户名或密码错误'})
+    }
+    return res.json({code:0, data:doc})
+  })
+})
+
+Router.post('/register', function(req,res){
+  const {user, pwd, type} = req.body
+  User.findOne({user},function(err,doc){
+    if(doc){
+      return res.json({code:1, msg:'用户名重复'})
+    }
+    User.create({user, type, pwd: md5Pwd(pwd)}, function(e,d){
+      if(e){
+        return res.json({code:1,msg:'后端出错'})
+      }
+      return res.json({code:0})
+    })
+  })
+})
+
+Router.get('/info',function(req,res){
+  return res.json({code:0})
+})
+
+//MD5密码加盐
+function md5Pwd(pwd){
+  const salt = 'songjiuchong_Therapists@!@251511!' 
+  return utils.md5(utils.md5(pwd+salt))
+}
+
+module.exports = Router
+
+
+上例在login页面成功登录后跳转到了’/geniusinfo’页面:
+￼
+
+可以发现向’user/login’发送的Ajax请求返回的data属性对象中只有type, user和_id这三个字段, 这是因为上例在user.js中使用了:
+
+Router.post('/login',function(req,res){
+  const {user, pwd} = req.body
+  User.findOne({user, pwd:md5Pwd(pwd)},{pwd:0,__v:0},function(err,doc){
+    if(!doc){
+      return res.json({code:1, msg:'用户名或密码错误'})
+    }
+    return res.json({code:0, data:doc})
+  })
+})
+
+mongoose的findOne方法支持传入第二个对象参数, 来屏蔽查询到记录的某些指定属性;
+
+
+(12)使用cookie保存登录状态;
+
+修改server/user.js;
+
+const express = require('express')
+const Router = express.Router()
+const utils = require('utility')
+const model = require('./model')
+const User = model.getModel('user')
+const _filter = {pwd:0,__v:0}
+
+Router.get('/list',function(req,res){
+  User.find({},function(err,doc){
+    return res.json(doc)
+  })
+})
+
+Router.post('/login',function(req,res){
+  const {user, pwd} = req.body
+  User.findOne({user, pwd:md5Pwd(pwd)}, _filter ,function(err,doc){
+    if(!doc){
+      return res.json({code:1, msg:'用户名或密码错误'})
+    }
+    res.cookie('userid', doc._id)
+    return res.json({code:0, data:doc})
+  })
+
+})
+
+Router.post('/register', function(req,res){
+  const {user, pwd, type} = req.body
+  User.findOne({user},function(err,doc){
+    if(doc){
+      return res.json({code:1, msg:'用户名重复'})
+    }
+    User.create({user, type, pwd: md5Pwd(pwd)}, function(e,d){
+      if(e){
+        return res.json({code:1,msg:'后端出错'})
+      }
+      const {user, type, _id} = d
+      res.cookie('userid',_id)
+      return res.json({code:0, data:{user, type, _id}})
+    })
+  })
+})
+
+Router.get('/info',function(req,res){
+  const {userid} = req.cookies
+  if(!userid){
+    return res.json({code:1})
+  }
+  User.findOne({_id:userid}, _filter, function(err,doc){
+    if(err){
+      return res.json({code:1, msg:'后端出错了'})
+    }
+    if(doc){
+      return res.json({code:0, data:doc})
+    }
+  })
+})
+
+//MD5密码加盐
+function md5Pwd(pwd){
+  const salt = 'songjiuchong_Therapists@!@251511!' 
+  return utils.md5(utils.md5(pwd+salt))
+}
+
+module.exports = Router
+
+
+修改redux/user.redux.js;
+
+import axios from 'axios'
+import {getRedirectPath} from '../util'
+const REGISTER_SUCCESS = 'REGISTER_SUCCESS'
+const ERROR_MSG = 'ERROR_MSG'
+const LOGIN_SUCCESS = 'LOGIN_SUCCESS'
+const LOAD_DATA = 'LOAD_DATA'
+
+const initState={
+  redirectTo:'',
+  isAuth:false,
+  msg:'',
+  user:'',
+  type:''
+}
+
+//reducer
+export function user(state=initState,action){
+  switch (action.type){
+    case REGISTER_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), isAuth:true, ...action.payload }
+    case LOGIN_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), isAuth:true, ...action.payload }
+    case LOAD_DATA:
+      return {...state, ...action.payload}
+    case ERROR_MSG: 
+      return {...state, isAuth:false, msg:action.msg}
+    default:
+      return state
+  }
+}
+function loginSuccess(data){
+  return {type:LOGIN_SUCCESS, payload:data}
+}
+function registerSuccess(data){
+  return {type:REGISTER_SUCCESS, payload:data}
+}
+function errorMsg(msg){
+  return {msg, type:ERROR_MSG}
+}
+
+//action creator
+export function loadData(userinfo){
+  return {type:LOAD_DATA, payload:userinfo}
+}
+
+export function login({user, pwd}){
+  if(!user||!pwd){
+    return errorMsg('登录信息不完整')
+  }
+  return dispatch=>{
+    axios.post('/user/login',{user,pwd})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(loginSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+export function register({user,pwd,repeatpwd,type}){
+  if(!user||!pwd||!type){
+    return errorMsg('用户信息不完整')
+  }
+  if(pwd!==repeatpwd){
+    return errorMsg('两次输入的密码不同')
+  }
+  return dispatch=>{
+    axios.post('/user/register',{user,pwd,type})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(registerSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+
+修改component/authroute/authroute.js;
+
+import React from 'react'
+import axios from 'axios'
+import { withRouter } from 'react-router-dom'
+import {loadData} from '../../redux/user.redux'
+import {connect} from 'react-redux'
+
+@withRouter
+@connect(
+  null,
+  {loadData}
+)
+class AuthRoute extends React.Component{
+  componentDidMount(){
+    const publicList = ['/login', '/register']
+    const pathname = this.props.location.pathname
+    if(publicList.indexOf(pathname) > -1){
+      return null
+    }
+    //通过上传浏览器中userid相关的cookie来获取用户登录信息;
+    axios.get('/user/info').
+      then(res=>{
+        if(res.status==200){
+          if(res.data.code==0){
+            this.props.loadData(res.data.data)
+          }else{
+            this.props.history.push('/login')
+          }
+        }
+      })
+  }
+  render(){
+    return null
+  }
+}
+
+export default AuthRoute
+
+
+上例中需要注意的是, @withRouter必须写在@connect的前面, 因为修饰器是从后向前返回值的, 也就是说需要先通过connect方法将AuthRoute组件进行封装, 返回后的AuthRoute再被传入withRouter来添加路由属性; 
+还需要注意的是, 在user.redux.js中将initState对象中的pwd属性删除了, 因为pwd属性不需要被放在redux的state中在组件之间共享, 它仅需要保存在注册和登录组件自身的state中以便发送到后端进行验证等操作; 
+
+
+上例在清除cookie缓存后访问’/login’页面后的cookie/redux的state:
+￼
+
+￼
+
+然后输入正确的用户名/密码点击登录后的cookie/redux的state:
+￼
+￼
+
+
+上例在清除cookie信息后访问’/register’页面后的cookie/redux的state:
+￼
+￼
+
+然后输入有效的用户信息点击注册后的cookie/redux的state:
+￼
+￼
+
+此时如果在’/bossinfo’页面中直接刷新页面, 页面不会跳转且cookie/redux的state信息与上两张图相同;
+
+
+
+
 
 
