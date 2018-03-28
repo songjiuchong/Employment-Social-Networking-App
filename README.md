@@ -855,6 +855,18 @@ class App extends React.Component{
 当然如果上例这种情况下要为子组件设置初始属性可以通过:
 ReactDOM.render(<App><One boss='outsider’></One></App>, document.getElementById('root'));
 
+
+重要补充:
+1.componentDidMount()和react的其它钩子函数不同, 它是在虚拟树对比完成并将一个原本在页面中不存在的组件添加到页面之后才会触发(就算这个组件render方法返回null也会触发), 而其他的钩子函数都是在虚拟树更新和对比阶段触发的; 
+2.componentDidUpdate在组件render()方法执行完之后, 虚拟树开始对比之前触发, 就算component的render方法返回null也会触发;
+3.react是如何判断一个组件是否是第一次加载;
+由于一个组件第一次加载时会触发其componentWillMount和componentDidMount方法, 而如果做为其它组件的子组件在父组件更新的情况下也同时被更新时就会触发componentWillUpdate/componentDidUpdate等一系列方法, 那么react是如何判断一个组件是否是第一次被加载的呢?
+举个例子, 如果一个父组件的render方法中根据某个判断条件来决定是否包含一个子组件, 那么每次父组件更新时都有可能添加/移除或者更新这个子组件, 那么react是如何判断的呢?
+其实当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 如果react发现一个component已经存在了实例对象了, 那么就会执行update相关的一系列方法; 
+对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象, componentWillUnmount方法在虚拟树对比结束, 开始更新差异到页面之前触发;
+如果是setState/forceUpdate方法触发的重新加载一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+
+
  2.关于组件类constructor方法的参数;
 ……
 ReactDOM.render(<App ini='1'></App>, document.getElementById('root'));
@@ -1590,6 +1602,10 @@ ReactDom.render(
 还可以发现, this.props.history中的location属性与this.props.location属性相同;
 
 需要注意的是, 使用组件中this.props.history.push/replace方法可以触发react-router的路由系统, 但是如果直接使用类似: window.history.pushState({},null,'/two'); 这样的方式只会更改浏览器地址栏地址, 而不会触发react-router的路由系统;
+
+
+重要补充:
+1.当页面加载后通过react-router路由跳转, Router组件会被更新(props中更新了当前路径信息, 并且将路径信息放在了context.router.route.location.pathname中), 从而更新其下的Route组件, Route组件通过componentWillReceiveProps方法来判断自己的path属性是否与context.router中相关路径信息匹配, 如果匹配就更新自己的this.state.match中的内容, 并且以此在其render方法中进行判断(不匹配的Route组件的this.state.match属性为null), 是否需要加载其component属性对应的子组件; 也就是说, 符合路由的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法);
 
 
 (4)Redirect;
@@ -3341,7 +3357,7 @@ Router.get('/list',function(req,res){
 
 Router.post('/login',function(req,res){
   const {user, pwd} = req.body
-  User.findOne({user, pwd:md5Pwd(pwd)},{pwd:0,__v:0,_id:0},function(err,doc){
+  User.findOne({user, pwd:md5Pwd(pwd)},{pwd:0,__v:0},function(err,doc){
     if(!doc){
       return res.json({code:1, msg:'用户名或密码错误'})
     }
@@ -3588,8 +3604,23 @@ class AuthRoute extends React.Component{
 export default AuthRoute
 
 
-上例中需要注意的是, @withRouter必须写在@connect的前面, 因为修饰器是从后向前返回值的, 也就是说需要先通过connect方法将AuthRoute组件进行封装, 返回后的AuthRoute再被传入withRouter来添加路由属性; 
+上例中需要注意的是, @withRouter必须写在@connect的前面, 因为修饰器是从后向前返回值的, 也就是说需要先通过connect方法将AuthRoute组件进行封装, 封装后的AuthRoute再被传入withRouter来添加路由属性; 
+
 还需要注意的是, 在user.redux.js中将initState对象中的pwd属性删除了, 因为pwd属性不需要被放在redux的state中在组件之间共享, 它仅需要保存在注册和登录组件自身的state中以便发送到后端进行验证等操作; 
+
+最后还需要注意一点, 当页面加载后通过react-router路由跳转, Router组件会被更新(props中更新了当前路径信息, 并且将路径信息放在了context.router.route.location.pathname中), 从而更新其下的Route组件, Route组件通过componentWillReceiveProps方法来判断自己的path属性是否与context.router中相关路径信息匹配, 如果匹配就更新自己的this.state.match中的内容, 并且以此在其render方法中进行判断(不匹配的Route组件的this.state.match属性为null), 是否需要加载其component属性对应的子组件; 也就是说, 符合路由的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法), 上例中的AuthRoute组件就属于每次路由改变都匹配的情况, 所以react-route路由跳转并不会再次触发向服务器检查用户浏览器cookie的逻辑, 只会重新update一遍AuthRoute组件, 除非页面重新刷新;
+
+相关复习: 
+1.componentDidMount()和react的其它钩子函数不同, 它是在虚拟树对比完成并将一个原本在页面中不存在的组件添加到页面之后才会触发(就算这个组件render方法返回null也会触发), 而其他的钩子函数都是在虚拟树更新和对比阶段触发的; 
+2.componentDidUpdate在组件render()方法执行完之后, 虚拟树开始对比之前触发, 就算component的render方法返回null也会触发;
+3.react是如何判断一个组件是否是第一次加载;
+由于一个组件第一次加载时会触发其componentWillMount和componentDidMount方法, 而如果做为其它组件的子组件在父组件更新的情况下也同时被更新时就会触发componentWillUpdate/componentDidUpdate等一系列方法, 那么react是如何判断一个组件是否是第一次被加载的呢?
+举个例子, 如果一个父组件的render方法中根据某个判断条件来决定是否包含一个子组件, 那么每次父组件更新时都有可能添加/移除或者更新这个子组件, 那么react是如何判断的呢?
+其实当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 如果react发现一个component已经存在了实例对象了, 那么就会执行update相关的一系列方法; 
+对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象, componentWillUnmount方法在虚拟树对比结束, 开始更新差异到页面之前触发;
+如果是setState/forceUpdate方法触发的重新加载一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+
+￼
 
 
 上例在清除cookie缓存后访问’/login’页面后的cookie/redux的state:
@@ -3611,6 +3642,7 @@ export default AuthRoute
 ￼
 
 此时如果在’/bossinfo’页面中直接刷新页面, 页面不会跳转且cookie/redux的state信息与上两张图相同;
+
 
 
 
