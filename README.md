@@ -6,6 +6,7 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
+
 Redux+React Router+Node.js全栈开发笔记;
 
 
@@ -3626,7 +3627,7 @@ Router组件的属性构造:
 Route组件中的context结构:
 ￼
 
-Route组件的props属性:
+Route组件component属性对应子组件的props属性:
 ￼
 
 相关复习: 
@@ -3661,6 +3662,489 @@ Route组件的props属性:
 ￼
 
 此时如果在’/bossinfo’页面中直接刷新页面, 页面不会跳转且cookie/redux的state信息与上两张图相同;
+
+
+
+7.完善用户信息;
+
+<7.1>Boss信息完善页面;
+
+(1)bossinfo页面;
+
+在src/container/bossinfo中新建bossinfo.js;
+
+import React from 'react'
+import {NavBar, InputItem, TextareaItem} from 'antd-mobile'
+import AvatarSelector from '../../component/avatar-selector/avatar-selector'
+
+class BossInfo extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      title:''
+    }
+  }
+  onChange(key,val){
+    this.setState({
+      [key]:val
+    })
+  }
+  render(){
+    return (
+      <div>
+        
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+        <AvatarSelector></AvatarSelector> 
+        <InputItem onChange={(v)=>this.onChange('title',v)}>
+          招聘职位
+        </InputItem>
+        <InputItem onChange={(v)=>this.onChange('company',v)}>
+          公司名称
+        </InputItem>
+        <InputItem onChange={(v)=>this.onChange('money',v)}>
+          职位薪资
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.onChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='职位要求'
+        >
+        </TextareaItem>
+      </div>
+    )
+  }
+
+}
+
+export default BossInfo
+
+补充:
+TextareaItem组件中的rows属性用来指定初始的显示行数, 这里使用rows=‘3’和rows={3}的效果是相同的; autoHeight属性用来指定组件是否能够自适应高度(如果不指定就会以滚动条的方式展示超出范围的内容); 与InputItem组件不同的是, 这里的title需要以title属性来指定, 而不是直接写在组件元素的内容部分;
+
+antd-mobile相关组件可以参考(这里的NavBar组件只用作BossInfo页面的header使用):
+https://mobile.ant.design/components/nav-bar/ (NavBar)
+https://mobile.ant.design/components/textarea-item/ (TextareaItem)
+
+
+￼
+
+
+(2)AvatarSelector组件(用户头像组件);
+
+在src/component/avatar-selector中新建avatar-selector.js;
+在src/component下新建img文件夹, 并放入几张头像图片;
+
+avatar-selector.js;
+
+import React from 'react'
+import {Grid, List} from 'antd-mobile'
+
+class AvatarSelector extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {}
+  }
+
+  render(){
+    const avatarList = 'fox,rabbit,fox1,fox2,fox3,fox4,rabbit1,rabbit2,rabbit3,rabbit4'.split(',').map(v=>({icon:require(`../img/${v}.png`), text:v}))  //src/component/img文件夹中所有头像图片的前缀名组成的字符串数组;
+    const gridHeader = this.state.icon ? 
+              (<div>
+                <span style={{'vertical-align': 'middle'}}>已选择头像:</span>
+                <img style={{'vertical-align': 'middle', 'margin-left':10,width:30}} src={this.state.icon}/>
+              </div>) 
+              : '请选择头像'
+    return (
+      <div>
+        <List renderHeader={()=>gridHeader}>
+          <Grid data={avatarList} 
+              columnNum='5'
+              onClick = {ele=>{
+                  this.setState(ele)
+                this.props.selectAvatar(ele.text)
+              }}
+          />
+        </List>
+      </div>
+    )
+  }
+}
+
+export default AvatarSelector
+
+上例中:
+1.Grid的onClick事件回调函数中传入的参数ele的结构与组件data属性指定的数组中的元素相同: {icon:require(`../img/${v}.png`), text:v}; 
+2.很显然antd-mobile的List组件的renderHeader属性允许函数返回一个jsx语法的元素对象;
+3.给jsx中元素的style属性设置值时需要注意将vertical-align, margin-left这样的属性名改为verticalAlign, marginLeft, 不然的话css功能可能可以实现, 但是会报错: Unsupported style property vertical-align. Did you mean verticalAlign?
+4.icon:require(`../img/${v}.png`) 这样的用法其实就是webpack对图片引入的支持, 会返回一个图片的有效请求路径, 可以直接放在<img>元素的src属性中使用,如:
+
+例1:
+……
+import logoImg from './job.png'
+import './logo.css'
+
+class Logo extends React.Component{
+
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+……
+
+例2:
+var img1 = document.createElement("img");
+img1.src = require("./small.png");
+document.body.appendChild(img1);
+
+antd-mobile的Grid组件可以参考:
+https://mobile.ant.design/components/grid/
+
+
+修改bossinfo.js;
+……
+import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
+……
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+        <AvatarSelector
+          selectAvatar={(imgname)=>{
+            this.setState({
+              avatar: imgname
+            })
+          }}
+        ></AvatarSelector>
+        <Button type='primary'>提交</Button>
+……
+
+上例通过父组件传递一个处理用户选中头像的函数给一个公用的子组件, 子组件通过自己元素的onClick方法将用户点击头像的信息传递给这个函数, 相当于将父组件的方法绑定在了子组件的点击事件回调函数中;
+
+在BOSS信息完善页面输入所有信息:
+
+￼
+
+
+(3)BOSS信息页面的前后端交互;
+
+修改bossinfo.js;
+……
+import {connect} from 'react-redux'
+import {update} from '../../redux/user.redux'
+@connect(
+  state=>state.user,
+  {update}
+)
+class BossInfo extends React.Component{
+……
+        <Button 
+          onClick={()=>{
+            this.props.update(this.state)
+          }}
+          type='primary'>提交</Button>
+……
+
+
+修改user.redux.js;
+
+由于形式和作用相同, 删除LOGIN_SUCCESS和REGISTER_SUCCESS这两个reducer的选择条件相关内容, 统一使用AUTH_SUCCESS来代替;
+并删除iniState中的isAuth属性;
+
+import axios from 'axios'
+import {getRedirectPath} from '../util'
+
+const AUTH_SUCCESS = 'AUTH_SUCCESS'
+const ERROR_MSG = 'ERROR_MSG'
+const LOAD_DATA = 'LOAD_DATA'
+
+const initState={
+  redirectTo:'',
+  msg:'',
+  user:'',
+  type:''
+}
+
+//reducer
+export function user(state=initState,action){
+  switch (action.type){
+    case AUTH_SUCCESS: 
+      return {...state, msg:'', redirectTo:getRedirectPath(action.payload), ...action.payload }
+    case LOAD_DATA:
+      return {...state, ...action.payload}
+    case ERROR_MSG: 
+      return {...state, msg:action.msg}
+    default:
+      return state
+  }
+}
+function authSuccess(data){
+  return {type:AUTH_SUCCESS, payload:data}
+}
+function errorMsg(msg){
+  return {msg, type:ERROR_MSG}
+}
+
+//action creator
+export function loadData(userinfo){
+  return {type:LOAD_DATA, payload:userinfo}
+}
+
+export function login({user, pwd}){
+  if(!user||!pwd){
+    return errorMsg('登录信息不完整')
+  }
+  return dispatch=>{
+    axios.post('/user/login',{user,pwd})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(authSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+export function register({user,pwd,repeatpwd,type}){
+  if(!user||!pwd||!type){
+    return errorMsg('用户信息不完整')
+  }
+  if(pwd!==repeatpwd){
+    return errorMsg('两次输入的密码不同')
+  }
+  return dispatch=>{
+    axios.post('/user/register',{user,pwd,type})
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(authSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+export function update(data){
+  return dispatch=>{
+    axios.post('/user/update',data)
+      .then(res=>{
+          if(res.status==200&&res.data.code===0){
+            dispatch(authSuccess(res.data.data))
+          }else{
+            dispatch(errorMsg(res.data.msg))
+          }
+      })
+  }
+}
+
+
+修改server/user.js;
+……
+Router.post('/update',function(req,res){
+  const userid = req.cookies.userid
+  if(!userid){
+    return res.json({code:1, msg:'请先登录'})
+  }
+  //这里暂时省略了对用户填写信息内容格式等的验证步骤;
+  const body = req.body
+  User.findByIdAndUpdate(userid, body, _filter, function(err, doc){
+    const data = Object.assign({},{
+      user:doc.user,
+      type:doc.type
+    }, body)
+    return res.json({code:0, data})
+  })
+})
+……
+
+上例中的findByIdAndUpdate方法是mongoose提供的一个更新一条记录(或者说文档)的API, 第一个参数是需要查找的记录的_id, 第二个参数是需要被更新的项组成的对象;
+上例使用了:
+    Object.assign({},{
+      user:doc.user,
+      type:doc.type
+    }, body)
+
+这样的方式来创建一个包含所有用户信息的对象, 之所以没有使用’…’扩展运算符, 是因为目前在我们自己创建的专门用来接收API请求的server(不是webpack-dev-server)中, 也就是我们自己的nodejs环境还未配置babel等解析最新ES6语法的插件;
+
+还需要注意的是, 目前’/update’这个API接口为弱验证接口, 并没有要求用户一定要填写某些内容, 也就是说用户可以不完善任何信息直接完成注册, 但是下次登录时如果检测到用户头像未指定, 那就会直接跳转到对应的完善信息页面;
+
+
+修改bossinfo.js;
+……
+import {Redirect} from 'react-router-dom'
+……
+{this.props.redirectTo?<Redirect to={this.props.redirectTo}/>:null}
+<NavBar mode="dark">BOSS完善信息页面</NavBar>
+{this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+……
+
+在登录状态下成功提交完善信息后跳转到’/boss’页面:
+￼
+
+
+如果在已经成功登录’/bossinfo’页面的情况下, cookie失效, 那么点击提交按钮后:
+￼
+
+
+但是如果一个已经登录的用户在还未选择过avatar的情况下在’/bossinfo’页面直接点击提交就会报错:
+Warning: You tried to redirect to the same route you're currently on: "/bossinfo"
+
+这是由于完善页面的请求成功后会向reducer发出一个type为AUTH_SUCCESS的action, 并将redux的state中的redirectTo属性更新为’/bossinfo’, 于是当前页面(也就是’/bossinfo’)页面被更新, 又因为bossinfo.js中存在: {this.props.redirectTo?<Redirect to={this.props.redirectTo}/>:null} 这样的逻辑, 所以会造成跳转的死循环;
+相同的问题也会发生在用户在成功提交了login/register页面信息后跳转到’/bossinfo’页面时;
+总之就是在redux的state的redirectTo不为空, 且avatar为空的情况下来到’/bossinfo’页面就会发生跳转死循环;
+原因就在util.js:
+……
+  let url = (type==='boss')?'/boss':'/genius'
+  if(!avatar){
+    url += 'info'
+  }
+  return url
+……
+
+解决办法是在bossinfo.js中修改:
+……
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+    return (
+      <div>
+        {redirect&&redirect!==path?<Redirect to={this.props.redirectTo}/>:null}
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+……
+
+这样就不会出现上述问题了;
+
+
+(4)牛人信息页面;
+
+修改index.js;
+……
+import GeniusInfo from './container/geniusinfo/geniusinfo'
+……
+<Route path='/genius' component={GeniusInfo}></Route>
+……
+
+
+在src/container/geniusinfo中新建geniusinfo.js;
+
+import React from 'react'
+import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
+import AvatarSelector from '../../component/avatar-selector/avatar-selector'
+import {connect} from 'react-redux'
+import {update} from '../../redux/user.redux'
+import {Redirect} from 'react-router-dom'
+
+@connect(
+  state=>state.user,
+  {update}
+)
+class GeniusInfo extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      title:'',
+      desc:''
+    }
+  }
+  onChange(key,val){
+    this.setState({
+      [key]:val
+    })
+  }
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+
+    return (
+      <div>
+        {redirect&&redirect!==path?<Redirect to={this.props.redirectTo}/>:null}
+        <NavBar mode="dark">牛人完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+        <AvatarSelector
+          selectAvatar={(imgname)=>{
+            this.setState({
+              avatar: imgname
+            })
+          }}
+        ></AvatarSelector> 
+        <InputItem onChange={(v)=>this.onChange('title',v)}>
+          求职岗位
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.onChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='个人简介'
+        >
+        </TextareaItem>
+        <Button 
+          onClick={()=>{
+            this.props.update(this.state)
+          }}
+          type='primary'>提交</Button>
+      </div>
+    )
+  }
+
+}
+
+export default GeniusInfo
+
+牛人完善信息页面:
+￼
+
+在牛人完善信息页面提交信息后:
+￼
+
+
+补充:
+1.虽然之前在server/user.js中使用了const _filter = {pwd:0,__v:0}来过滤从数据查到的user信息然后才返回给前端, 所以前端redux的state.user中不会保存这两种信息, 其实还可以使用更加便捷的方式来达到这个目的:
+
+user.redux.js;
+……
+function authSuccess(obj){
+  const {pwd, ...data} = obj
+  return {type:AUTH_SUCCESS, payload:data}
+}
+……
+
+2.prop-types组件(在开发时可以第一时间发现一些类型传递的错误);
+
+从react 16版本开始, 原本内置在react中的React.PropTypes, 如:
+……
+VisibleTodoList.contextTypes = {
+  store: React.PropTypes.object
+}
+……
+
+已经被抽离出来形成一个单独的库了, 所以需要手动安装并引入;
+
+$ npm install prop-types --save
+
+avatar-selector.js;
+……
+import PropTypes from 'prop-types'
+
+class AvatarSelector extends React.Component{
+  static propTypes = {
+    selectAvatar: PropTypes.func.isRequired
+  }
+  constructor(props){
+    super(props)
+    this.state = {}
+  }
+……
+
+参考:
+https://reactjs.org/docs/typechecking-with-proptypes.html
+
+
+
+8.牛人列表/BOSS列表;
+
+
 
 
 
