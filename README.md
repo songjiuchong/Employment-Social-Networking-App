@@ -7,7 +7,8 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
-Redux+React Router+Node.js全栈开发笔记;
+
+Redux+React Router+Node.js全栈开发笔记 (一);
 
 
 参考: https://coding.imooc.com/learn/list/150.html
@@ -31,7 +32,7 @@ APP所包含的功能模块:
 
 课程内容可以分成三个部分, 参考下图:
 
-￼
+
 
 
 
@@ -58,14 +59,14 @@ $ sudo npm install -g create-react-app
 $ create-react-app myapp
 
 <3>查看生成的目录内容;
-￼
+
 
 基本结构:
-￼
+
 
 package.json的结构:
 
-￼
+
 
 其中react-scripts中包含了所有webpack和eslint的配置, 相当于一个向外部暴露的黑盒; 之后如果需要自定义相关配置就需要使用eject命令先将其弹出; 
 
@@ -73,12 +74,12 @@ package.json的结构:
 <4>启动项目;
 $ npm start
 
-￼
+
 
 
 <5>浏览器访问localhost:3000 查看调试页面(当修改App.js内容后页面会自动刷新);
 
-￼
+
 
 
 <6>安装第三方库;
@@ -94,21 +95,21 @@ import {createStore} from 'redux';
 
 $ npm run eject
 
-￼
+
 
 需要注意的是, 这个步骤是不可逆的, 一旦选择yes, 那么就会安装一系列原本封装在react-scripts中的依赖, 并且会重新配置package.json;
 
-￼
+
 
 弹出成功后观察文件目录的变化:
 
-￼
+
 
 新增了config和scripts这两个目录, 其中config中是一些jest和webpack相关的配置文件, scripts中是实际执行npm run相关命令时运行的源代码, 之后可以通过node命令来运行;
 
 观察package.json的变化:
 
-￼
+
 
 除了在dependencies中添加了许多原本封装在react-scripts中的第三方依赖, 可以看到还对一些依赖进行了配置;
 
@@ -121,7 +122,7 @@ https://www.cnblogs.com/ruanyifeng/p/5283708.html (.eslintrc)
 
 补充内容:
 
-￼
+
 
 
 
@@ -172,11 +173,13 @@ console.log(obj);
 
 控制台显示:
 1
-     [object Object] {
+    
+[object Object] {
 name: "song",
 song2: 2,
 test: function (){window.runnerWindow.proxyConsole.log(4);},
-test1: test1(){ window.runnerWindow.proxyConsole.log(3)} }
+test1: test1(){ window.runnerWindow.proxyConsole.log(3)}
+}
 
 
 
@@ -292,7 +295,7 @@ app.listen(9093,function(){
 })
 
 
-￼
+
 
 补充:
 1.mongoDB 数据库概念;
@@ -336,7 +339,7 @@ User.create({
 })
 ……
 
-￼
+
 
 需要注意的是, 虽然之前在创建文档模型时明确指定了user和age属性的type类型和require:true, 但是在新增数据时如果给age传入字符串数字或者不设置age都能成功新增数据(给age传入’18’时会自动转换为数字18), 但是如果给age传入不能转换为数字的字符串时会报错:
 ValidationError: user validation failed: age: Cast to Number failed for value "a" at path "age”……
@@ -352,7 +355,7 @@ app.get('/data',function(req,res){
 })
 ……
 
-￼
+
 需要注意的是, find方法总是返回一个数组, 就算只有一条数据或没有数据, 使用findOne方法就会返回一个对象或者null;
 
 
@@ -392,7 +395,7 @@ $ npm install —save react@next react-dom@next
 
 (1)下图是使用react的JSX语法实际转换为JS执行时的代码:
 
-￼
+
 
 
 (2)修改App.js;
@@ -422,7 +425,7 @@ export default App
 
 需要注意的是, 组件的render方法中只能return一个根标签, 并且如果JSX语句有多行的话需要用()括起; 
 
-￼
+
 
 
 (3)组件之间传递数据;
@@ -460,7 +463,7 @@ export default App
 
 需要注意的是, 如果组件只有render函数, 还可以用函数的形式写组件, 但是不要使用this.props, 因为不是一个类, 直接使用参数props; 
 
-￼
+
 
 
 (4)组件内部state;
@@ -510,7 +513,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 
 需要注意的是, 上例中如果没有在返回的<li></li>元素中添加值唯一的key属性, 虽然程序可以执行, 但是会在console中报错:
@@ -575,7 +578,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 需要注意的是, 除了在constructor中使用this.addSoldier = this.addSoldier.bind(this)来绑定事件回调函数内部的this, 还可以使用箭头函数:
 <button onClick={()=>this.addSoldier()}>add new soldier</button>
@@ -593,9 +596,9 @@ React组件有若干钩子函数, 在组件的不同状态下执行;
 
 参考下图:
 
-￼
 
-￼
+
+
 
 
 需要注意的是, 上图中的Second Render指的是子组件第一次render时的生命周期情况, 与父组件第一次render稍有不同的是, 由于其defaultProps是由父组件传递进来的, 所以不需要执行getDefaultProps函数; 
@@ -784,7 +787,7 @@ function Two(props){
 
 export default App
 
-￼
+
 
 上例在点击change mystate按钮后在console中显示:
 
@@ -909,13 +912,13 @@ Warning: App(...): When calling super() in `App`, make sure to pass up the same 
 
 (7)安装react官方推荐的开发插件(chrome);
 
-￼
 
-￼
+
+
 
 安装完毕后再次打开chrome开发者工具, 就会发现新增了debug react项目代码的选项:
 
-￼
+
 
 右侧工具栏还能实时显示选中组件的Props和State;
 
@@ -938,7 +941,7 @@ import 'antd-mobile/dist/antd-mobile.css'
 ……
 
 css文件的路径参考:
-￼
+
 
 然后使用Button组件:
 ……
@@ -953,7 +956,7 @@ https://mobile.ant.design/components/button/
 
 在页面中显示:
 
-￼
+
 
 
 安装并配置babel插件: babel-plugin-import;
@@ -998,9 +1001,9 @@ node_modules/antd-mobile/lib/button/style/css.js
 
 
 babel-plugin-import 用法参考:
-￼
 
-￼
+
+
 
 参考:
 https://www.cnblogs.com/yswz/p/7165031.html
@@ -1036,7 +1039,7 @@ render(){
   }
 ……
 
-￼
+
 
 
 
@@ -1162,7 +1165,7 @@ export default App
 
 上例在页面中加载后显示:
 
-￼
+
 
 点击增加/减少武器按钮会改变文本中显示的数量;
 
@@ -1284,7 +1287,7 @@ const addGUNAsync = this.props.addGUNAsync;
 <4.5>Redux调试工具(chrome);
 
 (1)在chrome中安装Redux DevTools;
-￼
+
 
 安装完成后在chrome的developer tools的选项栏中就会新增Redux选项;
 
@@ -1313,9 +1316,9 @@ Redux笔记中: ’17. applyMiddleware();’里的源码;
 
 参考下图:
 
-￼
-￼
-￼
+
+
+
 
 
 
@@ -1417,7 +1420,7 @@ export function addGUNAsync(){
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
 
 被connect方法包装过的组件最后在页面中的结构是类似下图这样的:
-￼
+
 
 也就是说connect方法会创建一个新的名为,如: Connect(Auth)这样的组件, 在组件内部做一些相关设置(如: 在componentDidMount方法中设置forceUpdate函数等), 最后在其render方法内获取this.context中的store, 并且将相关内容做为props属性传递给其子组件(UI组件), 也就是开发者自行声明的Auth组件; 
 
@@ -1534,14 +1537,14 @@ ReactDom.render(
 需要注意的是, BrowserRouter组件中也只能包含一个根元素, 所以上例中使用了一个<div></div>将其中内容包了起来;
 上例在浏览器中显示为:
 
-￼
-￼
+
+
 
 可以发现, 当点击了指向’/two’或者’/three’的Link时同样显示了’/’根目录Route的内容, 这是因为’/’默认并非是完全匹配的, 也就是说’/two’或者’/three’也同时匹配了’/’, 属于正则匹配(但是这样的正则规则只适用于’/‘, 如果是类似: ‘/two’和’/two2’这样的路径是不会同时匹配的); 解决办法是在<Route path='/' component={App}></Route>中添加一个exact属性:
 <Route path='/' exact component={App}></Route>
 
 页面显示为:
-￼
+
 
 需要注意的是, react-router4与react-router2不同的是, 默认情况下不是找到匹配路由规则就停止查找, 而是继续查找并渲染所有匹配规则的路由组件, 也就是说如果上例中路由改为:
 ……
@@ -1593,12 +1596,12 @@ ReactDom.render(
 )
  
 上例在浏览器中显示:
-￼
+
 
 可以发现, 在Route使用类似: <Route path='/:location' component={Test}></Route> 这种方式定义path后, Test组件的props属性的match属性中将会与不在path中使用’/:’的Route定义有一些不同, 前者的params属性中的值是一个以path中’/:’后指定的字符串为key, 实际匹配路由地址中字符串为value的对象, 而后者是一个空对象;
 
 下图是直接访问’/test’, 并且匹配到了path=‘/test’的Route的情况:
-￼
+
 
 那么根据上面显示的传入组件props属性中的这些内容可以发现, 在组件中使用this.props.match.params.location就可以获取实际路由地址中匹配Route组件中path属性’/:’后的字符串了;
 还可以发现, this.props.history中的location属性与this.props.location属性相同;
@@ -1610,13 +1613,13 @@ ReactDom.render(
 1.当页面加载后通过react-router路由跳转, Router组件会监听路径的变化, 然后被更新(props.history.location.pathname中更新了当前路径信息), 此时, 其下设置的Route组件都处于Router组件的this.props.children中, Router组件更新时会找到它们(参考下图), 然后根据它们的path属性来匹配当前路径, 如果匹配, 就调用这个Route组件的setState方法将路径信息加入它的state.match.url中(不匹配的Route组件的this.state.match属性为null) , Router组件还同时会将路径信息传入所有Route组件(无论其path是否匹配当前路径)的context.router中(参考下图);  然后这个Route组件会根据this.state.match在其render方法中进行判断是否需要加载其component属性对应的子组件, 也就是说, 符合路由匹配的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 并将history, location, match三个属性做为其props属性传入(参考下图); 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法); 
 
 Router组件的属性构造:
-￼
+
 
 Route组件中的context结构:
-￼
+
 
 Route组件的props属性:
-￼
+
 
 
 (4)Redirect;
@@ -1643,8 +1646,8 @@ class Test extends React.Component{
 ……
 
 上例在浏览器中显示:
-￼
-￼
+
+
 
 可以发现, 当路径不匹配任何路由规则时就会触发Test组件渲染, 但是上例的问题是, 点击two或者three按钮同时也会渲染Test组件;
 解决方法(给Route组件添加exact无法解决这个问题)是使用Switch组件, 因为Switch组件只会去渲染其中第一个匹配的路由;
@@ -1661,14 +1664,14 @@ src/index.js;
         </Switch>
 ……
 
-￼
+
 
 
 需要注意的是, 如果路由使用了<Switch>组件, 那么最后渲染的页面中只包含被匹配的那个Route组件的内容, 如果不使用<Switch>组件, 那么所有Route组件都会被渲染到页面中, 但是只有最终匹配路由的Route组件其中的component会被渲染;
 
 参考下图中页面结构:
-￼
-￼
+
+
 
 
 src/index.js;
@@ -1918,7 +1921,7 @@ export default Auth
 通过上面的代码可以发现react-router4 路由嵌套的模式;
 
 上例在浏览器中访问’/dashboard/two’后的html结构:
-￼
+
 
 还有一点需要注意的是, 目前上面的代码中存在了两个不同的reducer(也存在两种不同形式的state), 一个是index.redux.js中的counter, 另一个是Auth.redux.js中的auth, 那么很显然需要将不同的reducer/state合并成一个才能正常使用redux; 
 
@@ -1960,8 +1963,8 @@ console.log(store.getState())
 
 上例在浏览器中加载后, 控制台中显示:
 
-￼
-￼
+
+
 
 
 上面显示的对象就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
@@ -2015,7 +2018,7 @@ export default Dashboard
 
 
 在浏览器加载页面后由于初始的state.auth.isAuth是false, 所以会自动跳转到’/login’页面:
-￼
+
 
 
 修改Auth.js, 增加login功能;
@@ -2045,7 +2048,7 @@ export default Auth
 
 上例在页面加载后首先会跳转到’/login’页面:
 
-￼
+
 
 点击login按钮后会跳转到’/dashboard’页面;
 因为点击按钮会触发dispatch({type:LOGIN}), 从而更新了state.auth.isAuth为true, 这样会使页面中使用了react-redux的conntect方法的组件被执行forceUpdate方法, 也就是重新执行其render方法更新组件状态, 由于页面中目前只有Auth组件(只有Auth组件被react-redux使用subscribe方法绑定了其forceUpdate函数), 并且其render方法中使用了{this.props.isAuth? <Redirect to='/dashboard'/> : null}逻辑来判断用户登录状态, 所以组件重新render后会直接跳转到’/dashboard’页面; 
@@ -2081,7 +2084,7 @@ export default Auth
 ……
 
 上例在页面加载后显示: 
-￼
+
 
 点击logout按钮后会重新render Dashboard组件, 然后跳转到’/login’页面;
 
@@ -2126,7 +2129,7 @@ export default Auth
 
 <5.1>页面分类:
 
-￼
+
 
 
 
@@ -2135,7 +2138,7 @@ export default Auth
 (1)axios;
 Axios 是一个基于 promise 的 HTTP 库, 可以用在浏览器和 node.js 中; 
 
-￼
+
 
 参考:
 https://www.kancloud.cn/yunye/axios/234845
@@ -2189,7 +2192,7 @@ const devServer = new WebpackDevServer(compiler, serverConfig);
 关于const proxyConfig = prepareProxy(proxySetting, paths.appPublic) 这条语句, paths.appPublic返回的是项目下public文件夹的路径信息, 而这里的prepareProxy方法之所以需要传入这第二个参数, 是因为在设置proxy时需要判断请求的是否是public文件夹中的内容, 如果是则不需要代理转发请求, 因为public文件夹中保存的都是webpack-dev-server生成的静态文件, 其中最重要的就是index.html文件, 也就是浏览器向webpack-dev-server(localhost:3000)服务器请求页面时返回的初始html文件(包含<div id="root"></div>这个节点), bundle.js文件就包含在其中; 也就是说, 除了请求localhost:3000服务器中public文件夹下的文件, 其它请求都会被proxy转发; 
 
 所以, create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
-￼
+
 
 
 (3)测试前后端通信;
@@ -2207,11 +2210,11 @@ class Auth extends React.Component{
 ……
 
 页面加载后console中成功获取server.js中返回内容:
-￼
+
 
 server/server.js:
 ……
-￼
+
 
 
 如果将Auth.js修改为:
@@ -2248,7 +2251,7 @@ class Auth extends React.Component{
 ……
 
 页面显示为:
-￼
+
 
 从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
 
@@ -2339,11 +2342,11 @@ export default Auth
 
 上例在页面中显示为:
 
-￼
+
 
 当前数据库中数据为:
 
-￼
+
 
 这样就完成了react-redux通过ajax获取server中数据库信息并渲染页面;
 
@@ -2377,7 +2380,7 @@ import './config'
 
 
 上例在页面中显示:
-￼
+
 
 
 antd-mobile的Toast组件, 参考:
@@ -2386,7 +2389,8 @@ https://mobile.ant.design/components/toast-cn/
 
 补充:
 1.关于axios设置拦截器的注意点;
-(1)interceptor必须在请求前设置才有效; (2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
+(1)interceptor必须在请求前设置才有效;
+(2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
 
 var instance = axios.create();
 instance.interceptors.request.use(function () {/*...*/});
@@ -2403,12 +2407,12 @@ $ npm install cookie-parser —save
 
 
 (2)用户cookie管理流程;
-￼
+
 
 
 (3)项目文件目录结构以及登录/注册页面基本页面构建;
 
-￼
+
 
 
 src/index.js;
@@ -2561,10 +2565,10 @@ export default Register
 上面的代码在页面加载后效果为:
 
 访问’/login’;
-￼
+
 
 点击注册按钮后跳转到’/register’;
-￼
+
 
 
 antd-mobile组件参考:
@@ -2723,7 +2727,7 @@ Router.get('/info',function(req,res){
 这样就实现了通过AuthRoute组件完成验证用户信息之后跳转;
 
 观察下图可以观察使用了withRouter方法封装AuthRoute组件后的页面结构, 以及传递给AuthRoute组件的props的内容:
-￼
+
 
 需要注意的是, withRouter方法在react-router2与react-router4中的用法不同, 关于react-router2中的withRouter方法可以参考:
 React-router2笔记中’11.路由的钩子;’里withRouter的相关内容; 
@@ -2790,7 +2794,7 @@ export default Register
 
 上例中当用户填写完了所有信息后，Register组件自身的state就包含了这些内容，然后点击注册按钮，就能对用户填写的所有信息进行验证和提交了；
 
-￼
+
 
 
 从上例中可以发现，Register组件使用了react原生的state来保存状态而非使用redux，这是因为Register组件中的这些状态无需与其他组件共享，并且根据组件解耦的原则，在不需要依赖外部状态的情况下组件本身的状态应该就只保存在组件内部，这样方便被复用；
@@ -2929,9 +2933,9 @@ export default Register
 
 上例在页面加载后用户在’/register’页面输入不同信息下state的变化:
 
-￼
 
-￼
+
+
 
 
 在src中新建一个index.css文件;
@@ -2959,8 +2963,8 @@ import './index.css'
 
 上例在页面加载后测试截图:
 
-￼
-￼
+
+
 
 
 (8)数据库模型建立;
@@ -3092,7 +3096,7 @@ module.exports = Router
 
 上例中在页面中完成注册后再次使用同一个用户名提交注册后就会报错, 说明之前的用户信息已经成功提交到了后端:
 
-￼
+
 
 
 (10)注册跳转/密码加密;
@@ -3130,7 +3134,7 @@ export function user(state=initState,action){
 
 再次成功注册后可以发现redux的state.user.redirectTo属性更新为了’/bossinfo’: 
 
-￼
+
 
 
 修改register.js;
@@ -3173,7 +3177,7 @@ const utils = require('utility')
 不过需要注意的是, 虽然md5不可逆（指攻击者不能从哈希值h(x)中逆推出x）而且碰撞几率低（指不能找到两个值x、x’具有相同的哈希值）；然而这种方式也是不安全的，因为只要枚举出所有的常用密码，做成一个索引表，就可以推出来原始密码，这张索引表也被叫做“彩虹表”;
 
 比如反向解密上例中MD5存储的pwd:202cb962ac59075b964b07152d234b70:
-￼
+
 
 由于密码过于简单, 所以被解密的可能就非常高, 那么除了在注册时硬性规定用户创建的密码要符合一定的复杂度(比如:必须包括大小写, 特殊符号, 数字等), 还可以在服务器端通过密码加盐来增加密码的安全性; 
 
@@ -3197,7 +3201,7 @@ function md5Pwd(pwd){
 {"_id":"5ab9ec6ab616f84a144231b2","user":"song5","type":"boss","pwd":"1addc366314c8bc34466429522c4afdc","__v":0}
 
 可以发现同样使用123做为密码, 得到的pwd是1addc366314c8bc34466429522c4afdc, 现在重新尝试解密:
-￼
+
 
 上面的结果说明, 通过了密码加盐之后, 数据库存储的pwd已经不会被轻易解密了, 就算被解密, 那解密者也只是获得了utils.md5(utils.md5(pwd+salt))中内层的utils.md5(pwd+salt)的内容, 所以安全性是非常高的;
 
@@ -3405,7 +3409,7 @@ module.exports = Router
 
 
 上例在login页面成功登录后跳转到了’/geniusinfo’页面:
-￼
+
 
 可以发现向’user/login’发送的Ajax请求返回的data属性对象中只有type, user和_id这三个字段, 这是因为上例在user.js中使用了:
 
@@ -3622,13 +3626,13 @@ export default AuthRoute
 最后需要注意一点, 当页面加载后通过react-router路由跳转, Router组件会监听路径的变化, 然后被更新(props.history.location.pathname中更新了当前路径信息), 此时, 其下设置的Route组件都处于Router组件的this.props.children中, Router组件更新时会找到它们(参考下图), 然后根据它们的path属性来匹配当前路径, 如果匹配, 就调用这个Route组件的setState方法将路径信息加入它的state.match.url中(不匹配的Route组件的this.state.match属性为null) , Router组件还同时会将路径信息传入所有Route组件(无论其path是否匹配当前路径)的context.router中(参考下图);  然后这个Route组件会根据this.state.match在其render方法中进行判断是否需要加载其component属性对应的子组件, 也就是说, 符合路由匹配的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 并将history, location, match三个属性做为其props属性传入(参考下图); 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法), 上例中的AuthRoute组件就属于每次路由改变都匹配的情况, 所以react-route路由跳转并不会再次触发向服务器检查用户浏览器cookie的逻辑, 只会重新update一遍AuthRoute组件, 除非页面刷新;
 
 Router组件的属性构造:
-￼
+
 
 Route组件中的context结构:
-￼
+
 
 Route组件component属性对应子组件的props属性:
-￼
+
 
 相关复习: 
 1.componentDidMount()和react的其它钩子函数不同, 它是在虚拟树对比完成并将一个原本在页面中不存在的组件添加到页面之后才会触发(就算这个组件render方法返回null也会触发), 而其他的钩子函数都是在虚拟树更新和对比阶段触发的; 
@@ -3640,26 +3644,26 @@ Route组件component属性对应子组件的props属性:
 对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象, componentWillUnmount方法在虚拟树对比结束, 开始更新差异到页面之前触发;
 如果是setState/forceUpdate方法触发的重新加载一定不是首次加载, 因为这两个方法需要实例对象this来调用;
 
-￼
+
 
 
 上例在清除cookie缓存后访问’/login’页面后的cookie/redux的state:
-￼
 
-￼
+
+
 
 然后输入正确的用户名/密码点击登录后的cookie/redux的state:
-￼
-￼
+
+
 
 
 上例在清除cookie信息后访问’/register’页面后的cookie/redux的state:
-￼
-￼
+
+
 
 然后输入有效的用户信息点击注册后的cookie/redux的state:
-￼
-￼
+
+
 
 此时如果在’/bossinfo’页面中直接刷新页面, 页面不会跳转且cookie/redux的state信息与上两张图相同;
 
@@ -3727,7 +3731,7 @@ https://mobile.ant.design/components/nav-bar/ (NavBar)
 https://mobile.ant.design/components/textarea-item/ (TextareaItem)
 
 
-￼
+
 
 
 (2)AvatarSelector组件(用户头像组件);
@@ -3823,7 +3827,7 @@ import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
 
 在BOSS信息完善页面输入所有信息:
 
-￼
+
 
 
 (3)BOSS信息页面的前后端交互;
@@ -3926,6 +3930,9 @@ export function register({user,pwd,repeatpwd,type}){
 }
 
 export function update(data){
+
+  //这里暂时省略了对用户填写信息内容格式等的验证步骤;
+
   return dispatch=>{
     axios.post('/user/update',data)
       .then(res=>{
@@ -3946,7 +3953,6 @@ Router.post('/update',function(req,res){
   if(!userid){
     return res.json({code:1, msg:'请先登录'})
   }
-  //这里暂时省略了对用户填写信息内容格式等的验证步骤;
   const body = req.body
   User.findByIdAndUpdate(userid, body, _filter, function(err, doc){
     const data = Object.assign({},{
@@ -3967,7 +3973,7 @@ Router.post('/update',function(req,res){
 
 这样的方式来创建一个包含所有用户信息的对象, 之所以没有使用’…’扩展运算符, 是因为目前在我们自己创建的专门用来接收API请求的server(不是webpack-dev-server)中, 也就是我们自己的nodejs环境还未配置babel等解析最新ES6语法的插件;
 
-还需要注意的是, 目前’/update’这个API接口为弱验证接口, 并没有要求用户一定要填写某些内容, 也就是说用户可以不完善任何信息直接完成注册, 但是下次登录时如果检测到用户头像未指定, 那就会直接跳转到对应的完善信息页面;
+还需要注意的是, 目前update这个action creator并没有要求用户一定要填写某些内容, 也就是说用户可以不完善任何信息直接完成注册, 但是下次登录时如果检测到用户头像未指定, 那就会直接跳转到对应的完善信息页面;
 
 
 修改bossinfo.js;
@@ -3980,11 +3986,11 @@ import {Redirect} from 'react-router-dom'
 ……
 
 在登录状态下成功提交完善信息后跳转到’/boss’页面:
-￼
+
 
 
 如果在已经成功登录’/bossinfo’页面的情况下, cookie失效, 那么点击提交按钮后:
-￼
+
 
 
 但是如果一个已经登录的用户在还未选择过avatar的情况下在’/bossinfo’页面直接点击提交就会报错:
@@ -4023,7 +4029,7 @@ Warning: You tried to redirect to the same route you're currently on: "/bossinfo
 ……
 import GeniusInfo from './container/geniusinfo/geniusinfo'
 ……
-<Route path='/genius' component={GeniusInfo}></Route>
+<Route path='/geniusinfo’ component={GeniusInfo}></Route>
 ……
 
 
@@ -4093,14 +4099,14 @@ class GeniusInfo extends React.Component{
 export default GeniusInfo
 
 牛人完善信息页面:
-￼
+
 
 在牛人完善信息页面提交信息后:
-￼
+
 
 
 补充:
-1.虽然之前在server/user.js中使用了const _filter = {pwd:0,__v:0}来过滤从数据查到的user信息然后才返回给前端, 所以前端redux的state.user中不会保存这两种信息, 其实还可以使用更加便捷的方式来达到这个目的:
+1.之前在server/user.js中使用了const _filter = {pwd:0,__v:0}来过滤从数据库查到的user信息然后才返回给前端, 所以前端redux的state.user中不会保存这两类数据, 其实还可以使用更加便捷的方式来达到这个目的:
 
 user.redux.js;
 ……
@@ -4142,11 +4148,191 @@ https://reactjs.org/docs/typechecking-with-proptypes.html
 
 
 
+Redux+React Router+Node.js全栈开发笔记(二);
+
+
 8.牛人列表/BOSS列表;
 
+(1)应用骨架;
+
+在component/dashboard中新建dashboard.js;
+
+import React from 'react'
+
+class Dashboard extends from React.Component{
+
+  render(){
+    return (
+      <h2>header</h2>
+      <h2>footer</h2>
+    )
+  }
+}
+
+export default Dashboard
+
+
+修改index.js;
+……
+import Dashboard from './component/dashboard/dashboard' 
+……
+          <Route path='/register' component={Register}></Route>
+          <Route component='Dashboard'></Route>
+        </Switch>
+……
+
+
+修改index.css;
+……
+.am-tab-bar{
+  position: fixed;
+  bottom:0;
+  width:100%;
+}
+
+.am-navbar{
+  position: fixed;
+  top:0;
+  width:100%;
+}
+
+.page-content{
+  padding:45px 5px;
+}
+
+用来固定页面header导航栏, 和底部导航栏;
+
+
+(2)导航和跳转;
+
+修改component/dashboard/dashboard.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {NavBar} from 'antd-mobile'
+import NavLinkBar from '../navlinkbar/navlinkbar'
+
+@connect(
+  state=>state
+)
+class Dashboard extends React.Component{
+  
+  render(){
+    const {pathname} = this.props.location
+    const user = this.props.user
+    const navList = [
+      {
+        path:'/boss',
+        text:'牛人',
+        icon:'boss',
+        title:'牛人列表',
+        //component: Boss,
+        hide: user.type == 'genius'
+      },
+      {
+        path:'/genius',
+        text:'boss',
+        icon:'job',
+        title:'BOSS列表',
+        //component: Genius,
+        hide: user.type == 'boss'
+      },
+      {
+        path:'/msg',
+        text:'消息',
+        icon:'msg',
+        title:'消息列表',
+        //component: Msg,
+      },
+      {
+        path:'/me',
+        text:'我',
+        icon:'user',
+        title:'个人中心',
+        //component: User,
+      }
+    ]
+
+    return (
+      <div>
+        <NavBar mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+  }
+}
+
+export default Dashboard
+
+上例中, 将’/boss’, ‘/genius’, ‘/msg’, ’/me’这四个页面的header导航栏和底部导航栏的架构搭建了一下, 通过navList数组指定各个页面的数据方便遍历检索; 如果是boss的type登录的用户将默认可以看到牛人列表, 如果是genius的type登录的用户默认可以看到BOSS列表, 所以如果用户身份是boss, 那么在’/boss’页面不会显示跳转到’/genius’页面的图标, 如果用户身份是genius, 那么在’/genius’页面中不会显示跳转到’/boss’页面的图标, 其它两个图标是共享的; 而header导航栏中的文字和页面内容完全是根据当前路径对应path的navList数组元素的text和component属性生成的, 也就是说, 如果不做其它限制的话, 身份为boss的用户也可以来到’/genius’页面查看BOSS列表的内容, 但是底部导航只会显示跳转到牛人列表的图标, 反之亦然; 
+
+
+在component/navlinkbar中新建navlinkbar.js;
+
+import React from 'react'
+import PropTypes from 'prop-types'
+import {TabBar} from 'antd-mobile'
+import {withRouter} from 'react-router-dom'
+
+@withRouter
+class NavLinkBar extends React.Component{
+  static propTypes = {
+    data:PropTypes.array.isRequired
+  }
+  render(){
+    const navList = this.props.data.filter(v=>!v.hide)
+    const {pathname} = this.props.location
+    return (
+      <TabBar>
+        {navList.map(v=>(
+          <TabBar.Item 
+            key={v.path}
+            title={v.text}
+            icon={{uri:require(`./img/${v.icon}.png`)}}
+            selectedIcon={{uri:require(`./img/${v.icon}_fill.png`)}}
+            selected = {pathname === v.path}
+            onPress={()=>{
+              this.props.history.push(v.path)
+            }}
+          ></TabBar.Item>
+        ))}
+      </TabBar>
+    )
+  }
+}
+
+export default NavLinkBar
+
+可以发现, NavLinkBar这个组件简单地对antd-mobile的TabBar组件做了一层封装, 目的是接收从Dashboard组件传递进来的props: navList数组, 然后根据其中元素的hide属性来决定将忽略哪个图标, 然后通过TabBar.Item子组件来遍历过滤后的数组从而生成三个图标, 页面默认被选中的图标就是当前访问地址所对应的图标, 每个图标点击后都会通过Route传入的history.push方法跳转到图标所对应的页面, 这之所以使用原生的react-router的history.push方法是因为目前antd-mobile对<Link>组件的支持还不是很好;
+当然, 另一个单独建立这个NavLinkBar组件的原因是: 它并非某个Route组件的component, 所以为了获取当前页面的location.pathname和history.push方法, 需要使用withRouter修饰器来封装一下, 封装后组件效果如下图所示:
+￼
+
+￼
+
+可以发现, 被withRouter修饰器封装的组件会被withRouter(相当于Router)和Route组件包裹, 并且由于距离它最近的父Route组件属于非exact匹配(且没有指定path属性), 所以它的match.url和match.path为’/’, 不能以此来获取当前页面的路径; 
+
+需要注意的是, 上例中的TabBar.Item组件的icon属性用来指定导航栏图标, 它的值可以是一个对象, 或者是一个jsx语法的元素对象;
+￼
+￼
+
+关于antd-mobile中TabBar的用法可以参考:
+https://mobile.ant.design/components/tab-bar/ 
+
+
+在component/navlinkbar中创建一个img文件夹, 然后将底部导航栏用到的icon图片放入(icon图片名与dashboard.js中navList的icon属性一一对应);
+￼
+
+上例在页面中的访问效果:
+￼
+
+￼
+￼
+
+￼
 
 
 
+(3)
 
 
 

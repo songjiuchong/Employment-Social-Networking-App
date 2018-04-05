@@ -15,7 +15,6 @@ Router.post('/update',function(req,res){
 	if(!userid){
 		return res.json({code:1, msg:'请先登录'})
 	}
-	//这里暂时省略了对用户填写信息内容格式等的验证步骤;
 	const body = req.body
 	User.findByIdAndUpdate(userid, body, _filter, function(err, doc){
 		const data = Object.assign({},{

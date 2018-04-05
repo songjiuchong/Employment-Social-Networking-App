@@ -75,6 +75,9 @@ export function register({user,pwd,repeatpwd,type}){
 }
 
 export function update(data){
+	
+	//这里暂时省略了对用户填写信息内容格式等的验证步骤;
+
 	return dispatch=>{
 		axios.post('/user/update',data)
 			.then(res=>{
