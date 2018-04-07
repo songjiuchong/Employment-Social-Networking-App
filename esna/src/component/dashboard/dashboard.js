@@ -1,7 +1,11 @@
 import React from 'react'
 import {connect} from 'react-redux'
+import {Switch, Route} from 'react-router-dom'
 import {NavBar} from 'antd-mobile'
 import NavLinkBar from '../navlinkbar/navlinkbar'
+import Boss from '../../component/boss/boss'
+import Genius from '../../component/genius/genius'
+import User from '../../component/user/user'
 
 @connect(
 	state=>state
@@ -17,7 +21,7 @@ class Dashboard extends React.Component{
 				text:'牛人',
 				icon:'boss',
 				title:'牛人列表',
-				//component: Boss,
+				component: Boss,
 				hide: user.type == 'genius'
 			},
 			{
@@ -25,7 +29,7 @@ class Dashboard extends React.Component{
 				text:'boss',
 				icon:'job',
 				title:'BOSS列表',
-				//component: Genius,
+				component: Genius,
 				hide: user.type == 'boss'
 			},
 			{
@@ -40,13 +44,20 @@ class Dashboard extends React.Component{
 				text:'我',
 				icon:'user',
 				title:'个人中心',
-				//component: User,
+				component: User,
 			}
 		]
 
 		return (
 			<div>
-				<NavBar mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+				<NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+				<div style={{marginTop:45}}>
+					<Switch>
+						{navList.map(v=>(
+							<Route key={v.path} path={v.path} component={v.component}/>
+						))}
+					</Switch>
+				</div>
 				<NavLinkBar data={navList}></NavLinkBar>
 			</div>
 		)
