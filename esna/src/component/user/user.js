@@ -1,12 +1,29 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import {Result, List, WhiteSpace} from 'antd-mobile'
+import {Redirect} from 'react-router-dom'
+import {Result, List, WhiteSpace, Modal} from 'antd-mobile'
+import browserCookie from 'browser-cookies'
+import {logoutSubmit} from '../../redux/user.redux'
 
 @connect(
-	state=>state.user
+	state=>state.user,
+	{logoutSubmit}
 )
 class User extends React.Component{
-
+	constructor(props){
+		super(props)
+		this.logout = this.logout.bind(this)
+	}
+	logout(){
+		const alert = Modal.alert
+        alert('注销', '是否继续退出?', [
+          { text: 'Cancel' },
+          { text: 'Ok', onPress: () => {
+			browserCookie.erase('userid')
+			this.props.logoutSubmit()
+          }},
+        ])
+	}
 	render(){
 
 		return this.props.user ? (
@@ -29,10 +46,10 @@ class User extends React.Component{
 				</List>
 				<WhiteSpace></WhiteSpace>
 				<List>
-					<List.Item>退出登录</List.Item>
+					<List.Item onClick = {this.logout}>退出登录</List.Item>
 				</List>
 			</div>
-		):null
+		): this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null
 	}
 }
 
