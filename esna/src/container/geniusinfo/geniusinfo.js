@@ -4,23 +4,20 @@ import AvatarSelector from '../../component/avatar-selector/avatar-selector'
 import {connect} from 'react-redux'
 import {update} from '../../redux/user.redux'
 import {Redirect} from 'react-router-dom'
+import hocForm from '../../component/hoc-form/hoc-form'
 
 @connect(
 	state=>state.user,
 	{update}
 )
+@hocForm
 class GeniusInfo extends React.Component{
 	constructor(props){
 		super(props)
-		this.state = {
-			title:'',
-			desc:''
-		}
-	}
-	onChange(key,val){
-		this.setState({
-			[key]:val
-		})
+		// this.state = {
+		// 	title:'',
+		// 	desc:''
+		// }
 	}
 	render(){
 		const path = this.props.location.pathname
@@ -33,16 +30,13 @@ class GeniusInfo extends React.Component{
 				{this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
 				<AvatarSelector
 					selectAvatar={(imgname)=>{
-						this.setState({
-							avatar: imgname
-						})
-					}}
+						this.props.handleChange('avatar',imgname)}}
 				></AvatarSelector> 
-				<InputItem onChange={(v)=>this.onChange('title',v)}>
+				<InputItem onChange={(v)=>this.props.handleChange('title',v)}>
 					求职岗位
 				</InputItem>
 				<TextareaItem 
-					onChange={(v)=>this.onChange('desc',v)}
+					onChange={(v)=>this.props.handleChange('desc',v)}
 					rows={3}
 					autoHeight
 					title='个人简介'
@@ -50,7 +44,7 @@ class GeniusInfo extends React.Component{
 				</TextareaItem>
 				<Button 
 					onClick={()=>{
-						this.props.update(this.state)
+						this.props.update(this.props.state)
 					}}
 					type='primary'>提交</Button>
 			</div>
