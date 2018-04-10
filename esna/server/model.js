@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+//连接mongo, 并且使用esna这个数据库(如果不存在会新建);
 const DB_URL = 'mongodb://127.0.0.1:27017/esna'
 mongoose.connect(DB_URL)
 
@@ -20,7 +20,12 @@ const models = {
 		'money':{type:String}
 	},
 	chat:{
-
+		'chatid': {'type':String, 'require':true},
+		'from':{'type':String, 'require': true},
+		'to':{'type':String, 'require': true},
+		'read':{'type':Boolean, default:false},
+		'content':{'type':String, 'require':true, 'default':''},
+		'create_time': {'type':Number, 'default': new Date().getTime()}
 	}
 }
 

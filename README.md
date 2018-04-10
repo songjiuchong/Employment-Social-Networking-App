@@ -8,6 +8,7 @@ Employment-Social-Networking-App is built on Redux+React Router+Node.js
 
 
 
+
 Redux+React Router+Node.js全栈开发笔记 (一);
 
 
@@ -32,7 +33,7 @@ APP所包含的功能模块:
 
 课程内容可以分成三个部分, 参考下图:
 
-
+￼
 
 
 
@@ -59,14 +60,14 @@ $ sudo npm install -g create-react-app
 $ create-react-app myapp
 
 <3>查看生成的目录内容;
-
+￼
 
 基本结构:
-
+￼
 
 package.json的结构:
 
-
+￼
 
 其中react-scripts中包含了所有webpack和eslint的配置, 相当于一个向外部暴露的黑盒; 之后如果需要自定义相关配置就需要使用eject命令先将其弹出; 
 
@@ -74,12 +75,12 @@ package.json的结构:
 <4>启动项目;
 $ npm start
 
-
+￼
 
 
 <5>浏览器访问localhost:3000 查看调试页面(当修改App.js内容后页面会自动刷新);
 
-
+￼
 
 
 <6>安装第三方库;
@@ -95,21 +96,21 @@ import {createStore} from 'redux';
 
 $ npm run eject
 
-
+￼
 
 需要注意的是, 这个步骤是不可逆的, 一旦选择yes, 那么就会安装一系列原本封装在react-scripts中的依赖, 并且会重新配置package.json;
 
-
+￼
 
 弹出成功后观察文件目录的变化:
 
-
+￼
 
 新增了config和scripts这两个目录, 其中config中是一些jest和webpack相关的配置文件, scripts中是实际执行npm run相关命令时运行的源代码, 之后可以通过node命令来运行;
 
 观察package.json的变化:
 
-
+￼
 
 除了在dependencies中添加了许多原本封装在react-scripts中的第三方依赖, 可以看到还对一些依赖进行了配置;
 
@@ -122,7 +123,7 @@ https://www.cnblogs.com/ruanyifeng/p/5283708.html (.eslintrc)
 
 补充内容:
 
-
+￼
 
 
 
@@ -173,13 +174,11 @@ console.log(obj);
 
 控制台显示:
 1
-    
-[object Object] {
+     [object Object] {
 name: "song",
 song2: 2,
 test: function (){window.runnerWindow.proxyConsole.log(4);},
-test1: test1(){ window.runnerWindow.proxyConsole.log(3)}
-}
+test1: test1(){ window.runnerWindow.proxyConsole.log(3)} }
 
 
 
@@ -295,7 +294,7 @@ app.listen(9093,function(){
 })
 
 
-
+￼
 
 补充:
 1.mongoDB 数据库概念;
@@ -339,7 +338,7 @@ User.create({
 })
 ……
 
-
+￼
 
 需要注意的是, 虽然之前在创建文档模型时明确指定了user和age属性的type类型和require:true, 但是在新增数据时如果给age传入字符串数字或者不设置age都能成功新增数据(给age传入’18’时会自动转换为数字18), 但是如果给age传入不能转换为数字的字符串时会报错:
 ValidationError: user validation failed: age: Cast to Number failed for value "a" at path "age”……
@@ -355,7 +354,7 @@ app.get('/data',function(req,res){
 })
 ……
 
-
+￼
 需要注意的是, find方法总是返回一个数组, 就算只有一条数据或没有数据, 使用findOne方法就会返回一个对象或者null;
 
 
@@ -395,7 +394,7 @@ $ npm install —save react@next react-dom@next
 
 (1)下图是使用react的JSX语法实际转换为JS执行时的代码:
 
-
+￼
 
 
 (2)修改App.js;
@@ -425,7 +424,7 @@ export default App
 
 需要注意的是, 组件的render方法中只能return一个根标签, 并且如果JSX语句有多行的话需要用()括起; 
 
-
+￼
 
 
 (3)组件之间传递数据;
@@ -463,7 +462,7 @@ export default App
 
 需要注意的是, 如果组件只有render函数, 还可以用函数的形式写组件, 但是不要使用this.props, 因为不是一个类, 直接使用参数props; 
 
-
+￼
 
 
 (4)组件内部state;
@@ -513,7 +512,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 
 需要注意的是, 上例中如果没有在返回的<li></li>元素中添加值唯一的key属性, 虽然程序可以执行, 但是会在console中报错:
@@ -578,7 +577,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 需要注意的是, 除了在constructor中使用this.addSoldier = this.addSoldier.bind(this)来绑定事件回调函数内部的this, 还可以使用箭头函数:
 <button onClick={()=>this.addSoldier()}>add new soldier</button>
@@ -596,9 +595,9 @@ React组件有若干钩子函数, 在组件的不同状态下执行;
 
 参考下图:
 
+￼
 
-
-
+￼
 
 
 需要注意的是, 上图中的Second Render指的是子组件第一次render时的生命周期情况, 与父组件第一次render稍有不同的是, 由于其defaultProps是由父组件传递进来的, 所以不需要执行getDefaultProps函数; 
@@ -787,7 +786,7 @@ function Two(props){
 
 export default App
 
-
+￼
 
 上例在点击change mystate按钮后在console中显示:
 
@@ -867,9 +866,28 @@ ReactDOM.render(<App><One boss='outsider’></One></App>, document.getElementByI
 3.react是如何判断一个组件是否是第一次加载;
 由于一个组件第一次加载时会触发其componentWillMount和componentDidMount方法, 而如果做为其它组件的子组件在父组件更新的情况下也同时被更新时就会触发componentWillUpdate/componentDidUpdate等一系列方法, 那么react是如何判断一个组件是否是第一次被加载的呢?
 举个例子, 如果一个父组件的render方法中根据某个判断条件来决定是否加载一个子组件, 那么每次父组件更新时都有可能添加/移除或者更新这个子组件, 那么react是如何判断的呢?
-其实当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 而如果react发现一个component已经存在实例对象了, 那么就会执行update相关的一系列方法; 
-对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象, componentWillUnmount方法在虚拟树对比结束, 开始更新差异到页面之前触发;
-如果是setState/forceUpdate方法触发的重新加载一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 而如果react发现一个component已经存在实例对象了, 那么就会执行update相关的一系列方法; 对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象; 
+但是react是如何判断一个组件是否已经实例化了呢?
+其实在一个组件的render方法执行后还存在一个对比的过程(还未进行react虚拟dom树与实际树的对比), 假设一个父组件的render方法中包含了若干个子组件(多个子组件可能属于同一个组件类), 无论这些子组件是否最终会被加载(可能由于一些判断条件导致某些情况下只有一些子组件会加载, 一些会被忽略), 都会被react按顺序添加在全局范围内不会重复react id以便区分, 之后在父组件的一次render执行后哪些id的子组件加载了, 哪些id的子组件没有加载是有记录的(做为属性保存在父组件中), 接着render生成的这个父组件的虚拟树片段会和当前react中保存的虚拟树中对应的片段进行对比(由于父组件本身也存在独一无二的react id, 所以可以很方便地找到进行对比), 根据父组件对子组件的id记录(react中保存的虚拟树中的组件也有对子组件id的记录)就能很清楚的对比出哪些子组件已经创建过实例了只需要update, 哪些子组件需要创建新的实例, 哪些子组件需要被移除, 与此同时子组件就会根据判断下来的不同情况开始走自己的流程:
+<1>如果是被判断为新加载的子组件, 那么就会走componentWillMount/render/componentDidMount的步骤, 很显然这种情况下子组件其下的所有子孙组件也会依次走相同的步骤;
+<2>如果是被判断为update的子组件, 那么就会走componentWillUpdate/render/componentDidUpdate的步骤, 也就是说, 这种情况下它本身会做为父组件去render自己的虚拟树片段, 记录其子组件id…
+<3>如果是被判断为需要移除的子组件, 那么就会走componentWillUnmont的步骤, 这种情况下子组件其下的所有子孙组件也会依次走相同的步骤;
+某个组件的componentWillUnmount方法就是在其父组件render生成的虚拟树片段与react虚拟树对应片段对比后发现需要被移除时触发的;
+
+当父组件其下的所有子孙组件的render相关流程都执行完毕后, 最初的父组件的render方法才算运行结束, 其生成的完整虚拟树片段会更新到react保存的虚拟树对应的片段中, 也就完成了react虚拟树的更新, 之后就可以进行虚拟dom树与实际树的对比了;
+另外, 如果是setState/forceUpdate方法触发的组件更新一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+4.关于父组件和子组件钩子函数执行顺序;
+
+当实例化一个新的父组件时:
+父组件的componentWillMount先触发, 然后触发子组件的componentWillMount;
+子组件的componentDidMount先触发, 然后触发父组件的componentDidMount;
+
+当update一个父组件时:
+父组件的componentWillUpdate先触发, 然后触发子组件的componentWillUpdate;
+子组件的componentDidUpdate先触发, 然后触发父组件的componentDidUpdate;
+
+可以发现, 在父组件render方法执行阶段触发的钩子函数父组件都是先于子组件的, 具体原因可以参考上面第3条中解释的父/子组件加载流程;
+在render方法后才触发的钩子函数子组件都是先于父组件的, 这是因为子组件的render方法会先行返回, 最终父组件的render方法才会返回; 
 
 
  2.关于组件类constructor方法的参数;
@@ -912,13 +930,13 @@ Warning: App(...): When calling super() in `App`, make sure to pass up the same 
 
 (7)安装react官方推荐的开发插件(chrome);
 
+￼
 
-
-
+￼
 
 安装完毕后再次打开chrome开发者工具, 就会发现新增了debug react项目代码的选项:
 
-
+￼
 
 右侧工具栏还能实时显示选中组件的Props和State;
 
@@ -941,7 +959,7 @@ import 'antd-mobile/dist/antd-mobile.css'
 ……
 
 css文件的路径参考:
-
+￼
 
 然后使用Button组件:
 ……
@@ -956,7 +974,7 @@ https://mobile.ant.design/components/button/
 
 在页面中显示:
 
-
+￼
 
 
 安装并配置babel插件: babel-plugin-import;
@@ -1001,9 +1019,9 @@ node_modules/antd-mobile/lib/button/style/css.js
 
 
 babel-plugin-import 用法参考:
+￼
 
-
-
+￼
 
 参考:
 https://www.cnblogs.com/yswz/p/7165031.html
@@ -1039,7 +1057,7 @@ render(){
   }
 ……
 
-
+￼
 
 
 
@@ -1165,7 +1183,7 @@ export default App
 
 上例在页面中加载后显示:
 
-
+￼
 
 点击增加/减少武器按钮会改变文本中显示的数量;
 
@@ -1287,7 +1305,7 @@ const addGUNAsync = this.props.addGUNAsync;
 <4.5>Redux调试工具(chrome);
 
 (1)在chrome中安装Redux DevTools;
-
+￼
 
 安装完成后在chrome的developer tools的选项栏中就会新增Redux选项;
 
@@ -1316,9 +1334,9 @@ Redux笔记中: ’17. applyMiddleware();’里的源码;
 
 参考下图:
 
-
-
-
+￼
+￼
+￼
 
 
 
@@ -1420,7 +1438,7 @@ export function addGUNAsync(){
 需要注意的是, 之前提过组件的解耦, 但是由于使用react-redux将会需要为UI组件创建一层外层逻辑组件的封装, 必须为connect函数传入第二个参数, 也就是组件需要触发的dispatch相关函数(这些函数会通过props传给内层UI组件), 所以只能在此通过import引入'./index.redux’中的内容, 有一定的耦合性, 但是由于整个connect过程都在这一个App.js模块中完成, 最后export的是一个经过包装的组件, 可以直接被使用; 
 
 被connect方法包装过的组件最后在页面中的结构是类似下图这样的:
-
+￼
 
 也就是说connect方法会创建一个新的名为,如: Connect(Auth)这样的组件, 在组件内部做一些相关设置(如: 在componentDidMount方法中设置forceUpdate函数等), 最后在其render方法内获取this.context中的store, 并且将相关内容做为props属性传递给其子组件(UI组件), 也就是开发者自行声明的Auth组件; 
 
@@ -1537,14 +1555,14 @@ ReactDom.render(
 需要注意的是, BrowserRouter组件中也只能包含一个根元素, 所以上例中使用了一个<div></div>将其中内容包了起来;
 上例在浏览器中显示为:
 
-
-
+￼
+￼
 
 可以发现, 当点击了指向’/two’或者’/three’的Link时同样显示了’/’根目录Route的内容, 这是因为’/’默认并非是完全匹配的, 也就是说’/two’或者’/three’也同时匹配了’/’, 属于正则匹配(但是这样的正则规则只适用于’/‘, 如果是类似: ‘/two’和’/two2’这样的路径是不会同时匹配的); 解决办法是在<Route path='/' component={App}></Route>中添加一个exact属性:
 <Route path='/' exact component={App}></Route>
 
 页面显示为:
-
+￼
 
 需要注意的是, react-router4与react-router2不同的是, 默认情况下不是找到匹配路由规则就停止查找, 而是继续查找并渲染所有匹配规则的路由组件, 也就是说如果上例中路由改为:
 ……
@@ -1596,12 +1614,12 @@ ReactDom.render(
 )
  
 上例在浏览器中显示:
-
+￼
 
 可以发现, 在Route使用类似: <Route path='/:location' component={Test}></Route> 这种方式定义path后, Test组件的props属性的match属性中将会与不在path中使用’/:’的Route定义有一些不同, 前者的params属性中的值是一个以path中’/:’后指定的字符串为key, 实际匹配路由地址中字符串为value的对象, 而后者是一个空对象;
 
 下图是直接访问’/test’, 并且匹配到了path=‘/test’的Route的情况:
-
+￼
 
 那么根据上面显示的传入组件props属性中的这些内容可以发现, 在组件中使用this.props.match.params.location就可以获取实际路由地址中匹配Route组件中path属性’/:’后的字符串了;
 还可以发现, this.props.history中的location属性与this.props.location属性相同;
@@ -1613,13 +1631,13 @@ ReactDom.render(
 1.当页面加载后通过react-router路由跳转, Router组件会监听路径的变化, 然后被更新(props.history.location.pathname中更新了当前路径信息), 此时, 其下设置的Route组件都处于Router组件的this.props.children中, Router组件更新时会找到它们(参考下图), 然后根据它们的path属性来匹配当前路径, 如果匹配, 就调用这个Route组件的setState方法将路径信息加入它的state.match.url中(不匹配的Route组件的this.state.match属性为null) , Router组件还同时会将路径信息传入所有Route组件(无论其path是否匹配当前路径)的context.router中(参考下图);  然后这个Route组件会根据this.state.match在其render方法中进行判断是否需要加载其component属性对应的子组件, 也就是说, 符合路由匹配的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 并将history, location, match三个属性做为其props属性传入(参考下图); 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法); 
 
 Router组件的属性构造:
-
+￼
 
 Route组件中的context结构:
-
+￼
 
 Route组件的props属性:
-
+￼
 
 
 (4)Redirect;
@@ -1646,8 +1664,8 @@ class Test extends React.Component{
 ……
 
 上例在浏览器中显示:
-
-
+￼
+￼
 
 可以发现, 当路径不匹配任何路由规则时就会触发Test组件渲染, 但是上例的问题是, 点击two或者three按钮同时也会渲染Test组件;
 解决方法(给Route组件添加exact无法解决这个问题)是使用Switch组件, 因为Switch组件只会去渲染其中第一个匹配的路由;
@@ -1664,14 +1682,14 @@ src/index.js;
         </Switch>
 ……
 
-
+￼
 
 
 需要注意的是, 如果路由使用了<Switch>组件, 那么最后渲染的页面中只包含被匹配的那个Route组件的内容, 如果不使用<Switch>组件, 那么所有Route组件都会被渲染到页面中, 但是只有最终匹配路由的Route组件其中的component会被渲染;
 
 参考下图中页面结构:
-
-
+￼
+￼
 
 
 src/index.js;
@@ -1921,7 +1939,7 @@ export default Auth
 通过上面的代码可以发现react-router4 路由嵌套的模式;
 
 上例在浏览器中访问’/dashboard/two’后的html结构:
-
+￼
 
 还有一点需要注意的是, 目前上面的代码中存在了两个不同的reducer(也存在两种不同形式的state), 一个是index.redux.js中的counter, 另一个是Auth.redux.js中的auth, 那么很显然需要将不同的reducer/state合并成一个才能正常使用redux; 
 
@@ -1963,8 +1981,8 @@ console.log(store.getState())
 
 上例在浏览器中加载后, 控制台中显示:
 
-
-
+￼
+￼
 
 
 上面显示的对象就是使用了combineReducers方法合并了counter和auth这两个reducer后执行createStore方法后生成的初始state对象;
@@ -2018,7 +2036,7 @@ export default Dashboard
 
 
 在浏览器加载页面后由于初始的state.auth.isAuth是false, 所以会自动跳转到’/login’页面:
-
+￼
 
 
 修改Auth.js, 增加login功能;
@@ -2048,7 +2066,7 @@ export default Auth
 
 上例在页面加载后首先会跳转到’/login’页面:
 
-
+￼
 
 点击login按钮后会跳转到’/dashboard’页面;
 因为点击按钮会触发dispatch({type:LOGIN}), 从而更新了state.auth.isAuth为true, 这样会使页面中使用了react-redux的conntect方法的组件被执行forceUpdate方法, 也就是重新执行其render方法更新组件状态, 由于页面中目前只有Auth组件(只有Auth组件被react-redux使用subscribe方法绑定了其forceUpdate函数), 并且其render方法中使用了{this.props.isAuth? <Redirect to='/dashboard'/> : null}逻辑来判断用户登录状态, 所以组件重新render后会直接跳转到’/dashboard’页面; 
@@ -2084,7 +2102,7 @@ export default Auth
 ……
 
 上例在页面加载后显示: 
-
+￼
 
 点击logout按钮后会重新render Dashboard组件, 然后跳转到’/login’页面;
 
@@ -2129,7 +2147,7 @@ export default Auth
 
 <5.1>页面分类:
 
-
+￼
 
 
 
@@ -2138,7 +2156,7 @@ export default Auth
 (1)axios;
 Axios 是一个基于 promise 的 HTTP 库, 可以用在浏览器和 node.js 中; 
 
-
+￼
 
 参考:
 https://www.kancloud.cn/yunye/axios/234845
@@ -2192,7 +2210,7 @@ const devServer = new WebpackDevServer(compiler, serverConfig);
 关于const proxyConfig = prepareProxy(proxySetting, paths.appPublic) 这条语句, paths.appPublic返回的是项目下public文件夹的路径信息, 而这里的prepareProxy方法之所以需要传入这第二个参数, 是因为在设置proxy时需要判断请求的是否是public文件夹中的内容, 如果是则不需要代理转发请求, 因为public文件夹中保存的都是webpack-dev-server生成的静态文件, 其中最重要的就是index.html文件, 也就是浏览器向webpack-dev-server(localhost:3000)服务器请求页面时返回的初始html文件(包含<div id="root"></div>这个节点), bundle.js文件就包含在其中; 也就是说, 除了请求localhost:3000服务器中public文件夹下的文件, 其它请求都会被proxy转发; 
 
 所以, create-react-app在用户启用其内置server的时候会读取package.json中关于proxy的配置, 然后对server进行proxy的设置, 转发请求;
-
+￼
 
 
 (3)测试前后端通信;
@@ -2210,11 +2228,11 @@ class Auth extends React.Component{
 ……
 
 页面加载后console中成功获取server.js中返回内容:
-
+￼
 
 server/server.js:
 ……
-
+￼
 
 
 如果将Auth.js修改为:
@@ -2251,7 +2269,7 @@ class Auth extends React.Component{
 ……
 
 页面显示为:
-
+￼
 
 从控制台显示内容的顺序可以发现, 当react运行到this.setState()后就会先执行componentWillUpdate()方法, 此时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
 
@@ -2342,11 +2360,11 @@ export default Auth
 
 上例在页面中显示为:
 
-
+￼
 
 当前数据库中数据为:
 
-
+￼
 
 这样就完成了react-redux通过ajax获取server中数据库信息并渲染页面;
 
@@ -2380,7 +2398,7 @@ import './config'
 
 
 上例在页面中显示:
-
+￼
 
 
 antd-mobile的Toast组件, 参考:
@@ -2389,8 +2407,7 @@ https://mobile.ant.design/components/toast-cn/
 
 补充:
 1.关于axios设置拦截器的注意点;
-(1)interceptor必须在请求前设置才有效;
-(2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
+(1)interceptor必须在请求前设置才有效; (2)直接为axios全局对象创建interceptor，会导致全局的axios发出的请求或接收的响应都会被拦截到，所以应该使用axios.create()来创建单独的axios实例, 如:
 
 var instance = axios.create();
 instance.interceptors.request.use(function () {/*...*/});
@@ -2407,12 +2424,12 @@ $ npm install cookie-parser —save
 
 
 (2)用户cookie管理流程;
-
+￼
 
 
 (3)项目文件目录结构以及登录/注册页面基本页面构建;
 
-
+￼
 
 
 src/index.js;
@@ -2565,10 +2582,10 @@ export default Register
 上面的代码在页面加载后效果为:
 
 访问’/login’;
-
+￼
 
 点击注册按钮后跳转到’/register’;
-
+￼
 
 
 antd-mobile组件参考:
@@ -2659,7 +2676,7 @@ module.exports = Router
 
 const mongoose = require('mongoose')
 
-//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+//连接mongo, 并且使用esna这个数据库(如果不存在会新建);
 const DB_URL = 'mongodb://127.0.0.1:27017/esna'
 mongoose.connect(DB_URL)
 
@@ -2727,7 +2744,7 @@ Router.get('/info',function(req,res){
 这样就实现了通过AuthRoute组件完成验证用户信息之后跳转;
 
 观察下图可以观察使用了withRouter方法封装AuthRoute组件后的页面结构, 以及传递给AuthRoute组件的props的内容:
-
+￼
 
 需要注意的是, withRouter方法在react-router2与react-router4中的用法不同, 关于react-router2中的withRouter方法可以参考:
 React-router2笔记中’11.路由的钩子;’里withRouter的相关内容; 
@@ -2794,7 +2811,7 @@ export default Register
 
 上例中当用户填写完了所有信息后，Register组件自身的state就包含了这些内容，然后点击注册按钮，就能对用户填写的所有信息进行验证和提交了；
 
-
+￼
 
 
 从上例中可以发现，Register组件使用了react原生的state来保存状态而非使用redux，这是因为Register组件中的这些状态无需与其他组件共享，并且根据组件解耦的原则，在不需要依赖外部状态的情况下组件本身的状态应该就只保存在组件内部，这样方便被复用；
@@ -2933,9 +2950,9 @@ export default Register
 
 上例在页面加载后用户在’/register’页面输入不同信息下state的变化:
 
+￼
 
-
-
+￼
 
 
 在src中新建一个index.css文件;
@@ -2963,8 +2980,8 @@ import './index.css'
 
 上例在页面加载后测试截图:
 
-
-
+￼
+￼
 
 
 (8)数据库模型建立;
@@ -2973,7 +2990,7 @@ import './index.css'
 
 const mongoose = require('mongoose')
 
-//连接mongo, 并且使用esna这个集合(如果不存在会新建);
+//连接mongo, 并且使用esna这个数据库(如果不存在会新建);
 const DB_URL = 'mongodb://127.0.0.1:27017/esna'
 mongoose.connect(DB_URL)
 
@@ -3096,7 +3113,7 @@ module.exports = Router
 
 上例中在页面中完成注册后再次使用同一个用户名提交注册后就会报错, 说明之前的用户信息已经成功提交到了后端:
 
-
+￼
 
 
 (10)注册跳转/密码加密;
@@ -3134,7 +3151,7 @@ export function user(state=initState,action){
 
 再次成功注册后可以发现redux的state.user.redirectTo属性更新为了’/bossinfo’: 
 
-
+￼
 
 
 修改register.js;
@@ -3177,7 +3194,7 @@ const utils = require('utility')
 不过需要注意的是, 虽然md5不可逆（指攻击者不能从哈希值h(x)中逆推出x）而且碰撞几率低（指不能找到两个值x、x’具有相同的哈希值）；然而这种方式也是不安全的，因为只要枚举出所有的常用密码，做成一个索引表，就可以推出来原始密码，这张索引表也被叫做“彩虹表”;
 
 比如反向解密上例中MD5存储的pwd:202cb962ac59075b964b07152d234b70:
-
+￼
 
 由于密码过于简单, 所以被解密的可能就非常高, 那么除了在注册时硬性规定用户创建的密码要符合一定的复杂度(比如:必须包括大小写, 特殊符号, 数字等), 还可以在服务器端通过密码加盐来增加密码的安全性; 
 
@@ -3201,7 +3218,7 @@ function md5Pwd(pwd){
 {"_id":"5ab9ec6ab616f84a144231b2","user":"song5","type":"boss","pwd":"1addc366314c8bc34466429522c4afdc","__v":0}
 
 可以发现同样使用123做为密码, 得到的pwd是1addc366314c8bc34466429522c4afdc, 现在重新尝试解密:
-
+￼
 
 上面的结果说明, 通过了密码加盐之后, 数据库存储的pwd已经不会被轻易解密了, 就算被解密, 那解密者也只是获得了utils.md5(utils.md5(pwd+salt))中内层的utils.md5(pwd+salt)的内容, 所以安全性是非常高的;
 
@@ -3409,7 +3426,7 @@ module.exports = Router
 
 
 上例在login页面成功登录后跳转到了’/geniusinfo’页面:
-
+￼
 
 可以发现向’user/login’发送的Ajax请求返回的data属性对象中只有type, user和_id这三个字段, 这是因为上例在user.js中使用了:
 
@@ -3626,13 +3643,13 @@ export default AuthRoute
 最后需要注意一点, 当页面加载后通过react-router路由跳转, Router组件会监听路径的变化, 然后被更新(props.history.location.pathname中更新了当前路径信息), 此时, 其下设置的Route组件都处于Router组件的this.props.children中, Router组件更新时会找到它们(参考下图), 然后根据它们的path属性来匹配当前路径, 如果匹配, 就调用这个Route组件的setState方法将路径信息加入它的state.match.url中(不匹配的Route组件的this.state.match属性为null) , Router组件还同时会将路径信息传入所有Route组件(无论其path是否匹配当前路径)的context.router中(参考下图);  然后这个Route组件会根据this.state.match在其render方法中进行判断是否需要加载其component属性对应的子组件, 也就是说, 符合路由匹配的Route组件的component属性对应的组件会被当成Route组件的子组件加载(如果是首次加载会触发componentWillMount和componentDidMount方法), 并将history, location, match三个属性做为其props属性传入(参考下图); 不符合的Route组件的component属性对应的组件会被移除(并会触发其componentWillUnmount方法), 上例中的AuthRoute组件就属于每次路由改变都匹配的情况, 所以react-route路由跳转并不会再次触发向服务器检查用户浏览器cookie的逻辑, 只会重新update一遍AuthRoute组件, 除非页面刷新;
 
 Router组件的属性构造:
-
+￼
 
 Route组件中的context结构:
-
+￼
 
 Route组件component属性对应子组件的props属性:
-
+￼
 
 相关复习: 
 1.componentDidMount()和react的其它钩子函数不同, 它是在虚拟树对比完成并将一个原本在页面中不存在的组件添加到页面之后才会触发(就算这个组件render方法返回null也会触发), 而其他的钩子函数都是在虚拟树更新和对比阶段触发的; 
@@ -3640,30 +3657,49 @@ Route组件component属性对应子组件的props属性:
 3.react是如何判断一个组件是否是第一次加载;
 由于一个组件第一次加载时会触发其componentWillMount和componentDidMount方法, 而如果做为其它组件的子组件在父组件更新的情况下也同时被更新时就会触发componentWillUpdate/componentDidUpdate等一系列方法, 那么react是如何判断一个组件是否是第一次被加载的呢?
 举个例子, 如果一个父组件的render方法中根据某个判断条件来决定是否加载一个子组件, 那么每次父组件更新时都有可能添加/移除或者更新这个子组件, 那么react是如何判断的呢?
-其实当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 而如果react发现一个component已经存在实例对象了, 那么就会执行update相关的一系列方法; 
-对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象, componentWillUnmount方法在虚拟树对比结束, 开始更新差异到页面之前触发;
-如果是setState/forceUpdate方法触发的重新加载一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+当一个组件第一次被加载时会执行其constructor方法并新创建一个组件的实例, 之后对组件的操作其实都是对这个实例的操作, 也就是说如果是initial render(react发现这个组件还未实例化), 那么这个组件接下来会触发componentWillMount/render/componentDidMount这一系列方法, 不管是否是因为父组件的render而触发的加载, 而如果react发现一个component已经存在实例对象了, 那么就会执行update相关的一系列方法; 对一个组件的移除会触发其componentWillUnmont方法(并不会触发update相关的钩子函数), 同时react会删除已经创建的实例对象; 
+但是react是如何判断一个组件是否已经实例化了呢?
+其实在一个组件的render方法执行后还存在一个对比的过程(还未进行react虚拟dom树与实际树的对比), 假设一个父组件的render方法中包含了若干个子组件(多个子组件可能属于同一个组件类), 无论这些子组件是否最终会被加载(可能由于一些判断条件导致某些情况下只有一些子组件会加载, 一些会被忽略), 都会被react按顺序添加在全局范围内不会重复react id以便区分, 之后在父组件的一次render执行后哪些id的子组件加载了, 哪些id的子组件没有加载是有记录的(做为属性保存在父组件中), 接着render生成的这个父组件的虚拟树片段会和当前react中保存的虚拟树中对应的片段进行对比(由于父组件本身也存在独一无二的react id, 所以可以很方便地找到进行对比), 根据父组件对子组件的id记录(react中保存的虚拟树中的组件也有对子组件id的记录)就能很清楚的对比出哪些子组件已经创建过实例了只需要update, 哪些子组件需要创建新的实例, 哪些子组件需要被移除, 与此同时子组件就会根据判断下来的不同情况开始走自己的流程:
+<1>如果是被判断为新加载的子组件, 那么就会走componentWillMount/render/componentDidMount的步骤, 很显然这种情况下子组件其下的所有子孙组件也会依次走相同的步骤;
+<2>如果是被判断为update的子组件, 那么就会走componentWillUpdate/render/componentDidUpdate的步骤, 也就是说, 这种情况下它本身会做为父组件去render自己的虚拟树片段, 记录其子组件id…
+<3>如果是被判断为需要移除的子组件, 那么就会走componentWillUnmont的步骤, 这种情况下子组件其下的所有子孙组件也会依次走相同的步骤;
+某个组件的componentWillUnmount方法就是在其父组件render生成的虚拟树片段与react虚拟树对应片段对比后发现需要被移除时触发的;
 
+当父组件其下的所有子孙组件的render相关流程都执行完毕后, 最初的父组件的render方法才算运行结束, 其生成的完整虚拟树片段会更新到react保存的虚拟树对应的片段中, 也就完成了react虚拟树的更新, 之后就可以进行虚拟dom树与实际树的对比了;
+另外, 如果是setState/forceUpdate方法触发的组件更新一定不是首次加载, 因为这两个方法需要实例对象this来调用;
+4.关于父组件和子组件钩子函数执行顺序;
 
+当实例化一个新的父组件时:
+父组件的componentWillMount先触发, 然后触发子组件的componentWillMount;
+子组件的componentDidMount先触发, 然后触发父组件的componentDidMount;
+
+当update一个父组件时:
+父组件的componentWillUpdate先触发, 然后触发子组件的componentWillUpdate;
+子组件的componentDidUpdate先触发, 然后触发父组件的componentDidUpdate;
+
+可以发现, 在父组件render方法执行阶段触发的钩子函数父组件都是先于子组件的, 具体原因可以参考上面第3条中解释的父/子组件加载流程;
+在render方法后才触发的钩子函数子组件都是先于父组件的, 这是因为子组件的render方法会先行返回, 最终父组件的render方法才会返回; 
+
+￼
 
 
 上例在清除cookie缓存后访问’/login’页面后的cookie/redux的state:
+￼
 
-
-
+￼
 
 然后输入正确的用户名/密码点击登录后的cookie/redux的state:
-
-
+￼
+￼
 
 
 上例在清除cookie信息后访问’/register’页面后的cookie/redux的state:
-
-
+￼
+￼
 
 然后输入有效的用户信息点击注册后的cookie/redux的state:
-
-
+￼
+￼
 
 此时如果在’/bossinfo’页面中直接刷新页面, 页面不会跳转且cookie/redux的state信息与上两张图相同;
 
@@ -3731,7 +3767,7 @@ https://mobile.ant.design/components/nav-bar/ (NavBar)
 https://mobile.ant.design/components/textarea-item/ (TextareaItem)
 
 
-
+￼
 
 
 (2)AvatarSelector组件(用户头像组件);
@@ -3827,7 +3863,7 @@ import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
 
 在BOSS信息完善页面输入所有信息:
 
-
+￼
 
 
 (3)BOSS信息页面的前后端交互;
@@ -3986,11 +4022,11 @@ import {Redirect} from 'react-router-dom'
 ……
 
 在登录状态下成功提交完善信息后跳转到’/boss’页面:
-
+￼
 
 
 如果在已经成功登录’/bossinfo’页面的情况下, cookie失效, 那么点击提交按钮后:
-
+￼
 
 
 但是如果一个已经登录的用户在还未选择过avatar的情况下在’/bossinfo’页面直接点击提交就会报错:
@@ -4099,10 +4135,10 @@ class GeniusInfo extends React.Component{
 export default GeniusInfo
 
 牛人完善信息页面:
-
+￼
 
 在牛人完善信息页面提交信息后:
-
+￼
 
 
 补充:
@@ -4148,7 +4184,14 @@ https://reactjs.org/docs/typechecking-with-proptypes.html
 
 
 
-Redux+React Router+Node.js全栈开发笔记(二);
+
+
+
+Redux+React Router+Node.js全栈开发笔记 (二);
+
+
+……
+
 
 
 8.牛人列表/BOSS列表;
@@ -4264,7 +4307,7 @@ class Dashboard extends React.Component{
 
 export default Dashboard
 
-上例中, 将’/boss’, ‘/genius’, ‘/msg’, ’/me’这四个页面的header导航栏和底部导航栏的架构搭建了一下, 通过navList数组指定各个页面的数据方便遍历检索; 如果是boss的type登录的用户将默认可以看到牛人列表, 如果是genius的type登录的用户默认可以看到BOSS列表, 所以如果用户身份是boss, 那么在’/boss’页面不会显示跳转到’/genius’页面的图标, 如果用户身份是genius, 那么在’/genius’页面中不会显示跳转到’/boss’页面的图标, 其它两个图标是共享的; 而header导航栏中的文字和页面内容完全是根据当前路径对应path的navList数组元素的text和component属性生成的, 也就是说, 如果不做其它限制的话, 身份为boss的用户也可以来到’/genius’页面查看BOSS列表的内容, 但是底部导航只会显示跳转到牛人列表的图标, 反之亦然; 
+上例中, 将’/boss’, ‘/genius’, ‘/msg’, ’/me’这四个页面的header导航栏和底部导航栏的架构搭建了一下, 通过navList数组指定各个页面的数据方便遍历检索; 如果是boss的type登录的用户将默认可以看到牛人列表, 如果是genius的type登录的用户默认可以看到BOSS列表, 所以如果用户身份是boss, 那么在’/boss’页面不会显示跳转到’/genius’页面的图标, 如果用户身份是genius, 那么在’/genius’页面中不会显示跳转到’/boss’页面的图标, 其它两个图标是共享的; 而header导航栏中的文字和页面内容完全是根据当前路径对应path的navList数组元素的title属性和component属性对应的组件生成的, 也就是说, 如果不做其它限制的话, 身份为boss的用户也可以来到’/genius’页面查看BOSS列表的内容, 但是底部导航只会显示跳转到牛人列表的图标, 反之亦然; 
 
 
 在component/navlinkbar中新建navlinkbar.js;
@@ -4322,6 +4365,11 @@ https://mobile.ant.design/components/tab-bar/
 在component/navlinkbar中创建一个img文件夹, 然后将底部导航栏用到的icon图片放入(icon图片名与dashboard.js中navList的icon属性一一对应);
 ￼
 
+补充:
+关于各种格式和类型的小图标下载, 可以访问:
+http://www.iconfont.cn/
+
+
 上例在页面中的访问效果:
 ￼
 
@@ -4332,8 +4380,1403 @@ https://mobile.ant.design/components/tab-bar/
 
 
 
-(3)
+(3)牛人列表;
 
+修改dashboard.js;
+…..
+import {Switch, Route} from 'react-router-dom'
+……
+const navList = [
+      {
+        path:'/boss',
+        text:'牛人',
+        icon:'boss',
+        title:'牛人列表',
+        component: Boss,
+        hide: user.type == 'genius'
+      },
+……
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+          <Switch>
+            {navList.map(v=>(
+              <Route key={v.path} path={v.path} component={v.component}/>
+            ))}
+          </Switch>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+……
+
+上例中, dashboard页面的主体部分使用路由来选择性加载boss/genius组件;
+
+
+修改index.css;
+……
+.fixed-header.am-navbar{
+  position: fixed;
+  top:0;
+  width:100%;
+……
+
+
+在src/component/boss中新建boss.js;
+
+import React from 'react'
+import axios from 'axios'
+import {Card, WhiteSpace, WingBlank} from 'antd-mobile'
+
+class Boss extends React.Component{
+  constructor(props){
+    super(props)
+    this.state={
+      data:[]
+    }
+  }
+  componentDidMount(){
+    axios.get('/user/list?type=genius').then(res=>{
+      if(res.data.code==0){
+        this.setState({data:res.data.data})
+      }
+    })
+  }
+  render(){
+    return (
+      <WingBlank>
+        <WhiteSpace></WhiteSpace>
+        {this.state.data.map(v=>(
+          v.avatar ? 
+          <Card key={v._id}>
+            <Card.Header
+              title = {v.user}
+              thumb = {require(`../img/${v.avatar}.png`)}
+              thumbStyle = {{width:40}}
+              extra = {<span>{v.title}</span>}
+            >
+            </Card.Header>
+            <Card.Body>
+              {v.desc.split('\n').map(v=>(
+                <div key={v+Math.random()}>{v}</div>
+              ))}
+            </Card.Body>
+          </Card> : null
+        ))}
+      </WingBlank>
+    )
+  }
+}
+
+export default Boss
+
+上例中通过componentDidMount钩子函数向后端请求所有type为genius的用户信息以便渲染牛人列表;
+可以发现, 没有头像信息的用户将不会被显示在列表中;
+
+关于antd-mobile中Card组件相关内容参考:
+https://mobile.ant.design/components/card/
+
+
+修改server/user.js;
+……
+Router.get('/list',function(req,res){
+  let {type} = req.query
+  if(!type) type = {}
+    else type = {type}
+  User.find(type,function(err,doc){
+    return res.json({code:0, data:doc})
+  })
+})
+……
+
+上例中当访问’/user/list:type=boss’时会返回所有boss身份的用户信息, 访问’/user/list?genius’时会返回所有genius身份的用户信息, 如果访问’/user/list’, 那么req.query.type = undefined, 改造后会获取所有用户的信息;
+
+￼
+
+
+
+(4)使用redux管理牛人列表;
+
+在src/redux中新建chatuser.redux.js;
+
+这里的思路是将用户列表同时视为一个聊天对象的列表(相关数据需要在不同组件之间共享), 也就是说, 除了显示用户的基本信息, 可以随时选择列表中的牛人/boss进行聊天;
+
+
+chatuser.redux.js;
+
+import axios from 'axios'
+
+const USER_LIST = 'USER_LIST'
+
+const initState = {
+  userlist : []
+}
+
+//reducer
+export function chatuser(state = initState, action){
+  switch(action.type){
+    case USER_LIST:
+      return {...state, userlist:action.payload}
+    default:
+      return state
+  }
+}
+
+//action creator
+function userList(data){
+  return {type:USER_LIST, payload:data}
+}
+
+export function getUserList(type){
+  return dispatch=>{
+    axios.get('/user/list?type=' + type).then(res=>{
+      if(res.data.code==0){
+        dispatch(userList(
+          res.data.data.map(v=>{
+            const {pwd, __v, ...filteredUser} = v
+            return filteredUser
+          })
+        ))
+      }
+    })
+  }
+}
+
+上例创建了redux的state的一个新的属性: chatuser, 专门用于存储genius/boss用户列表数据; 
+由于从后端’/user/list?type=genius’取得的用户数组中的用户数据携带pwd和__v这两个不需要储存在redux的state中的属性, 所以将res.data.data中数组元素的属性进行了过滤;
+
+
+修改component/boss/boss.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {Card, WhiteSpace, WingBlank} from 'antd-mobile'
+import {getUserList} from '../../redux/chatuser.redux'
+
+@connect(
+  state=>state.chatuser,
+  {getUserList}
+)
+class Boss extends React.Component{
+  componentDidMount(){
+    this.props.getUserList('genius')
+  }
+  render(){
+    return (
+      <WingBlank>
+        <WhiteSpace></WhiteSpace>
+        {this.props.userlist.map(v=>(
+          v.avatar ? 
+          <Card key={v._id}>
+            <Card.Header
+              title = {v.user}
+              thumb = {require(`../img/${v.avatar}.png`)}
+              thumbStyle = {{width:40}}
+              extra = {<span>{v.title}</span>}
+            >
+            </Card.Header>
+            <Card.Body>
+              {v.desc.split('\n').map(v=>(
+                <div key={v+Math.random()}>{v}</div>
+              ))}
+            </Card.Body>
+          </Card> : null
+        ))}
+      </WingBlank>
+    )
+  }
+}
+
+export default Boss
+
+上例中, Boss组件不再通过自身的state来存储用户列表信息, 而是通过redux来获取和共享; 
+
+
+修改reducer.js;
+
+import {combineReducers} from 'redux'
+import {user} from './redux/user.redux'
+import {chatuser} from './redux/chatuser.redux'
+
+export default combineReducers({user, chatuser})
+
+观察state.chatuser
+￼
+
+
+
+9.个人中心;
+
+(1)boss列表创建和用户列表组件抽离;
+
+修改component/dashboard/dashboard.js;
+……
+import Genius from '../..component/genius/genius'
+……
+      {
+        path:'/genius',
+        text:'boss',
+        icon:'job',
+        title:'BOSS列表',
+        component: Genius,
+        hide: user.type == 'boss'
+      },
+……
+
+
+在src/component/genius下新建genius.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {getUserList} from '../../redux/chatuser.redux'
+import UserCard from '../usercard/usercard'
+
+@connect(
+  state=>state.chatuser,
+  {getUserList}
+)
+class Genius extends React.Component{
+  componentDidMount(){
+    this.props.getUserList('boss')
+  }
+  render(){
+    return <UserCard userlist={this.props.userlist}/>
+  }
+}
+
+export default Genius
+
+
+在src/component/usercard下新建usercard.js;
+
+import React from 'react'
+import PropTypes from 'prop-types'
+import {Card, WhiteSpace, WingBlank} from 'antd-mobile'
+
+class UserCard extends React.Component{
+  static propTypes = {
+    userlist: PropTypes.array.isRequired
+  }
+  render(){
+    return (
+      <WingBlank>
+        <WhiteSpace></WhiteSpace>
+        {this.props.userlist.map(v=>(
+          v.avatar ? 
+          <Card key={v._id}>
+            <Card.Header
+              title = {v.user}
+              thumb = {require(`../img/${v.avatar}.png`)}
+              thumbStyle = {{width:40}}
+              extra = {<span>{v.title}</span>}
+            >
+            </Card.Header>
+            <Card.Body>
+              {v.type=='boss'?<div>公司:{v.company}</div>:null}
+              {v.desc.split('\n').map(d=>(
+                <div key={d+Math.random()}>{d}</div>
+              ))}
+              {v.type=='boss'?<div>薪资:{v.money}</div>:null}
+            </Card.Body>
+          </Card> : null
+        ))}
+      </WingBlank>
+    )
+  }
+}
+
+export default UserCard
+
+上例中将原本处于boss.js和genius.js组件render部分的列表显示抽离了出来单独构成一个usercard.js公共组件, 由Boss和Genius组件通过props属性传递从后端获取的genius/boss用户列表数组来渲染页面列表部分的内容, 需要注意的是, 由于boss身份用户相比genius身份用户多出了money和company这两条信息, 所以需要根据不同情况改变列表中card的结构;
+
+
+修改boss.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {getUserList} from '../../redux/chatuser.redux'
+import UserCard from '../usercard/usercard'
+
+@connect(
+  state=>state.chatuser,
+  {getUserList}
+)
+class Boss extends React.Component{
+  componentDidMount(){
+    this.props.getUserList('genius')
+  }
+  render(){
+    return <UserCard userlist={this.props.userlist}/>
+  }
+}
+
+export default Boss
+
+￼
+
+￼
+
+
+(2)个人中心信息展示;
+
+在src/component/user中新建user.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {Result, List, WhiteSpace} from 'antd-mobile'
+
+@connect(
+  state=>state.user
+)
+class User extends React.Component{
+  render(){
+    return this.props.user ? (
+      <div>
+        <Result
+          img={<img src={require(`../img/${this.props.avatar}.png`)} style={{width:50}} alt='' />}
+          title={this.props.user}
+          message={this.props.type=='boss' ? this.props.company:null}
+        />
+        <List renderHeader={()=>'简介'}>
+          <List.Item
+            multipleLine
+          >
+            {this.props.title}
+            {this.props.desc.split('\n').map(m=>(
+              <List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
+            ))}
+            {this.props.money?<List.Item.Brief>薪资:{this.props.money}</List.Item.Brief>:null}
+          </List.Item>
+        </List>
+        <WhiteSpace></WhiteSpace>
+        <List>
+          <List.Item>退出登录</List.Item>
+        </List>
+      </div>
+    ):null
+  }
+}
+
+export default User
+
+上例中, 在List.Item组件中设置multipleLine属性的作用是, 当List.Item中内容部分超过一行时可以换行显示, 如果不设置就会直接将超出一行部分使用’…’显示; 
+
+关于antd-mobile中Result组件相关内容, 可以参考:
+https://mobile.ant.design/components/result/
+
+
+修改dashboard.js;
+……
+import User from '../..component/user/user'
+……
+      {
+        path:'/me',
+        text:'我',
+        icon:'user',
+        title:'个人中心',
+        component: User,
+      }
+……
+
+￼
+￼
+
+
+(3)用户注销功能;
+
+安装browser-cookies;
+
+npm install browser-cookies —save
+
+￼
+
+browser-cookies的API, 可以参考:
+https://github.com/voltace/browser-cookies
+
+
+修改component/user/user.js;
+……
+import browserCookie from 'browser-cookies'
+……
+  constructor(props){
+    super(props)
+    this.logout = this.logout.bind(this)
+  }
+  logout(){
+    const alert = Modal.alert
+            alert('注销', '是否继续退出?', [
+              { text: 'Cancel' },
+              { text: 'Ok', onPress: () => {
+      browserCookie.erase('userid')
+      window.location.href = window.location.href
+              }},
+            ])
+  }
+……
+<List.Item onClick = {this.logout}>退出登录</List.Item>
+……
+
+上例中, 使用了antd-mobile的Modal组件在用户点击退出登录时弹框向用户确认是否继续退出; 在用户确认退出后, 会清除相关cookie并使用window.location.href = window.location.href这样的方式来强制刷新页面, 这种刷新页面的方式显然不符合单页面应用的规范, 之后会加以优化, 以不刷新页面的方式来完成, 基本是通过清空redux的state中相关内容并跳转到指定页面来实现的; 
+
+这里还需要理解的一点是, 很明显在这个项目中是通过清除前端的指定cookie来达到登出效果的, 因为后端只是简单地检查前端是否传递过来携带用户id的cookie来判断用户是否已经处于登录状态了(这种方式显然不够安全, 一旦用户id泄露, 前端就可以伪造cookie来访问需要登录权限的资源), 而在之前的Nodejs+ejs和Backbone项目中后端都是通过session来管理用户登录状态的, 也就是说在用户成功登录后会为其在session中保存一个独有的sessionid, 并且将sessionid放入cookie传递给前端, 前端再次访问时就会将这个带有sessionid的cookie传递过来, 后端检查这个sessionid是否存在于其session中(会存在过期的情况), 如果有就认为用户已经登录, 如果没有就视为未登录; 所以在这种通过session保存用户登录状态的项目中, logout并不是简单将前端指定cookie删除, 而是需要通知后端将对应sessionid在session中删除, 之后就算前端访问时传递了带有sessionid的cookie, 由于此sessionid已经不存在于后端的session中了, 所以也视为未登录; 
+
+补充:
+1.使用document.cookie可以获取当前页面的所有cookie;
+￼
+
+
+特别注意:
+这里有一个坑, 需要非常小心, antd-mobile中的TabBar组件默认高度为100%, 这样就会遮挡dashboard组件中之前的所有其它元素, 导致被遮挡元素无法触发点击事件, 所以需要修改.am-tab-bar的css属性: z-index;
+￼
+￼
+
+需要修改index.css;
+……
+.am-tab-bar{
+  position: fixed;
+  bottom:0;
+  width:100%;
+  z-index:-1;
+}
+……
+
+关于antd-mobile中Modal的用法可以参考:
+https://mobile.ant.design/components/modal/
+
+￼
+
+
+(4)注销同时清空redux中数据, 并做页面跳转;
+
+修改redux/user.redux.js;
+……
+const LOGOUT = 'LOGOUT'
+……
+  case LOGOUT:
+      return {...initState, redirectTo:'/login'}
+……
+export function logoutSubmit(){
+  return {type:LOGOUT}
+}
+……
+
+
+修改user/user.js;
+……
+import {logoutSubmit} from '../../redux/user.redux'
+……
+  logout(){
+    const alert = Modal.alert
+            alert('注销', '是否继续退出?', [
+              { text: 'Cancel' },
+              { text: 'Ok', onPress: () => {
+        browserCookie.erase('userid')
+        this.props.logoutSubmit()
+              }},
+            ])
+  }
+  render(){
+
+    return this.props.user ? (
+      <div>
+        <Result
+          img={<img src={require(`../img/${this.props.avatar}.png`)} style={{width:50}} alt='' />}
+          title={this.props.user}
+          message={this.props.type=='boss' ? this.props.company:null}
+        />
+        <List renderHeader={()=>'简介'}>
+          <List.Item
+            multipleLine
+          >
+            {this.props.title}
+            {this.props.desc.split('\n').map(m=>(
+              <List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
+            ))}
+            {this.props.money?<List.Item.Brief>薪资:{this.props.money}</List.Item.Brief>:null}
+          </List.Item>
+        </List>
+        <WhiteSpace></WhiteSpace>
+        <List>
+          <List.Item onClick = {this.logout}>退出登录</List.Item>
+        </List>
+      </div>
+    ):<div>{this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}</div>
+  }
+……
+
+上例中需要注意的是, 在render方法中的三目运算符的’:’后的返回值不能直接设置为:
+{this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}, 会报错:
+￼
+
+这是由于如果直接设置为:{…}相当于最后在render方法中返回了一个对象: return {…}, 所以需要使用<div></div>包裹起来, 返回一个react元素对象;
+当然, 也可以直接设置为: this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null
+
+参考:
+https://stackoverflow.com/questions/44849206/react-js-syntax-error-this-is-a-reserved-word-in-render-function
+
+
+登出后跳转到’/login’页面, 并且redux中的相关内容被清空;
+￼
+
+但是此时在login页面会报错: 
+Warning: You tried to redirect to the same route you're currently on: "/login"
+
+这是由于login.js中存在:
+{this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}
+
+需要优化为:
+{this.props.redirectTo&&this.props.redirectTo!='/login'?<Redirect to={this.props.redirectTo} />:null}
+
+
+
+(5)使用高阶组件优化登录, 注册等页面的输入功能;
+
+之前在login.js和register.js中存在:
+  handleChange(key,val){
+    this.setState({
+      [key]:val 
+    })
+  }
+
+这样的方法;
+
+在bossinfo.js和geniusinfo.js中存在:
+  onChange(key,val){
+    this.setState({
+      [key]:val
+    })
+  }
+这样类似的方法;
+
+那么怎样才能减少这样重复冗余的方法使用, 将这一功能抽象出来呢(有些类似JAVA中类实现某个抽象的接口)?
+
+
+在Babel中转换一个React组件, 可以发现其实组件就是通过定义一个函数(或者说一个类)来实现的:
+￼
+
+参考:
+https://babeljs.io 
+
+
+也就是说所有的React组件在本质上就是一个函数, 而高阶组件的基础就是函数式编程, 这里来实现两个简单的高阶组件:
+
+<1>属性代理功能的高阶组(高阶组件还有一种功能是反向继承);
+class Hello extends React.Component{
+  render(){
+    return <h2>hello</h2>
+  }
+}
+
+function WrapperHello(comp){
+  class WrapComp extends React.Component{
+    render(){
+      return (<div>
+        <p>这是HOC(Higher-order component)高阶组件的特有元素</p>
+        <Comp {…this.props}></Comp>
+      </div>)
+    }
+  }
+  return WrapComp
+}
+
+Hello = WrapperHello(Hello)
+
+上例中, 通过WrapperHello这个高阶组件, 就可以获取一个封装后的具有属性代理功能的Hello组件;
+类似: <Comp {…this.props}></Comp> 这样传递属性的方式又称为属性穿透;
+
+react-redux的connect就属于高阶组件的使用, 上例中的Hello = WrapperHello(Hello)完全可以改为通过:
+
+@WrapperHello
+class Hello extends React.Component{
+  render(){
+    return <h2>hello</h2>
+  }
+}
+
+这样的方式来封装Hello组件;
+
+
+<2>反向继承功能的高阶组件;
+class Hello extends React.Component{
+  componentDidMount(){
+      console.log('组件的生命周期')
+    }
+  render(){
+    return <h2>hello</h2>
+  }
+}
+
+function WrapperHello(Comp){
+  class WrapComp extends Comp{
+    componentDidMount(){
+      console.log(‘高阶组件更新的生命周期’)
+    }
+  }
+  return WrapComp
+}
+Hello = WrapperHello(Hello)
+
+上例中, 加载封装后的Hello组件后在控制台显示:
+高阶组件更新的生命周期
+
+
+在src/component/hoc-form中新建一个hoc-form.js;
+
+import React from 'react'
+
+export default function hocForm(Comp){
+  return class WrapperComp extends React.Component{
+    constructor(props){
+      super(props)
+      this.state = {}
+      this.handleChange = this.handleChange.bind(this)
+    }
+    handleChange(key,val){
+      this.setState({
+        [key]:val 
+      })
+    }
+    render(){
+      return <Comp handleChange={this.handleChange} state={this.state} {...this.props}></Comp>
+    }
+
+  }
+}
+
+
+修改login.js;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+import {Redirect} from 'react-router-dom'
+import {connect} from 'react-redux'
+import {login} from '../../redux/user.redux'
+import hocForm from '../../component/hoc-form/hoc-form'
+
+@connect(
+  state=>state.user,
+  {login}
+)
+@hocForm
+class Login extends React.Component{
+  constructor(props){
+    super(props)
+    this.register = this.register.bind(this)
+    this.handleLogin = this.handleLogin.bind(this)
+  }
+
+  register(){
+    this.props.history.push('/register')
+  }
+  handleLogin(){
+    this.props.login(this.props.state)
+  }
+  render(){
+    return (
+      <div>
+        {this.props.redirectTo&&this.props.redirectTo!='/login'?<Redirect to={this.props.redirectTo} />:null}
+        <Logo></Logo>
+        <WingBlank>
+          <List>
+            {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+            <InputItem onChange={v=>this.props.handleChange('user',v)}>用户</InputItem>
+            <InputItem type='password' onChange={v=>this.props.handleChange('pwd',v)}>密码</InputItem>
+          </List>
+          <WhiteSpace />
+          <Button onClick={this.handleLogin} type="primary">登录</Button>
+          <WhiteSpace />
+          <Button onClick={this.register} type="primary">注册</Button>
+        </WingBlank>
+      </div>
+    )
+  }
+}
+
+export default Login
+
+上例中, 在Login组件上使用了hocForm高阶组件进行封装, 相应地, 在Login组件中需要改为在props中获取state和handleChange方法; 
+
+
+修改register.js;
+
+import React from 'react'
+import Logo from '../../component/logo/logo'
+import {List, InputItem, Radio, WingBlank, WhiteSpace, Button} from 'antd-mobile'
+import {Redirect} from 'react-router-dom'
+import {connect} from 'react-redux'
+import {register} from '../../redux/user.redux'
+import hocForm from '../../component/hoc-form/hoc-form'
+
+@connect(
+  state=>state.user,
+  {register}
+)
+@hocForm
+class Register extends React.Component{
+  constructor(props){
+    super(props)
+    this.handleRegister = this.handleRegister.bind(this)
+  }
+  componentDidMount(){
+    this.props.handleChange('type','genius')
+  }
+  handleRegister(){
+    this.props.register(this.props.state)
+  }
+  render(){
+    const RadioItem = Radio.RadioItem
+    return (
+      <div>
+        {this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null}
+        <Logo></Logo>
+        <List>
+          {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+          <InputItem onChange={v=>this.props.handleChange('user',v)}>用户名</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.props.handleChange('pwd',v)}>密码</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+          onChange={v=>this.props.handleChange('repeatpwd',v)}>确认密码</InputItem>
+          <WhiteSpace />
+          <RadioItem checked={this.props.state.type=='genius'} 
+          onChange={()=>this.props.handleChange('type','genius')}>
+            牛人
+          </RadioItem>
+          <RadioItem checked={this.props.state.type=='boss'}
+          onChange={()=>this.props.handleChange('type','boss')}>
+            BOSS
+          </RadioItem>
+          <WhiteSpace />
+          <Button type="primary" onClick={this.handleRegister}>注册</Button>
+        </List>
+      </div>
+    )
+  }
+}
+
+export default Register
+
+上例中, 由于原先Register组件的state有一个初始值来默认选中’牛人’单选项, 所以这里在删除了Register组件的state属性后, 添加了一个componentDidMount钩子函数来通知Register的高阶组件来设置这个初始值;
+
+
+修改bossinfo.js;
+
+import React from 'react'
+import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
+import AvatarSelector from '../../component/avatar-selector/avatar-selector'
+import {connect} from 'react-redux'
+import {update} from '../../redux/user.redux'
+import {Redirect} from 'react-router-dom'
+import hocForm from '../../component/hoc-form/hoc-form'
+
+@connect(
+  state=>state.user,
+  {update}
+)
+@hocForm
+class BossInfo extends React.Component{
+  constructor(props){
+    super(props)
+    // this.state = {
+    //  title:'',
+    //  company:'',
+    //  money:'',
+    //  desc:''
+    // }
+  }
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+
+    return (
+      <div>
+        {redirect&&redirect!==path?<Redirect to={this.props.redirectTo}/>:null}
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+        <AvatarSelector
+          selectAvatar={(imgname)=>{
+            this.props.handleChange('avatar', imgname)
+          }}
+        ></AvatarSelector> 
+        <InputItem onChange={(v)=>this.props.handleChange('title',v)}>
+          招聘职位
+        </InputItem>
+        <InputItem onChange={(v)=>this.props.handleChange('company',v)}>
+          公司名称
+        </InputItem>
+        <InputItem onChange={(v)=>this.props.handleChange('money',v)}>
+          职位薪资
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.props.handleChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='职位要求'
+        >
+        </TextareaItem>
+        <Button 
+          onClick={()=>{
+            this.props.update(this.props.state)
+          }}
+          type='primary'>提交</Button>
+      </div>
+    )
+  }
+
+}
+
+export default BossInfo
+
+上例中, 需要将传入AvatarSelector组件的selectAvatar方法做修改, 不能使用this.setState方法了, 因为BossInfo组件的state属性已经删除了, 需要使用this.props.handleChange方法来代替;
+
+
+修改geniusinfo.js;
+
+import React from 'react'
+import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
+import AvatarSelector from '../../component/avatar-selector/avatar-selector'
+import {connect} from 'react-redux'
+import {update} from '../../redux/user.redux'
+import {Redirect} from 'react-router-dom'
+import hocForm from '../../component/hoc-form/hoc-form'
+
+@connect(
+  state=>state.user,
+  {update}
+)
+@hocForm
+class GeniusInfo extends React.Component{
+  constructor(props){
+    super(props)
+    // this.state = {
+    //  title:'',
+    //  desc:''
+    // }
+  }
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+
+    return (
+      <div>
+        {redirect&&redirect!==path?<Redirect to={this.props.redirectTo}/>:null}
+        <NavBar mode="dark">牛人完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+        <AvatarSelector
+          selectAvatar={(imgname)=>{
+            this.props.handleChange('avatar',imgname)}}
+        ></AvatarSelector> 
+        <InputItem onChange={(v)=>this.props.handleChange('title',v)}>
+          求职岗位
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.props.handleChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='个人简介'
+        >
+        </TextareaItem>
+        <Button 
+          onClick={()=>{
+            this.props.update(this.props.state)
+          }}
+          type='primary'>提交</Button>
+      </div>
+    )
+  }
+
+}
+
+export default GeniusInfo
+
+
+
+10.聊天详情页面;
+
+(1)socket.io介绍;
+
+socket.io是基于事件的实时双向通信库(前后端通过事件来进行双向通信), 不同于Ajax(基于http协议), 它是基于双向通信协议: websocket协议;
+
+￼
+
+
+(2)安装socket.io库;
+
+$ npm install socket.io —save
+$ npm install socket.io-client —save
+
+
+(3)修改index.css(为聊天页面添加一些基本样式);
+……
+#chat-page .chat-me .am-list-extra{
+  flex-basis:auto;
+}
+#chat-page .chat-me .am-list-content{
+  padding-right: 15px;
+  text-align: right;
+}
+.stick-footer{
+  z-index: 10;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+上例中, .stick-footer是聊天输入框的样式;
+
+
+(4)修改src/index.js;
+……
+import Chat from './component/chat/chat' 
+……
+<Route path='/chat/:user' component={Chat}></Route>
+……
+
+上例中, 路由的path设置为’/chat/:user’, 是因为需要知道当前在和哪个用户聊天;
+
+
+(5)在component/chat中新建chat.js;
+
+import React from 'react'
+
+class Chat extends React.Component{
+
+  render(){
+    console.log(this.props)
+    return (
+      <h2>chat with user:{this.props.match.params.user}</h2>
+    )
+  }
+}
+
+export default Chat
+
+
+(6)修改component/usercard/usercard.js;
+
+import React from 'react'
+import PropTypes from 'prop-types'
+import {Card, WhiteSpace, WingBlank} from 'antd-mobile'
+import {withRouter} from 'react-router-dom'
+
+@withRouter
+class UserCard extends React.Component{
+  static propTypes = {
+    userlist: PropTypes.array.isRequired
+  }
+  handleChat(v){
+    this.props.history.push(`/chat/${v.user}`)
+  }
+  render(){
+    return (
+      <WingBlank>
+        <WhiteSpace></WhiteSpace>
+        {this.props.userlist.map(v=>(
+          v.avatar ? 
+          <Card key={v._id} onClick={()=>this.handleChat(v)}>
+            <Card.Header
+              title = {v.user}
+              thumb = {require(`../img/${v.avatar}.png`)}
+              thumbStyle = {{width:40}}
+              extra = {<span>{v.title}</span>}
+            >
+            </Card.Header>
+            <Card.Body>
+              {v.type=='boss'?<div>公司:{v.company}</div>:null}
+              {v.desc.split('\n').map(d=>(
+                <div key={d+Math.random()}>{d}</div>
+              ))}
+              {v.type=='boss'?<div>薪资:{v.money}</div>:null}
+            </Card.Body>
+          </Card> : null
+        ))}
+      </WingBlank>
+    )
+  }
+}
+
+export default UserCard
+
+
+上例在点击song2这个usercard后会跳转到对应的chat页面:
+￼
+
+￼
+
+
+(7)修改server/server.js;
+
+const express = require('express')
+const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
+
+const app = express();
+//work with express
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+
+io.on('connection', function(socket){
+  console.log('user login')
+})
+
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+上例中, 将socket.io与express关联了起来, 如果是仅仅使用socket.io, 只需要const io = require('socket.io’)即可;
+将socket.io与express配合使用之后, 9093端口不仅可以监听http协议的请求, 还可以监听websocket协议的请求, 并且由io来对接收到的websocket请求做进一步处理; 
+
+
+(8)修改chat.js;
+
+import React from 'react'
+import io from 'socket.io-client'
+
+class Chat extends React.Component{
+  componentDidMount(){
+    const socket = io('ws://localhost:9093')
+  }
+  render(){
+    console.log(this.props)
+    return (
+      <h2>chat with user:{this.props.match.params.user}</h2>
+    )
+  }
+}
+
+export default Chat
+
+上例中, 由于目前在前端发起的ws请求是属于跨域的, 所以这里需要手动指定连接地址;
+重新访问’http://localhost:3000/chat/song2’后, 服务器端控制台显示:
+user login
+
+
+(9)前后端实时显示消息;
+
+修改server/model.js;
+……
+const models = {
+  user:{
+    'user':{type:String, require:true},
+    'pwd':{type:String, require:true},
+    'type':{type:String, require:true},
+    //用户头像
+    'avatar':{type:String},
+    //个人简介
+    'desc':{type:String},
+    //职位名
+    'title':{type:String},
+    //Boss需要的两个字段
+    'company':{type:String},
+    'money':{type:String}
+  },
+  chat:{
+    'chatid': {'type':String, 'require':true},
+    'from':{'type':String, 'require': true},
+    'to':{'type':String, 'require': true},
+    'read':{'type':Boolean, default:false},
+    'content':{'type':String, 'require':true, 'default':''},
+    'create_time': {'type':Number, 'default': new Date().getTime()}
+  }
+}
+……
+
+上例中, 在chat集合中设置的chatid字段是为了之后无须根据from和to字段来进行多次查询而创建的, 它保存的内容其实就是简单地将from和to中保存的_id值使用’_’进行连接得到的字符串; 
+
+
+修改server/server.js;
+
+const express = require('express')
+const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
+const model = require('./model')
+const Chat = model.getModel('chat')
+
+const app = express();
+//work with express
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+
+io.on('connection', function(socket){
+  socket.on('sendmsg', function(data){
+    const {from, to, msg} = data
+    const chatid = [from, to].sort().join('_')
+    Chat.create({chatid, from, to, content:msg}, function(err, doc){
+      delete doc._doc.__v
+      io.emit('recvmsg', Object.assign({},doc._doc))
+    })
+  })
+})
+
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+
+在src/redux中新建chat.redux.js;
+
+import axios from 'axios'
+import io from 'socket.io-client'
+const socket = io('ws://localhost:9093')
+
+//聊天列表
+const MSG_LIST = 'MSG_LIST'
+//读取信息
+const MSG_RECV = 'MSG_RECV'
+//标识已读
+const MSG_READ = 'MSG_READ'
+
+const initState = {
+  chatmsg:[],
+  unread:0
+}
+
+//reducer
+export function chat(state=initState,action){
+  switch(action.type){
+    case MSG_LIST:
+      return {...state, chatmsg:action.payload, unread:action.payload.filter(v=>!v.read).length}
+    case MSG_RECV:
+      return {...state, chatmsg:[...state.chatmsg, action.payload], unread:state.unread+1}
+    // case MSG_READ:
+
+    default:
+      return state
+  }
+}
+
+//action creator
+function msgList(msgs){
+  return {type:MSG_LIST, payload:msgs}
+}
+function msgRecv(msg){
+  return {type:MSG_RECV, payload:msg}
+}
+
+export function recvMsg(){
+  return dispatch=>{
+    socket.on('recvmsg', function(data){
+      dispatch(msgRecv(data))
+    })
+  }
+}
+
+export function sendMsg({from, to, msg}){
+  return dispatch=>{
+    socket.emit('sendmsg', {from, to, msg})
+  }
+}
+
+export function getMsgList(){
+  return dispatch=>{
+    axios.get('/user/getmsglist')
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          dispatch(msgList(res.data.msgs))
+        }
+      })
+  }
+}
+
+上例中, recvMsg方法并非发布action的方法, 但是由于react-redux的connect方法第二个参数的格式限制, 所以只能构造成上面的形式, 它的作用是当用户发送一条消息时, 通过客户端socket对象向服务器端发送一个’sendmsg’请求事件, 服务器接收到消息后将会在数据库中新建一条消息记录, 并且在全局范围内(当前server连接的所有客户端socket)发送一个’recvmsg’请求(其实只需要对这条消息的发送者和接收者广播’recvmsg’请求即可, 之后应该会优化);
+其实这个recvMsg方法就功能上来说无须设置在chat.redux.js中, 直接在chat.js中用户点击发送时在客户端socket对象上emit ’sendmsg’请求事件效果也是相同的, 但是出于应用中对数据的发送以及获取的功能最好都设置在redux相关的模块中(整体概念更加清晰), 所以就在chat.redux.js中设置了sendMsg方法;
+
+通过上例还可以发现, 与服务器端建立连接的客户端socket设置在了chat.redux.js中, 也就是说, 当应用加载时就已经与服务器建立了基于websocket的双向通信连接了(server端也同时开始监听从客户端发送的'sendmsg’事件了), 之后当chat.js模块被加载(Chat组件被加载), 其componentDidMount钩子函数中执行了getMsgList和recvMsg这两个发布action的函数, 第一个方法是为了向后端发送请求获取数据库中的一个消息列表(满足某些条件的所有消息记录组成的数组), 得到后端返回的数据后将更新redux的state.chat.chatmsg数组属性和state.chat.unread属性, 然后根据这些数据来渲染页面; 第二个方法用来在客户端socket对象上注册一个’recvmsg’请求事件的监听, 也就是说一旦客户端接收到了服务器端广播的一条’recvmsg’请求, 就会将接收到的消息数据更新到redux中, 这条消息会被添加到当前state.chat中chatmsg属性数组的最后(同时unread属性也会更新), 进而Chat组件会重新根据更新的数据渲染页面, 达到了实时更新消息的目的; 
+
+这里有一个问题需要结合下面的chat.js来一起看, 当Chat组件第一次加载的时候会自动在socket上注册一次对’recvmsg’请求事件的监听, 那么当Chat组件卸载后(由于用户改变路由等原因)这个socket对象的监听任务还是存在的, 这就会引发一个问题: 当下一次Chat组件重新被加载时又会执行一次注册’recvmsg’请求事件的监听, 那么也就是说此时当客户端收到了来自服务器端的’recvmsg’请求后, 会连续执行两遍处理函数, 也就是将收到的同一条消息记录放入state.chat.chatmsg数组两次, 并且state.chat.unread也增加了两次; 
+解决办法可以是在Chat组件的componentWillUnmount钩子函数中注销socket对象上对’recvmsg’请求事件的监听, 不过需要注意的是, socket对象的注册/注销函数的第二个参数的句柄(指针, 地址)必须是相同的, 例子:
+
+    const socketHandler = function(data){
+      dispatch(msgRecv(data))
+    }
+    socket.on('recvmsg', socketHandler)
+    socket.removeEventListener('recvmsg', socketHandler)
+
+不过, 之后会实现一个未读消息条数实时显示在消息图标上的这一功能, 如果这一功能依赖redux中state.chat.unread来更新的话, 那么这个socket上注册的对'recvmsg’请求事件的监听就不能随便取消, 因为需要通过它来实时更新state.chat.unread;
+于此相关的另一个问题是, 如果用户打开应用, 但是并没有进入chat页面, 也就是Chat组件未加载, 此时客户端socket对象还没有监听来自服务器端的’recvmsg’请求事件, 那么在这种情况下, 未读消息条数实时显示在消息图标上的这一功能又应该通过什么方式实现呢?
+
+
+修改chat.js;
+
+import React from 'react'
+import {List, InputItem} from 'antd-mobile'
+import {connect} from 'react-redux'
+import {getMsgList, sendMsg, recvMsg} from '../../redux/chat.redux'
+
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg}
+)
+class Chat extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {text:''}
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    this.props.recvMsg()
+  }
+  handleSubmit(){
+    const from = this.props.user._id
+    const to = this.props.match.params.user
+    const msg = this.state.text
+    this.props.sendMsg({from, to, msg})
+    this.setState({text:''})
+  }
+  render(){
+    return (
+      <div className='stick-footer'>
+        <List>
+          <InputItem
+            placeholder='请输入'
+            value={this.state.text}
+            onChange={v=>{
+              this.setState({text:v})
+            }}
+            extra={<span onClick={()=>this.handleSubmit()}>发送</span>}
+          ></InputItem>
+        </List>
+      </div>
+    )
+  }
+}
+
+export default Chat
+
+通过上例可以发现, 在Chat组件中并不会通过handleSubmit函数直接在页面中添加用户发送出的消息内容, 而是将内容发送到服务器端存入数据库后向相关客户端socket对象广播消息的方式来更新客户端redux中相关数据, 进而重新渲染消息页面显示最新的消息;
+上例中InputItem组件内的value={this.state.text}属性设置其实可以省略;
+
+
+修改src/reducer.js;
+……
+import {chat} from './redux/chat.redux'
+
+export default combineReducers({user, chatuser, chat})
+
+
+修改server/user.js;
+……
+const Chat = model.getModel('chat')
+……
+Router.get('/getmsglist', function(req,res){
+  const user = req.cookies.userid
+  Chat.find({'$or':[{from:user},{to:user}]},  _filter, function(err, doc){
+    if(!err){
+      return res.json({code:0, msgs:doc})
+    }
+  })
+})
+……
+
+
+修改usercard/usercard.js;
+……
+  handleChat(v){
+    this.props.history.push(`/chat/${v._id}`)
+  }
+……
+<Card key={v._id} onClick={()=>this.handleChat(v)}>
+……
+
+在用户来到与某个其他用户的chat页面后, redux中的state.chat.chatmsg将更新:
+￼
+
+当用户发送了一条消息后, 这条消息将会被添加到redux的state.chat.chatmsg数组的最后, 同时state.chat.unread也会递增:
+￼
+
+
+(10)优化chat页面;
+
+修改chat.js;
+
+import React from 'react'
+import {List, InputItem, NavBar} from 'antd-mobile'
+import {connect} from 'react-redux'
+import {getMsgList, sendMsg, recvMsg} from '../../redux/chat.redux'
+
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg}
+)
+class Chat extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {text:''}
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    this.props.recvMsg()
+  }
+  handleSubmit(){
+    const from = this.props.user._id
+    const to = this.props.match.params.user
+    const msg = this.state.text
+    this.props.sendMsg({from, to, msg})
+    this.setState({text:''})
+  }
+  render(){
+    const user = this.props.match.params.user
+    const Item = List.Item
+    return (
+      <div id='chat-page'>
+        <NavBar mode='dark'>
+          {user}
+        </NavBar>
+
+        {this.props.chat.chatmsg.map(v=>{
+          return v.from == user?(
+            <List key={v._id}>
+              <Item
+              >{v.content}</Item>
+            </List>
+          ):(
+            <List key={v._id}>
+              <Item 
+                extra={'avatar'}
+                className='chat-me'
+              >{v.content}</Item>
+            </List>
+          )
+        })}
+        <div className='stick-footer'>
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              extra={<span onClick={()=>this.handleSubmit()}>发送</span>}
+            ></InputItem>
+          </List>
+        </div>
+      </div>
+    )
+  }
+}
+
+export default Chat
+
+上例中, 暂时还未实现用户头像显示功能, 对于用户自己发出的消息需要显示在右侧, 需要添加css class ’chat-ma’, 具体参考src/index.css;
+
+
+在不同浏览器中以两个不同用户登录后聊天:
+￼
 
 
 
