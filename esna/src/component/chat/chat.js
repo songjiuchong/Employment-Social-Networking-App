@@ -1,7 +1,8 @@
 import React from 'react'
-import {List, InputItem, NavBar} from 'antd-mobile'
+import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
 import {connect} from 'react-redux'
 import {getMsgList, sendMsg, recvMsg} from '../../redux/chat.redux'
+import {getChatId} from '../../util'
 
 @connect(
 	state=>state,
@@ -10,11 +11,22 @@ import {getMsgList, sendMsg, recvMsg} from '../../redux/chat.redux'
 class Chat extends React.Component{
 	constructor(props){
 		super(props)
-		this.state = {text:''}
+		this.state = {
+			text:'',
+			showEmoji:false
+		}
 	}
 	componentDidMount(){
-		this.props.getMsgList()
-		this.props.recvMsg()
+		if(!this.props.chat.chatmsg.length){
+			this.props.getMsgList()
+			this.props.recvMsg()
+		}
+	}
+	//修正antd-mobile的Grid组件Carousel的问题
+	fixCarousel(){
+		setTimeout(function(){
+			window.dispatchEvent(new Event('resize'))
+		},0)
 	}
 	handleSubmit(){
 		const from = this.props.user._id
@@ -24,24 +36,44 @@ class Chat extends React.Component{
 		this.setState({text:''})
 	}
 	render(){
-		const user = this.props.match.params.user
+
+		const emoji = '😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 🙂 🤗 🤔 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 🙁 😖 😞 😟 😤 😢 😭'
+			.split(' ').filter(v=>v).map(v=>({text:v}))
+
+		const userid = this.props.match.params.user
 		const Item = List.Item
+		const users = this.props.chat.users
+
+		if(!users[userid]){
+			return null
+		}
+
+		const chatid = getChatId(userid, this.props.user._id)
+		const chatmsgs = this.props.chat.chatmsg.filter(v=>v.chatid == chatid)
 		return (
 			<div id='chat-page'>
-				<NavBar mode='dark'>
-					{user}
+				<NavBar 
+					mode='dark'
+					icon={<Icon type='left'/>}
+					onLeftClick={()=>{
+						this.props.history.goBack()
+					}}
+				>
+					{users[userid].name}
 				</NavBar>
 
-				{this.props.chat.chatmsg.map(v=>{
-					return v.from == user?(
+				{chatmsgs.map(v=>{
+					const avatar = require(`../img/${users[v.from].avatar}.png`)
+					return v.from == userid?(
 						<List key={v._id}>
 							<Item
+								thumb={avatar}
 							>{v.content}</Item>
 						</List>
 					):(
 						<List key={v._id}>
 							<Item 
-								extra={'avatar'}
+								extra={<img src={avatar}/>}
 								className='chat-me'
 							>{v.content}</Item>
 						</List>
@@ -55,9 +87,30 @@ class Chat extends React.Component{
 							onChange={v=>{
 								this.setState({text:v})
 							}}
-							extra={<span onClick={()=>this.handleSubmit()}>发送</span>}
+							extra={[<span 
+										key='1'
+										style={{marginRight:15}}
+										onClick={()=>{
+											this.setState({showEmoji:!this.state.showEmoji})
+											this.fixCarousel()
+										}}
+									>😀</span>,
+									<span key='2' onClick={()=>this.handleSubmit()}>发送</span>
+							]}
 						></InputItem>
 					</List>
+					{this.state.showEmoji?
+						<Grid
+						data={emoji}
+						columnNum={9}
+						carouselMaxRow={4}
+						isCarousel={true}
+						onClick={el=>{
+							this.setState(
+								{text:this.state.text+el.text}
+							)
+						}}
+					/>:null}
 				</div>
 			</div>
 		)

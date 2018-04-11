@@ -21,10 +21,6 @@ import reducers from './reducer'
 import './config'
 import './index.css'
 
-function Boss(){
-	return <h2>BOSS page</h2>
-}
-
 const store = createStore(reducers, compose(
 	applyMiddleware(thunk),
 	window.devToolsExtension?window.devToolsExtension():f=>f

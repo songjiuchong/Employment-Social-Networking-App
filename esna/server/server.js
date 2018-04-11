@@ -20,8 +20,10 @@ io.on('connection', function(socket){
 			// console.log('///////////////')
 			// console.log(Object.assign({},doc._doc))
 			
-			delete doc._doc.__v
-			io.emit('recvmsg', Object.assign({},doc._doc))
+			if(!err){
+				delete doc._doc.__v
+				io.emit('recvmsg', Object.assign({},doc._doc))
+			}
 		})
 	})
 })
