@@ -38,9 +38,12 @@ class User extends React.Component{
 						multipleLine
 					>
 						{this.props.title}
-						{this.props.desc.split('\n').map(m=>(
-							<List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
-						))}
+						{this.props.desc?
+							this.props.desc.split('\n').map(m=>(
+									<List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
+							))
+							:<List.Item.Brief>待更新</List.Item.Brief>
+						}
 						{this.props.money?<List.Item.Brief>薪资:{this.props.money}</List.Item.Brief>:null}
 					</List.Item>
 				</List>

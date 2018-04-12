@@ -1,12 +1,12 @@
 import React from 'react'
 import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
 import {connect} from 'react-redux'
-import {getMsgList, sendMsg, recvMsg} from '../../redux/chat.redux'
+import {getMsgList, sendMsg, recvMsg, listenerSet} from '../../redux/chat.redux'
 import {getChatId} from '../../util'
 
 @connect(
 	state=>state,
-	{getMsgList, sendMsg, recvMsg}
+	{getMsgList, sendMsg, recvMsg, listenerSet}
 )
 class Chat extends React.Component{
 	constructor(props){
@@ -17,9 +17,10 @@ class Chat extends React.Component{
 		}
 	}
 	componentDidMount(){
-		if(!this.props.chat.chatmsg.length){
-			this.props.getMsgList()
+		this.props.getMsgList()
+		if(!this.props.chat.listenerset){
 			this.props.recvMsg()
+			this.props.listenerSet()
 		}
 	}
 	//修正antd-mobile的Grid组件Carousel的问题

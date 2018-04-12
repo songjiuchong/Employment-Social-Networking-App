@@ -27,9 +27,12 @@ class UserCard extends React.Component{
 						</Card.Header>
 						<Card.Body>
 							{v.type=='boss'?<div>公司:{v.company}</div>:null}
-							{v.desc.split('\n').map(d=>(
-								<div key={d+Math.random()}>{d}</div>
-							))}
+							{v.desc?
+								v.desc.split('\n').map(d=>(
+									<div key={d+Math.random()}>{d}</div>
+								))
+								:null
+							}
 							{v.type=='boss'?<div>薪资:{v.money}</div>:null}
 						</Card.Body>
 					</Card> : null

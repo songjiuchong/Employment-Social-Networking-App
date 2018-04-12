@@ -3,6 +3,7 @@ const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 const model = require('./model')
 const Chat = model.getModel('chat')
+const User = model.getModel('user')
 
 const app = express();
 //work with express
@@ -21,8 +22,17 @@ io.on('connection', function(socket){
 			// console.log(Object.assign({},doc._doc))
 			
 			if(!err){
-				delete doc._doc.__v
-				io.emit('recvmsg', Object.assign({},doc._doc))
+				User.find({}, function(e,userdoc){
+					let users = {}
+					if(!e){
+						userdoc.forEach(v=>{
+							users[v._id] = {name:v.user, avatar:v.avatar}
+						})
+						delete doc._doc.__v
+						let data = {doc:doc._doc, users}
+						io.emit('recvmsg', Object.assign({},data))
+					}
+				})
 			}
 		})
 	})
