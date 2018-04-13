@@ -5490,7 +5490,7 @@ const models = {
 }
 ……
 
-上例中, 在chat集合中设置的chatid字段是为了之后无须根据from和to字段来进行多次查询而创建的, 它保存的内容其实就是简单地将from和to中保存的_id值使用’_’进行连接得到的字符串; 
+上例中, 在chat集合中设置的chatid字段是为了之后无须根据from和to字段来进行多次查询, 它保存的内容其实就是简单地将from和to中保存的用户_id值使用’_’进行连接得到的字符串; 
 
 
 修改server/server.js;
@@ -5511,8 +5511,10 @@ io.on('connection', function(socket){
     const {from, to, msg} = data
     const chatid = [from, to].sort().join('_')
     Chat.create({chatid, from, to, content:msg}, function(err, doc){
-      delete doc._doc.__v
-      io.emit('recvmsg', Object.assign({},doc._doc))
+      if(!err){
+        delete doc._doc.__v
+        io.emit('recvmsg', Object.assign({},doc._doc))
+      }
     })
   })
 })
@@ -5526,6 +5528,8 @@ app.use('/user',userRouter)
 server.listen(9093,function(){
   console.log('Node app start at port 9093')
 })
+
+上例中, 当服务器端监听到某个客户端socket发来的’sendmsg’请求事件后会使用io.emit方法在全局范围内广播一条’recvmsg’事件并同时将这条消息发送出去, 也就是说无论是否是这条消息直接发送用户或者是接收用户(from/to属性对应的用户)都会在客户端socket对象上接收到这条消息, 那么就现在应用的设计来说, 所有用户的redux.chat中内容都会被更新, 从而所有人的chat页面也都会显示这条消息的内容, 这显然不是最终正确的设计, 之后会进一步优化;
 
 
 在src/redux中新建chat.redux.js;
@@ -5593,10 +5597,10 @@ export function getMsgList(){
   }
 }
 
-上例中, recvMsg方法并非发布action的方法, 但是由于react-redux的connect方法第二个参数的格式限制, 所以只能构造成上面的形式, 它的作用是当用户发送一条消息时, 通过客户端socket对象向服务器端发送一个’sendmsg’请求事件, 服务器接收到消息后将会在数据库中新建一条消息记录, 并且在全局范围内(当前server连接的所有客户端socket)发送一个’recvmsg’请求(其实只需要对这条消息的发送者和接收者广播’recvmsg’请求即可, 之后应该会优化);
-其实这个recvMsg方法就功能上来说无须设置在chat.redux.js中, 直接在chat.js中用户点击发送时在客户端socket对象上emit ’sendmsg’请求事件效果也是相同的, 但是出于应用中对数据的发送以及获取的功能最好都设置在redux相关的模块中(整体概念更加清晰), 所以就在chat.redux.js中设置了sendMsg方法;
+上例中, recvMsg方法并非派发action的方法, 但是由于react-redux的connect方法第二个参数的格式限制, 所以只能构造成上面的形式, 它的作用是当用户发送一条消息时, 通过客户端socket对象向服务器端发送一个’sendmsg’请求事件, 服务器接收到消息后将会在数据库中新建一条消息记录, 并且在全局范围内(当前server连接的所有客户端socket)发送一个’recvmsg’请求(其实只需要对这条消息的发送者和接收者广播’recvmsg’请求即可, 之后应该会优化);
+虽然这个recvMsg方法就功能上来说无须设置在chat.redux.js中, 直接在chat.js中用户点击发送时在客户端socket对象上emit ’sendmsg’请求事件效果也是相同的, 但是出于应用中对数据向后端的发送以及获取的功能最好都设置在redux相关的模块中(整体概念更加清晰), 并且由于客户端socket对象本身设置在chat.redux.js模块中, 也就是说Chat组件就算要直接向后端发送websocket请求也需要先从chat.redux.js模块中引入这个socket对象, 所以这里就在chat.redux.js中设置了sendMsg方法;
 
-通过上例还可以发现, 与服务器端建立连接的客户端socket设置在了chat.redux.js中, 也就是说, 当应用加载时就已经与服务器建立了基于websocket的双向通信连接了(server端也同时开始监听从客户端发送的'sendmsg’事件了), 之后当chat.js模块被加载(Chat组件被加载), 其componentDidMount钩子函数中执行了getMsgList和recvMsg这两个发布action的函数, 第一个方法是为了向后端发送请求获取数据库中的一个消息列表(满足某些条件的所有消息记录组成的数组), 得到后端返回的数据后将更新redux的state.chat.chatmsg数组属性和state.chat.unread属性, 然后根据这些数据来渲染页面; 第二个方法用来在客户端socket对象上注册一个’recvmsg’请求事件的监听, 也就是说一旦客户端接收到了服务器端广播的一条’recvmsg’请求, 就会将接收到的消息数据更新到redux中, 这条消息会被添加到当前state.chat中chatmsg属性数组的最后(同时unread属性也会更新), 进而Chat组件会重新根据更新的数据渲染页面, 达到了实时更新消息的目的; 
+上例中, 与服务器端建立连接的客户端socket设置在了chat.redux.js中, 也就是说, 当应用加载时就已经与服务器建立了基于websocket的双向通信连接了(server端也同时开始监听从客户端发送的'sendmsg’事件了), 之后当chat.js模块被加载(Chat组件被加载), 其componentDidMount钩子函数中执行了getMsgList和recvMsg这两个派发action的函数, 第一个函数是为了向后端发送请求获取数据库中的一个消息列表(满足某些条件的所有消息记录组成的数组), 得到后端返回的数据后将更新redux的state.chat.chatmsg数组属性和state.chat.unread属性, 然后根据这些数据来渲染chat页面; 第二个函数用来在客户端socket对象上注册一个’recvmsg’请求事件的监听, 也就是说一旦客户端接收到了服务器端广播的一条’recvmsg’请求, 就会将接收到的消息数据更新到redux中, 这条消息会被添加到当前state.chat中chatmsg属性数组的最后(同时unread属性也会更新), 进而Chat组件会重新根据更新的数据渲染页面, 达到了实时更新消息的目的; 
 
 这里有一个问题需要结合下面的chat.js来一起看, 当Chat组件第一次加载的时候会自动在socket上注册一次对’recvmsg’请求事件的监听, 那么当Chat组件卸载后(由于用户改变路由等原因)这个socket对象的监听任务还是存在的, 这就会引发一个问题: 当下一次Chat组件重新被加载时又会执行一次注册’recvmsg’请求事件的监听, 那么也就是说此时当客户端收到了来自服务器端的’recvmsg’请求后, 会连续执行两遍处理函数, 也就是将收到的同一条消息记录放入state.chat.chatmsg数组两次, 并且state.chat.unread也增加了两次; 
 解决办法可以是在Chat组件的componentWillUnmount钩子函数中注销socket对象上对’recvmsg’请求事件的监听, 不过需要注意的是, socket对象的注册/注销函数的第二个参数的句柄(指针, 地址)必须是相同的, 例子:
@@ -5658,8 +5662,14 @@ class Chat extends React.Component{
 
 export default Chat
 
-通过上例可以发现, 在Chat组件中并不会通过handleSubmit函数直接在页面中添加用户发送出的消息内容, 而是将内容发送到服务器端存入数据库后向相关客户端socket对象广播消息的方式来更新客户端redux中相关数据, 进而重新渲染消息页面显示最新的消息;
-上例中InputItem组件内的value={this.state.text}属性设置其实可以省略;
+通过上例可以发现, 在Chat组件中并不会利用handleSubmit函数直接在页面中添加用户发送出的消息内容, 而是将内容发送到服务器端存入数据库后向相关客户端socket对象广播消息的方式来更新客户端redux中相关数据, 进而重新渲染消息页面显示最新的消息;
+
+需要注意的是, 上例中InputItem组件内的value={this.state.text}属性设置不可以省略, 原因是当用户点击发送后, 需要将InputItem组件中的内容清空(也就是将InputItem组件的value属性设置为’’), 如果省略了这条属性设置, 那么它就接收不到Chat组件自身state对象中text属性的最新更新(Chat组件state的更新不会对InputItem元素的value属性产生影响), 也就是说在其state更新并且重新render组件后, 在react虚拟dom树与实际dom树对比中不会发现InputItem元素的差异, 也就不会在html页面中更新它, 那么InputItem元素中已经输入的内容就会保留, 不会被重置; 
+如果没有清空state.text属性这个功能的话, 那么在InputItem组件中设置或者不设置value={this.state.text}的效果是相同的, 其实归根结底只要保证组件state中指定的某些属性与相关元素的输入值(value属性)保持同步就可以了;
+
+补充:
+那么对于不使用redux和react-redux的应用, 如何在上例的这种发送消息的情况下实时更新页面呢?
+解决方法可以是, 在后端将消息储存在数据库, 并通过'recvmsg’事件将消息发送给客户端socket对象后使用this.setState方法将消息更新在组件自己的state对象中, 从而达到根据最新数据实时渲染页面的效果;
 
 
 修改src/reducer.js;
@@ -5683,6 +5693,8 @@ Router.get('/getmsglist', function(req,res){
 })
 ……
 
+上例中, 对于聊天消息的查询条件是从指定用户发出或者发送给这个指定用户的所有消息记录, 那么也就是说对于一个用户而言, 无论是我发给谁的, 任何人发给我的都会做为查询返回值在我也某个其它用户的聊天界面中显示, 这显然不符合基本设计思路, 之后会优化;
+
 
 修改usercard/usercard.js;
 ……
@@ -5693,7 +5705,7 @@ Router.get('/getmsglist', function(req,res){
 <Card key={v._id} onClick={()=>this.handleChat(v)}>
 ……
 
-在用户来到与某个其他用户的chat页面后, redux中的state.chat.chatmsg将更新:
+在用户来到与某个其他用户chat的页面后, redux中的state.chat.chatmsg将更新:
 ￼
 
 当用户发送了一条消息后, 这条消息将会被添加到redux的state.chat.chatmsg数组的最后, 同时state.chat.unread也会递增:
@@ -5777,6 +5789,869 @@ export default Chat
 
 在不同浏览器中以两个不同用户登录后聊天:
 ￼
+
+
+(11)聊天未读消息实时更新;
+
+正如之前所提出的, 为了能够在消息图标上实时显示未读消息数量, 不能在Chat组件加载后才获取消息列表, 接收服务器端发来的新消息的方法也不能仅仅通过Chat组件的componentDidMount钩子函数来绑定, 而是需要在Dashboard组件加载时就绑定这两个方法; 
+
+删除chat.js的componentDidMount钩子函数中的:
+this.props.getMsgList()
+this.props.recvMsg()
+
+
+修改dashboard.js;
+……
+import {getMsgList, recvMsg} from '../../redux/chat.redux'
+
+@connect(
+  state=>state,
+  {getMsgList, recvMsg}
+)
+class Dashboard extends React.Component{
+  componentDidMount(){
+    this.props.getMsgList()
+    this.props.recvMsg()
+  }
+  render(){
+……
+
+
+修改navlinkbar.js;
+……
+import {connect} from 'react-redux'
+
+@withRouter
+@connect(
+  state=>state.chat
+)
+class NavLinkBar extends React.Component{
+……
+    <TabBar>
+        {navList.map(v=>(
+          <TabBar.Item 
+            badge={v.path=='/msg'?this.props.unread:0}
+            key={v.path}
+……
+
+￼
+￼
+
+不过, 目前还存在一个问题, 由于getMsgList和recvMsg这两个函数已经绑定在了Dashboard组件加载时, 那么如果是通过Dashboard组件跳转到chat页面, 消息列表和未读消息当然可以直接在redux中获取(并且实时显示更新), 但是如果用户在chat页面刷新页面, 也就是不通过Dashboard组件直接来到chat页面, 此时redux中还不存在消息列表与未读消息的信息, 那么就会出现问题, 解决办法是同时在Chat组件加载时绑定getMsgList和recvMsg这两个函数, 但是需要先行判断redux中是否已经存在消息列表以避免重复获取和重复监听, 修改chat.js:
+……
+  componentDidMount(){
+    if(!this.props.chat.chatmsg.length){
+      this.props.getMsgList()
+      this.props.recvMsg()
+    }
+  }
+……
+
+相同的道理, 在dashboard.js中也需要做一样的判断:
+……
+  componentDidMount(){
+    if(!this.props.chat.chatmsg.length){
+      this.props.getMsgList()
+      this.props.recvMsg()
+    }
+  }
+…...
+
+
+(12)完善chat页面功能;
+
+修改server.user.js;
+……
+Router.get('/getmsglist', function(req,res){
+  const user = req.cookies.userid
+
+  User.find({}, function(e,userdoc){
+    let users = {}
+    if(!e){
+      userdoc.forEach(v=>{
+        users[v._id] = {name:v.user, avatar:v.avatar}
+      })
+    }
+
+    Chat.find({'$or':[{from:user},{to:user}]}, _filter, function(err, doc){
+      if(!err){
+        return res.json({code:0, msgs:doc, users:users})
+      }
+    })
+  })
+
+})
+……
+
+上例中, 在Dashboard组件或者Chat组件首次加载后通过Ajax请求后端’/user/getmsglist’的数据时, 先获取所有用户的信息并以key/value(key:_id, value:{user, avatar})的形式保存, 然后再获取与当前登录用户相关的消息列表, 并同时返回这两类数据; 需要注意的是, 由于在查询消息列表的返回函数中使用到了users对象, 也就是说为了确保users对象先被查询到再与消息列表一同返回, 不能以平级的形式调用这两个find方法(它们都是异步的, 无法确定哪个先完成), 需要将Chat.find放在User.find的回调函数中; 
+
+不难发现, 这里查询出了所有数据库中用户的信息然后放入users对象, 其实根据应用的设计思路, 对于boss身份的用户只可能与genius身份的用户进行聊天(反之亦然), 又因为聊天页面本身默认就是通过Boss/牛人列表点击进入的, 那么完全可以利用chatuser.redux.js模块中存储的userlist数组来代替这里的users对象, 因为users对象本身就是为了方便渲染chat页面聊天双方的头像和名称信息才创建的, 也就是说这里的额外查询一次所有用户的信息并更新到chat.redux的users对象中这个步骤其实是可以省略的, 完全可以通过将chatuser.redux.js模块中的getUserList方法分别绑定在Chat组件和Boss/Genius组件的componentDidMount中(目前只有这些组件需要从redux中获取最新的用户列表的信息, 之后的msg页面也有可能需要)来将最新的用户列表信息放入redux的state.chatuser中, 然后在chat页面就可以根据redux中最新的用户列表数据来渲染聊天双方的头像和名称信息了(当前登录用户的各种信息可以在redux的state.user中获取);
+
+其实使用上面的这种优化方式还能同时修复目前存在的一个bug: 由于目前redux的state.chat中的users对象只在Dashboard/Chat组件首次加载时获取一次, 之后对chat聊天页面用户信息的渲染都是根据这个对象中的数据来进行的, 而Boss/Genius组件每次被加载时都会去后端取一次最新的用户列表数据并存储在redux的state.chatuser.userlist中, 那么如果在用户已经打开应用并且加载了Dashboard/Chat组件的情况下, 有其他新的用户注册了账号, 那么此时当前用户在不刷新页面的情况下来到Boss/牛人列表也是能够获取这个最新注册用户的信息的, 但是当进入与这个用户的chat页面后, 由于这个新用户的_id不存在与当前应用redux的state.chat.users对象中, 所以chat页面根本不会渲染;
+在当前的设计架构下, 修复上面提到的这个bug的方法是修改chat.js中的componentDidMount方法:
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.chatmsg.length){
+      this.props.recvMsg()
+    }
+  }
+
+这样每次用户来到chat页面都会重新获取一次数据库中所有用户的信息, 那么新注册用户的信息也能够拿到了;
+
+
+补充:
+1.在测试时发现一个bug, 就是当注册用户未填写desc字段的内容并完成注册后, 由于在user和boss/genius页面中需要通过split方法将用户desc字段中的信息按照换行符分行显示, 那么如果待展示用户在注册时并没有填写desc信息, 此时数据库的user集合中存储的这条记录中根本没有desc字段, 就算在model.js中将user集合Schema的desc字段创建规则改为: 'desc':{type:String, require:true, default:’’}也无法在数据库中添加的user记录中创建desc字段, 只会在创建记录时发出错误提示信息, 记录还是会成功创建, 因为在用户完善信息后向后端'/user/update’发出post请求的数据中在这种情况下本身就没有携带desc属性, 所以在前端获取的用户数据的desc属性为undefined, 因此会报错: Cannot read property 'split' of undefined;
+改进方法如下:
+
+修改component/user/user.js;
+……
+        <List renderHeader={()=>'简介'}>
+          <List.Item
+            multipleLine
+          >
+            {this.props.title}
+            {this.props.desc?
+              this.props.desc.split('\n').map(m=>(
+                  <List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
+              ))
+              :<List.Item.Brief>待更新</List.Item.Brief>
+            }
+            {this.props.money?<List.Item.Brief>薪资:{this.props.money}</List.Item.Brief>:null}
+          </List.Item>
+        </List>
+……
+
+修改component/usercard/usercard.js;
+……
+            <Card.Body>
+              {v.type=='boss'?<div>公司:{v.company}</div>:null}
+              {v.desc?
+                v.desc.split('\n').map(d=>(
+                  <div key={d+Math.random()}>{d}</div>
+                ))
+                :null
+              }
+              {v.type=='boss'?<div>薪资:{v.money}</div>:null}
+            </Card.Body>
+……
+
+这样在展示没有desc属性的用户(test用户)信息时:
+￼
+￼
+
+2.还有一个bug, 由于目前应用中是通过: !this.props.chat.chatmsg.length 这样的条件来判断前端socket对象是否已经开始监听来自服务器端的'recvmsg’事件了, 那么如果某个用户(比如新注册用户)他既没有发送过任何消息给其他用户, 也没有接收过其他用户的消息, 也就是说数据库中就根本没有任何消息记录的from/to字段存储了这个用户的_id, 这种情况下, 此用户在应用中redux的state.chat.chatmsg属性就是一个长度为0的数组, 显然判断条件: !this.props.chat.chatmsg.length 会一直成立, 导致应用重复监听来自服务器端的'recvmsg’事件, 接下去如果用户发送一条消息或者收到一条消息, 就会在其redux的state.chat.chatmsg中实时添加重复消息, 于是chat页面中的消息内容也就会重复显示;
+解决办法是在chat.redux.js的iniState中添加一个新的listenerset属性(标识应用是否已经监听了来自服务器端的'recvmsg’事件的标识符), 然后在Dashboard组件和Chat组件的componentDidMount方法中在执行recvMsg方法的同时执行listenerSet方法将redux中的标识符置为true, 并且将原先的判断条件: !this.props.chat.chatmsg.length 改为: !this.props.chat.listenerset;
+
+修改dashboard.js;
+……
+  componentDidMount(){
+    if(!this.props.chat.listenerset){
+      this.props.getMsgList()
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+  }
+……
+
+修改chat.js;
+……
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+  }
+……
+
+////////////////////////////////////////////////////////
+
+
+修改chat.redux.js;
+……
+const initState = {
+  chatmsg:[],
+  unread:0,
+  users:{},
+  listenerset:false
+}
+……
+case MSG_LIST:
+      return {...state, users:action.payload.users, chatmsg:action.payload.msgs, unread:action.payload.msgs.filter(v=>!v.read).length}
+……
+export function getMsgList(){
+  return dispatch=>{
+    axios.get('/user/getmsglist')
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          dispatch(msgList(res.data.msgs, res.data.users))
+        }
+      })
+  }
+}
+……
+
+上例中, 将后端'/user/getmsglist'返回的消息列表以及存储所有用户的_id, 名称/头像的对象通过MSG_LIST这个类型的action保存在了redux.chat中, 也就是说当Dashboard组件加载时, 这些信息已经都更新到redux中了;
+
+
+修改chat.js;
+……
+import {List, InputItem, NavBar, Icon} from 'antd-mobile'
+……
+render(){
+    const userid = this.props.match.params.user
+    const Item = List.Item
+    const users = this.props.chat.users
+
+    if(!users[userid]){
+      return null
+    }
+    return (
+      <div id='chat-page'>
+        <NavBar 
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+          {users[userid].name}
+        </NavBar>
+
+        {this.props.chat.chatmsg.map(v=>{
+          const avatar = require(`../img/${users[v.from].avatar}.png`)
+          return v.from == userid?(
+            <List key={v._id}>
+              <Item
+                thumb={avatar}
+              >{v.content}</Item>
+            </List>
+          ):(
+            <List key={v._id}>
+              <Item 
+                extra={<img src={avatar}/>}
+                className='chat-me'
+              >{v.content}</Item>
+            </List>
+          )
+        })}
+        <div className='stick-footer'>
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              extra={<span onClick={()=>this.handleSubmit()}>发送</span>}
+            ></InputItem>
+          </List>
+        </div>
+      </div>
+    )
+  }
+……
+
+上例中, Chat组件通过redux的state.chat.users信息完善了聊天页面中聊天对象名称以及聊天双方头像显示的功能, 并且如果聊天对象的id不匹配从数据库中获取的所有用户id中的任何一个, 那么chat页面就不会渲染; 
+其次, 在页面顶部的导航栏左侧添加了返回上一个页面的功能;
+
+￼
+
+关于antd-mobile中Icon组件的内容可以参考:
+https://mobile.ant.design/components/icon/
+
+
+修改src/util.js;
+……
+export function getChatId(userId, targetId){
+  return [userId,targetId].sort().join('_')
+}
+……
+
+
+修改chat.js;
+……
+import {getChatId} from '../../util'
+……
+render(){
+    const userid = this.props.match.params.user
+    const Item = List.Item
+    const users = this.props.chat.users
+
+    if(!users[userid]){
+      return null
+    }
+
+    const chatid = getChatId(userid, this.props.user._id)
+    const chatmsgs = this.props.chat.chatmsg.filter(v=>v.chatid == chatid)
+    return (
+      <div id='chat-page'>
+        <NavBar 
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+          {users[userid].name}
+        </NavBar>
+
+        {chatmsgs.map(v=>{
+……
+
+上例中, 引入了在util.js中设置的getChatId方法, 然后在遍历消息列表并渲染聊天页面之前增加了一次过滤, 因为之前也提到过, 目前聊天页面存在的问题是, 
+由于getMsgList函数获取到的消息列表包括: 当前登录用户发送给任何其它用户的消息与任何其它用户发送给当前登录用户的消息, 那么redux中state.chat.chatmsg存储的消息列表其实是当前登录用户与所有聊天对象的消息集合, 这样获取后端数据是正确的, 因为这些聊天消息数据是当前用户在与其它不同聊天对象的聊天页面中分别需要显示的; 但是与某个特定用户的聊天页面应该只显示聊天双方互相通信的消息, 而不是消息列表中的所有内容, 所以就需要一层过滤, 这层过滤的关键就是chatid这个字段, 鉴于chatid的生成条件, 只有特定的两个聊天对象(无论是from A to B 还是from B to A)拥有一个相同的chatid(AB), 也就是说所有满足chatid为’AB’的消息记录才应该显示在A与B或者B与A的聊天页面, 上例中利用当前登录用户的_id与当前chat页面聊天对象的_id通过getChatId方法生成了一个chatid(与在数据库chat集合中存储一条消息使用的chatid字段形成了对应关系), 通过它来过滤消息列表中的所有消息记录, 只有chatid相同的记录才会被当前chat页面显示, 而又因为相同chatid的消息中from与to属性是不同的, 所以就可以很好地实现1对1聊天页面的功能;
+不过, 目前还存在一个问题就是, 服务器端广播发送的消息记录没有经过任何过滤, 也就是说如果当前应用的登录用户是A, 他会因为在socket对象上注册了’recvmsg’事件而接收并在redux的state.chat.chatmsg中存储与自己毫无关系的聊天消息(比如C发送给D的消息), 虽然通过上面提到的在Chat组件中设置的过滤机制可以拦截所有无关的消息记录, 但是这种分发与接收消息的方式显然存在大量前后端的无用通信与redux数据的多余更新(未读消息数量也会错误地增加), 需要进一步优化; 
+
+
+修改chat.redux.js;
+……
+//reducer
+export function chat(state=initState,action){
+  switch(action.type){
+    case MSG_LIST:
+      return {...state, users:action.payload.users, chatmsg:action.payload.msgs, unread:action.payload.msgs.filter(v=>!v.read && v.to==action.payload.userid).length}
+    case MSG_RECV:
+      const n = action.payload.msg.to == action.payload.userid?1:0
+      return {...state, chatmsg:[...state.chatmsg, action.payload.msg], unread:state.unread+n}
+    case LISTENER_SET:
+      return {...state, listenerset:true}
+    // case MSG_READ:
+
+    default:
+      return state
+  }
+}
+……
+//action creator
+function msgList(msgs, users, userid){
+  return {type:MSG_LIST, payload:{msgs,users,userid}}
+}
+function msgRecv(msg, userid){
+  return {type:MSG_RECV, payload:{msg, userid}}
+}
+export function listenerSet(){
+  return {type:LISTENER_SET}
+}
+
+export function recvMsg(){
+  return (dispatch,getState)=>{
+    socket.on('recvmsg', function(data){
+      const userid = getState().user._id
+      dispatch(msgRecv(data, userid))
+    })
+  }
+}
+……
+export function getMsgList(){
+  return (dispatch,getState)=>{
+    axios.get('/user/getmsglist')
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          const userid = getState().user._id
+          dispatch(msgList(res.data.msgs, res.data.users, userid))
+        }
+      })
+  }
+}
+
+
+上例中, 主要解决的问题是: 目前在应用中无论是当前登录用户发送给其他用户的消息, 还是其他用户发送给当前用户的消息都会算在应用的未读消息中, 所以这里需要在MSG_LIST和MSG_RECV这两种action被派发时在reducer中结合当前登录用户的_id来做判断, 如果是其他用户发送给当前用户的消息(消息对象的to属性等于当前用户_id), 才记录在redux.chat的unread属性中;
+所以, 这里在chat.redux.js模块中需要获取user.redux.js模块中的数据(其实就是redux的state中不同属性下存储的数据), 解决办法是: react-redux的connect方法所支持的dispatch action相关的函数除了可以传入第一个参数:store.dispatch, 还可以传入第二个参数: store.getState, 这样在某个子redux模块中就可以通过redux整体的state对象获取其它子redux模块中的数据了;  
+
+
+(13)实现发送emoji表情的功能;
+
+emoji属于一种Unicode编码的字符集,  比较智能的编辑器可以直接显示emoji表情, 在一些比较现代的编程语言比如:swift中, emoji甚至可以被当作变量名;
+￼
+
+修改chat.js;
+
+import React from 'react'
+import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
+import {connect} from 'react-redux'
+import {getMsgList, sendMsg, recvMsg, listenerSet} from '../../redux/chat.redux'
+import {getChatId} from '../../util'
+
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg, listenerSet}
+)
+class Chat extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      text:'',
+      showEmoji:false
+    }
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+  }
+  //修正antd-mobile的Grid组件Carousel的问题
+  fixCarousel(){
+    setTimeout(function(){
+      window.dispatchEvent(new Event('resize'))
+    },0)
+  }
+  handleSubmit(){
+    const from = this.props.user._id
+    const to = this.props.match.params.user
+    const msg = this.state.text
+    this.props.sendMsg({from, to, msg})
+    this.setState({text:''})
+  }
+  render(){
+
+    const emoji = '😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 🙂 🤗 🤔 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 🙁 😖 😞 😟 😤 😢 😭'
+      .split(' ').filter(v=>v).map(v=>({text:v}))
+
+    const userid = this.props.match.params.user
+    const Item = List.Item
+    const users = this.props.chat.users
+
+    if(!users[userid]){
+      return null
+    }
+
+    const chatid = getChatId(userid, this.props.user._id)
+    const chatmsgs = this.props.chat.chatmsg.filter(v=>v.chatid == chatid)
+    return (
+      <div id='chat-page'>
+        <NavBar 
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+          {users[userid].name}
+        </NavBar>
+
+        {chatmsgs.map(v=>{
+          const avatar = require(`../img/${users[v.from].avatar}.png`)
+          return v.from == userid?(
+            <List key={v._id}>
+              <Item
+                thumb={avatar}
+              >{v.content}</Item>
+            </List>
+          ):(
+            <List key={v._id}>
+              <Item 
+                extra={<img src={avatar}/>}
+                className='chat-me'
+              >{v.content}</Item>
+            </List>
+          )
+        })}
+        <div className='stick-footer'>
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              extra={[<span 
+                    key='1'
+                    style={{marginRight:15}}
+                    onClick={()=>{
+                      this.setState({showEmoji:!this.state.showEmoji})
+                      this.fixCarousel()
+                    }}
+                  >😀</span>,
+                  <span key='2' onClick={()=>this.handleSubmit()}>发送</span>
+              ]}
+            ></InputItem>
+          </List>
+          {this.state.showEmoji?
+            <Grid
+            data={emoji}
+            columnNum={9}
+            carouselMaxRow={4}
+            isCarousel={true}
+            onClick={el=>{
+              this.setState(
+                {text:this.state.text+el.text}
+              )
+            }}
+          />:null}
+        </div>
+      </div>
+    )
+  }
+}
+
+export default Chat
+
+
+上例中以字符串的形式存储了一系列的emoji表情, 以空格隔开;
+在Grid组件中以文本的形式来展示表情;
+
+需要注意的是, 目前antd-mobile中Grid组件的Carousel(轮播)功能存在一定的bug, 需要使用官方给出的修正方法进行改进, fixCarousel函数就是用来修复这个bug的; 可以发现, fixCarousel函数被放在了onClick事件的回调函数中:
+  onClick={()=>{
+    this.setState({showEmoji:!this.state.showEmoji})
+    this.fixCarousel()
+  }}
+当this.setState方法执行完毕后会同时在任务队列中添加一个update Chat组件的任务, 然后主线程继续执行this.fixCarousel方法, 并且也在任务队列中添加了:
+window.dispatchEvent(new Event('resize')) 这样一个在window对象上派发一个resize事件的任务, 于是主线程执行完毕, 开始执行任务队列中的执行函数(将执行函数放到主线程执行), 首先就会去执行update Chat组件相关内容, 包括重新执行Chat组件的render方法, react 虚拟dom树对比, 将对比结果更新到html页面中, 然后这一轮的主线程也执行完毕了, 接着就会继续从任务队列中取得接下去的执行函数内容(window.dispatchEvent(new Event('resize’)))放到主线程执行...
+
+参考:
+https://emojipedia.org/ (表情库)
+https://segmentfault.com/a/1190000007594620?utm_source=tuicool&utm_medium=referral (对emoji编码的讲解)
+
+
+补充:
+上例中, 需要给InputItem组件传递一个extra属性, 这个属性可以接收一个jsx元素, 那么下面的两种写法是等同的:
+
+<1>
+              extra={[<span 
+                    key='1'
+                    style={{marginRight:15}}
+                    onClick={()=>{
+                      this.setState({showEmoji:!this.state.showEmoji})
+                      this.fixCarousel()
+                    }}
+                  >😀</span>,
+                  <span key='2' onClick={()=>this.handleSubmit()}>发送</span>
+              ]}
+
+<2>
+              extra={
+                <div>
+                  <span
+                    style={{marginRight:15}}
+                    onClick={()=>{
+                      this.setState({showEmoji:!this.state.showEmoji})
+                      this.fixCarousel()
+                    }}
+                  >😀</span>
+                  <span onClick={()=>this.handleSubmit()}>发送</span>
+                </div>
+              }
+
+
+需要注意的是, 在第2种写法中如果不给<span>元素添加key属性不会报错; 但是如果不使用<div>元素包裹两个<span>元素就会报错:
+Adjacent JSX elements must be wrapped in an enclosing tag
+
+
+修改index.css;
+……
+#chat-page .am-grid-icon{
+  display:none;
+}
+#chat-page .am-grid-text{
+  margin-top: 0;
+}
+……
+
+上例对Grid组件中的emoji文本创建了一些css格式, 由于Grid组件的每个栅格默认由icon和text两个元素组成, 这里只用到了text, 所以需要隐藏icon;
+￼
+￼
+
+
+
+11.聊天列表(msg页面)的实现;
+
+(1)构建msg页面;
+
+修改dashboard.js;
+……
+import Msg from '../../component/msg/msg'
+……
+      {
+        path:'/msg',
+        text:'消息',
+        icon:'msg',
+        title:'消息列表',
+        component: Msg,
+      },
+……
+
+
+在component/msg中新建msg.js;
+
+import React from 'react'
+import {connect} from 'react-redux'
+import {List} from 'antd-mobile'
+
+@connect(
+  state=>state
+)
+class Msg extends React.Component{
+
+  getLast(arr){
+    return arr[arr.length-1]
+  }
+
+  render(){
+    const Item = List.Item
+    const Brief = Item.Brief
+    const userid = this.props.user._id
+
+    //按照聊天会话(chatid)分组
+    const msgGroup={}
+    this.props.chat.chatmsg.forEach(v=>{
+      msgGroup[v.chatid] = msgGroup[v.chatid] || []
+      msgGroup[v.chatid].push(v)
+    })
+
+    const chatList = Object.values(msgGroup)
+
+    return  (
+      <div>
+          {
+            chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              
+              return (
+                <List key={lastItem._id}>
+                  <Item
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                  </Item>
+                </List>
+              )
+            })
+          }
+      </div>
+    )
+  }
+}
+
+export default Msg
+
+
+上例中的getLast方法用来获取当前用户与某人的所有聊天记录中的最后一条; 由于目前前端获取到的state.chat.chatmsg中的消息都是默认按照在数据库中创建的先后顺序排列的, 所以越靠后的消息就是越新的消息, 如果有需要的话也可以手动根据消息的create_time(数值越大越新)属性来排列它们; 
+
+需要注意的是, 在数据库手动删除user集合中某个已注册用户记录的同时不要忘了将与此用户相关的所有聊天记录在chat集合中删除, 不然上例中可能会发生在聊天信息中获取的targetId不存在于this.props.chat.users中, 也就是说this.props.chat.users[targetId]是undefined, 那么就会报错: Cannot read property 'name' of undefined;
+
+当前存在的相关bug:
+<1>.当用户跳转到msg页面后根据目前应用设计架构是不会更新redux的state.chat.users对象的, 那么如果在用户使用应用期间某个新用户注册了账号并且向当前用户发送了一条消息, 那么当前用户应用的redux中的state.chat.chatmsg数组是会实时更新的, 此时如果用户来在msg页面由于this.props.chat.users中不存在这个新注册用户的_id, 于是会报上面一样的错误;
+解决办法就是在服务器端监听到’sendmsg’事件后不仅将新建的消息全局发送给客户端, 同时将当前数据库中最新的所有用户的相关信息发送过去, 那么在客户端监听到服务器端发送的’recvmsg’事件后就可以同时将新消息和最新的users对象更新到redux的state.chat中, 从而让msg页面可以正确地实时更新新注册用户发来的消息;
+
+修改server/server.js;
+……
+const User = model.getModel('user')
+……
+io.on('connection', function(socket){
+  socket.on('sendmsg', function(data){
+    const {from, to, msg} = data
+    const chatid = [from, to].sort().join('_')
+    Chat.create({chatid, from, to, content:msg}, function(err, doc){      
+      if(!err){
+        User.find({}, function(e,userdoc){
+          let users = {}
+          if(!e){
+            userdoc.forEach(v=>{
+              users[v._id] = {name:v.user, avatar:v.avatar}
+            })
+            delete doc._doc.__v
+            let data = {doc:doc._doc, users}
+            io.emit('recvmsg', Object.assign({},data))
+          }
+        })
+      }
+    })
+  })
+})
+……
+
+
+修改redux/chat.redux.js;
+……
+    case MSG_RECV:
+      const n = action.payload.msg.to == action.payload.userid?1:0
+      return {...state, chatmsg:[...state.chatmsg, action.payload.msg], users:action.payload.users, unread:state.unread+n}
+……
+function msgRecv(msg, users, userid){
+  return {type:MSG_RECV, payload:{msg, users, userid}}
+}
+……
+export function recvMsg(){
+  return (dispatch,getState)=>{
+    socket.on('recvmsg', function(data){
+      const userid = getState().user._id
+      dispatch(msgRecv(data.doc, data.users, userid))
+    })
+  }
+}
+……
+
+<2>由于state.chat.chatmsg中通过在socket对象上监听’recvmsg’事件收到的最新消息没有经过任何过滤(无论是服务器端广播消息时, 还是前端接收后添加到redux的state.chat.chatmsg数组中时), 也就是说当前用户的chatmsg数组中会存储与其毫无关系的消息(from/to属性都不是当前用户的_id), 在Msg组件遍历渲染消息列表是也是直接使用了这个chatmsg数组, 这就会导致用户消息列表中显示其他用户互相聊天的最新消息, 修复的办法有两种:
+
+(1)在前端接收到’recvmsg’事件发送过来的消息后进行过滤再放入state.chat.chatmsg数组;
+解决办法是: 修改chat.redux.js;
+……
+export function recvMsg(){
+  return (dispatch,getState)=>{
+    socket.on('recvmsg', function(data){
+      const userid = getState().user._id
+      if(data.doc.from==userid || data.doc.to==userid)
+        dispatch(msgRecv(data.doc, data.users, userid))
+    })
+  }
+}
+……
+
+(2)在后端接收到'sendmsg’事件发来的消息后, 不再通过io.emit这种方式来全局广播发送这条最新消息, 而是向与这条消息相关的指定socket对象发送这条消息;
+由于当应用被打开时, 就已经建立了与服务器的连接, 而之后前端将会使用同一个socket向服务器接收/发送消息, 但是前端用户的角色是不固定的(用户可以在不刷新页面的情况下登出一个账号然后登陆另一个账号), 那么就需要在用户每次登陆被验证通过时向服务器端发送一条消息, 让其更新对此socket对象的标识(_id), 前端可以通过在每次类型为’AUTH_SUCCESS’的action被dispatch时同时向服务器端发送一个更新当前连接socket对象标识(_id)的消息, 由于应用的socket对象唯一, 并且处于chat.redux.js模块中, 所以可以在这个模块中export一个专门利用其socket对象向后端发送更新用户身份表示的请求事件;
+对于服务器端来说, 要做到向指定的socket对象发送消息而不是全局广播, 就需要维护一个socket对象池, 每次有新的socket对象连接到服务器时就将这个socket对象放入连接池(客户端断开websocket连接后销毁这个socket对象), 并且为每个socket对象维护一个身份标识(_id/null), 当服务器端每次接收到新的消息时, 根据消息的from和to属性来判断向哪些socket对象发送这条消息, 其实就是查找socket对象池中哪些socket对象的_id标识与这条消息的from或者to属性相符, 只要与其中一个属性相等就向这个socket发送这条消息, 这点和在chat集合中通过: {'$or':[{from:user},{to:user}]} 条件查找消息记录的原理相同; 
+这样就可以保证客户端的recvMsg方法接收到的最新消息一定是与当前应用登录用户有关的; 
+
+很显然第二种修复方式虽然更加繁琐, 但是总体上减少了很多前后端不必要的websocket通信;
+
+另外, 使用这种方式后还能顺带优化一个问题: 服务器端会查找当前所有用户信息并返回给客户端让其更新redux中state.chat.users对象, 但是就客户端而言, 这个users对象中并不需要数据库全部用户的信息, 其实只需要与当前登录用户身份不同的所有用户的信息即可, 因为这个应用的设计思路是只有不同身份的用户才能进行互动, 那么在服务器端有两处需要优化:
+
+server/user.js;
+……
+Router.get('/getmsglist', function(req,res){
+  const user = req.cookies.userid
+
+  User.find({}, function(e,userdoc){
+    let users = {}
+    if(!e){
+      userdoc.forEach(v=>{
+        users[v._id] = {name:v.user, avatar:v.avatar}
+      })
+    }
+
+    Chat.find({'$or':[{from:user},{to:user}]}, _filter, function(err, doc){
+      if(!err){
+        return res.json({code:0, msgs:doc, users:users})
+      }
+    })
+  })
+})
+……
+
+
+server/server.js;
+……
+io.on('connection', function(socket){
+  socket.on('sendmsg', function(data){
+    const {from, to, msg} = data
+    const chatid = [from, to].sort().join('_')
+    Chat.create({chatid, from, to, content:msg}, function(err, doc){
+      if(!err){
+        User.find({}, function(e,userdoc){
+          let users = {}
+          if(!e){
+            userdoc.forEach(v=>{
+              users[v._id] = {name:v.user, avatar:v.avatar}
+            })
+            delete doc._doc.__v
+            let data = {doc:doc._doc, users}
+            io.emit('recvmsg', Object.assign({},data))
+          }
+        })
+      }
+    })
+  })
+})
+……
+
+很显然, 上例中的两处都可以根据当前应用登录用户的_id来查找到其type属性, 然后以当前这个type值的另一种取值作为查找条件查找数据库user集合中的所有用户信息并返回给客户端, 让其更新redux的state.chat.users对象;
+
+
+￼
+
+
+补充:
+1.对于之前应用的功能来说, 在Dashboard组件中使用getMsgList方法其实只用到了它更新state.chat.chatmsg和state.chat.unread这个功能, 而获取后端用户信息并更新到redux的state.chat.user对象这个功能其实并没有实际作用(唯一需要state.chat.user信息的Chat组件自己会去获取), 但是在新增了Msg组件后, Dashboard组件中绑定的这个功能变为必须的了, 因为msg页面需要state.chat.user对象中的信息来渲染页面;
+而对于Chat组件来说, componentDidMount中绑定的getMsgList方法的上述两个功能都是必须的, 因为它既要使用state.chat.user中数据来渲染页面中聊天双方的信息, 又需要保证如果用户是直接从chat页面打开应用(或者在chat页面刷新了页面), 然后从chat页面回到加载Dashboard组件相关的页面时不会缺失redux中state.chat.chatmsg和state.chat.unread的数据, 因为在加载Dashboard组件时state.chat.listenerset已经是true了, 不会再执行绑定在Dashboard组件中componentDidMount钩子函数中的getMsgList方法了; 
+2.对于基于react-redux的应用在store对象被更新后, 应用中的那些使用了connect方法封装的组件如何update的推测;
+就以此项目中Dashboard组件, Boss组件和UserCard组件为例(它们依次存在父子层级关系), 其中Dashboard组件和Boss组件都使用了connect方法封装, 那么在boss页面加载后, 这三个组件被依次render, 然后从内向外执行componentDidMount钩子函数, 也就是说当页面完成渲染后, Boss组件的componentDidMount函数先执行, 并且改变了一次store对象, 此时redux会在任务队列中放入一个执行函数, 它会依次执行之前在store上subscribe的所有回调函数, 而react-redux会在每个被connect方法封装组件的componentDidMount钩子函数中在store上注册组件的forceUpdate方法(可以参考Redux笔记中的相关内容), 接着在主线程中Dashboard组件的componentDidMount函数被执行了, 它也会改变一次store对象, 同样一个执行函数被redux放入任务队列, 至此主线程结束, 接着, 任务队列中刚才被redux放入的执行函数会被按顺序放入主线程运行, 对于每一个执行函数而言, 它将会依次执行之前react-redux通过connect方法在store上subscribe的所有回调函数, 但是这些回调函数是经过react-redux优化的: 首先,如果此次对store对象的改变在深度对比后结果是与上一个状态相同, 那么就不会触发组件的forceUpdate方法(这一点还有待核实); 其次, 并非是所有被connect方法封装的组件都会被update, 只有处于最外层的组件会被forceUpdate, 也就是说, react-redux会检查在store上subscribe的回调函数中将要被forceUpdate的组件, 如果这个组件的祖先中存在着被connect封装的组件就忽略这次forceUpdate(可能是通过react的虚拟dom树来进行检查), 只有当检查到没有其他祖先组件是被connect封装过的组件时才会去forceUpdate这个组件, 这样就避免了由于被connect封装的组件存在层级关系而重复update相同组件的情况; 也就是说, 这种情况下当store被更新, 那么只有Dashboard组件会因此被forceUpdate, Boss组件虽然也被connect封装, 但是它只会做为Dashboard组件的子组件被update...
+
+
+(2)在msg页面的消息列表中显示未读消息数量, 并且保证列表中未读消息数量总和等于消息图标上显示的未读消息;
+
+修改msg.js;
+……
+import {List, Badge} from 'antd-mobile'
+……
+return  (
+      <div>
+          {
+            chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              const unreadNum = v.filter(v=>
+                !v.read&&v.to==userid
+              ).length
+
+              return (
+                <List key={lastItem._id}>
+                  <Item
+                    extra={<Badge text={unreadNum}></Badge>}
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                  </Item>
+                </List>
+              )
+            })
+          }
+      </div>
+    )
+…...
+
+￼
+
+更多关于antd-mobile中的内容可以参考:
+https://mobile.ant.design/components/badge/
+
+
+(3)消息列表按照最新消息排序(最新收到的消息排在消息列表的最上面);
+
+修改msg.js;
+……
+    //根据每个聊天会话数组中最后一条聊天记录的create_time属性进行从大到小排列(最后返回的是正数)
+    const chatList = Object.values(msgGroup).sort((a,b)=>{
+      const a_last = this.getLast(a).create_time
+      const b_last = this.getLast(b).create_time
+      return b_last - a_last
+    })
+……
+
+
+(4)添加点击msg页面消息列表跳转到与对应用户聊天的chat页面的功能;
+
+修改msg.js;
+……
+            return (
+                <List key={lastItem._id}>
+                  <Item
+                    extra={<Badge text={unreadNum}></Badge>}
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                    arrow='horizontal'
+                    onClick={()=>{
+                      this.props.history.push(`/chat/${targetId}`)
+                    }}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                  </Item>
+                </List>
+              )
+……
+
+需要注意的是, 上例中在<Item>组件上设置了onClick方法, 但是这个onClick并非react原生支持的点击事件, 也就是说, 点击Item组件相关的元素并不会触发onClick方法, 这里只是将onClick最为一个属性传递到了Item组件中, 它可以通过this.props.onClick来获取; 只有在一个非自定义组件的原生jsx元素(如: <span></span>)上定义的onClick方法才可以直接被react管理; 
+
+￼
+
+
+
+12.
 
 
 

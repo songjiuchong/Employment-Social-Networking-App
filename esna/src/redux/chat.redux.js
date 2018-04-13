@@ -50,7 +50,8 @@ export function recvMsg(){
 	return (dispatch,getState)=>{
 		socket.on('recvmsg', function(data){
 			const userid = getState().user._id
-			dispatch(msgRecv(data.doc, data.users, userid))
+			if(data.doc.from==userid || data.doc.to==userid)
+				dispatch(msgRecv(data.doc, data.users, userid))
 		})
 	}
 }
