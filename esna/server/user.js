@@ -35,18 +35,33 @@ Router.get('/getmsglist', function(req,res){
 
 })
 
+Router.post('/readmsg', function(req,res){
+	const userid = req.cookies.userid
+	const {from} = req.body
+	Chat.update(
+		{from, to:userid},
+		{'$set':{read:true}},
+		{'multi':true},
+		function(err,doc){
+			if(!err){
+				return res.json({code:0, num:doc.nModified})
+			}
+			return res.json({code:1, msg:'error'})
+		}
+	)
+})
+
 Router.post('/update',function(req,res){
 	const userid = req.cookies.userid
 	if(!userid){
 		return res.json({code:1, msg:'请先登录'})
 	}
 	const body = req.body
-	User.findByIdAndUpdate(userid, body, _filter, function(err, doc){
-		const data = Object.assign({},{
-			user:doc.user,
-			type:doc.type
-		}, body)
-		return res.json({code:0, data})
+	User.findByIdAndUpdate(userid, body, function(err, doc){
+		if(!err){
+			const data = Object.assign({},doc._doc,body)
+			return res.json({code:0, data})
+		}
 	})
 })
 

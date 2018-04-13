@@ -10,6 +10,22 @@ class Msg extends React.Component{
 	getLast(arr){
 		return arr[arr.length-1]
 	}
+	
+	//将Date对象转换为如: 2018-04-25 12:00:00 这样格式的字符串
+	formatDateTime(date) {  
+                let y = date.getFullYear();  
+                let m = date.getMonth() + 1;  
+                m = m < 10 ? ('0' + m) : m;  
+                let d = date.getDate();  
+                d = d < 10 ? ('0' + d) : d;  
+                let h = date.getHours();  
+                h=h < 10 ? ('0' + h) : h;  
+                let minute = date.getMinutes();  
+                minute = minute < 10 ? ('0' + minute) : minute;  
+                let second=date.getSeconds();  
+                second=second < 10 ? ('0' + second) : second;  
+                return y + '-' + m + '-' + d+' '+h+':'+minute+':'+second;  
+    } 
 
 	render(){
 		const Item = List.Item
@@ -29,7 +45,7 @@ class Msg extends React.Component{
 			const b_last = this.getLast(b).create_time
 			return b_last - a_last
 		})
-
+		
 		return  (
 			<div>
 					{
@@ -52,6 +68,7 @@ class Msg extends React.Component{
 									>	
 										{lastItem.content}
 										<Brief>{this.props.chat.users[targetId].name}</Brief>
+										<Brief>🕘{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
 									</Item>
 								</List>
 							)

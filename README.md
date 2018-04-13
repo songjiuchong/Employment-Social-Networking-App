@@ -5900,44 +5900,57 @@ Router.get('/getmsglist', function(req,res){
 
 
 补充:
-1.在测试时发现一个bug, 就是当注册用户未填写desc字段的内容并完成注册后, 由于在user和boss/genius页面中需要通过split方法将用户desc字段中的信息按照换行符分行显示, 那么如果待展示用户在注册时并没有填写desc信息, 此时数据库的user集合中存储的这条记录中根本没有desc字段, 就算在model.js中将user集合Schema的desc字段创建规则改为: 'desc':{type:String, require:true, default:’’}也无法在数据库中添加的user记录中创建desc字段, 只会在创建记录时发出错误提示信息, 记录还是会成功创建, 因为在用户完善信息后向后端'/user/update’发出post请求的数据中在这种情况下本身就没有携带desc属性, 所以在前端获取的用户数据的desc属性为undefined, 因此会报错: Cannot read property 'split' of undefined;
+1.在测试时发现一个bug, 就是当注册用户未填写desc字段的内容并完成注册后, 由于在user和boss/genius页面中需要通过split方法将用户desc字段中的信息按照换行符分行显示, 那么如果待展示用户在注册时并没有填写desc信息, 此时数据库的user集合中存储的这条记录中根本没有desc字段, 那么更新后的redux中state.user中也不存在desc属性, 所以在前端获取的用户数据的desc属性为undefined, 因此会报错: Cannot read property 'split' of undefined;
 改进方法如下:
 
-修改component/user/user.js;
+修改server/model.js;
 ……
-        <List renderHeader={()=>'简介'}>
-          <List.Item
-            multipleLine
-          >
-            {this.props.title}
-            {this.props.desc?
-              this.props.desc.split('\n').map(m=>(
-                  <List.Item.Brief key={m+Math.random()}>{m}</List.Item.Brief>
-              ))
-              :<List.Item.Brief>待更新</List.Item.Brief>
-            }
-            {this.props.money?<List.Item.Brief>薪资:{this.props.money}</List.Item.Brief>:null}
-          </List.Item>
-        </List>
+'desc':{'type':String, 'default':'待更新'},
 ……
 
-修改component/usercard/usercard.js;
+
+修改server/user.js;
 ……
-            <Card.Body>
-              {v.type=='boss'?<div>公司:{v.company}</div>:null}
-              {v.desc?
-                v.desc.split('\n').map(d=>(
-                  <div key={d+Math.random()}>{d}</div>
-                ))
-                :null
-              }
-              {v.type=='boss'?<div>薪资:{v.money}</div>:null}
-            </Card.Body>
+Router.post('/update',function(req,res){
+  const userid = req.cookies.userid
+  if(!userid){
+    return res.json({code:1, msg:'请先登录'})
+  }
+  const body = req.body
+  User.findByIdAndUpdate(userid, body, function(err, doc){
+    if(!err){
+      const data = Object.assign({},doc._doc,body)
+      return res.json({code:0, data})
+    }
+  })
+})
 ……
+
+这里有一个特别需要注意的坑, 那就是mongoose的findByIdAndUpdate方法, 首先它不接受第三个filter对象参数来屏蔽返回信息中的指定自动, 其次, 在成功执行了数据库更新后, 这个方法的返回值doc中并非包含被更新对象的所有字段, 也并不是包含此次更新的所有字段, 而是包含了所有之前在创建集合的Schema结构时设置了requre:true或者default属性的所有字段, 也就是说, 当前user集合创建时的Schema结构为:
+  {
+    'user':{'type':String, 'require':true},
+    'pwd':{'type':String, 'require':true},
+    'type':{'type':String, 'require':true},
+    //用户头像
+    'avatar':{'type':String},
+    //个人简介
+    'desc':{'type':String, 'default':'待更新'},
+    //职位名
+    'title':{'type':String},
+    //Boss需要的两个字段
+    'company':{'type':String},
+    'money':{'type':String}
+  }
+
+那么使用findByIdAndUpdate方法更新了user集合中某个记录后返回的doc中只包含:user, pwd, type, desc, _id, __v这些字段;
+
+所以上例中使用了Object.assign({},doc._doc,body)来将此次前端完善信息的所有属性连同doc中返回的那些属性(其中desc非常重要, 因为前端很可能没有在完善信息时填写并传递这一属性, 那么就需要在这里取得doc中获取到的desc默认值来更新前端redux的state.user对象, 不然就会出现上面提到的desc为undefined的bug)一起返回给前端, 进而去更新redux的state.user;
+
 
 这样在展示没有desc属性的用户(test用户)信息时:
 ￼
 ￼
+
 
 2.还有一个bug, 由于目前应用中是通过: !this.props.chat.chatmsg.length 这样的条件来判断前端socket对象是否已经开始监听来自服务器端的'recvmsg’事件了, 那么如果某个用户(比如新注册用户)他既没有发送过任何消息给其他用户, 也没有接收过其他用户的消息, 也就是说数据库中就根本没有任何消息记录的from/to字段存储了这个用户的_id, 这种情况下, 此用户在应用中redux的state.chat.chatmsg属性就是一个长度为0的数组, 显然判断条件: !this.props.chat.chatmsg.length 会一直成立, 导致应用重复监听来自服务器端的'recvmsg’事件, 接下去如果用户发送一条消息或者收到一条消息, 就会在其redux的state.chat.chatmsg中实时添加重复消息, 于是chat页面中的消息内容也就会重复显示;
 解决办法是在chat.redux.js的iniState中添加一个新的listenerset属性(标识应用是否已经监听了来自服务器端的'recvmsg’事件的标识符), 然后在Dashboard组件和Chat组件的componentDidMount方法中在执行recvMsg方法的同时执行listenerSet方法将redux中的标识符置为true, 并且将原先的判断条件: !this.props.chat.chatmsg.length 改为: !this.props.chat.listenerset;
@@ -6651,9 +6664,182 @@ https://mobile.ant.design/components/badge/
 
 
 
-12.
+12.进一步完善应用;
+
+(1)消息已读状态的设置;
+
+当前应用中所有从数据库获取的消息的read属性都是false, 所以只要是其他用户发送给当前用户的消息都将作为未读消息处理, 这里会完善这个问题;
+
+修改chat.js;
+……
+import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg} from '../../redux/chat.redux'
+……
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg, listenerSet, readMsg}
+)
+……
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+  }
+……
+
+上例中, 在Chat组件的componentDidMount钩子函数中绑定了一个readMsg方法, 并将当前聊天对象的_id传入, 之后会在数据库中将所有from属性为这个_id, to属性为当前登录用户_id的所有消息的read属性都置为true, 然后更新应用中redux的state.chat.chatmsg和state.chat.unread, 从而可以更新消息图标上的未读消息数量和消息列表中聊天会话的未读消息数量;
 
 
+修改chat.redux.js;
+……
+export function chat(state=initState,action){
+  switch(action.type){
+    case MSG_LIST:
+      return {...state, users:action.payload.users, chatmsg:action.payload.msgs, unread:action.payload.msgs.filter(v=>!v.read && v.to==action.payload.userid).length}
+    case MSG_RECV:
+      const n = action.payload.msg.to == action.payload.userid?1:0
+      return {...state, chatmsg:[...state.chatmsg, action.payload.msg], users:action.payload.users, unread:state.unread+n}
+    case LISTENER_SET:
+      return {...state, listenerset:true}
+    case MSG_READ:
+      const {from, num} = action.payload
+      return {
+        ...state, 
+        chatmsg:state.chatmsg.map(v=>({...v, read:from==v.from?true:v.read})), 
+        unread: state.unread-num
+      }
+    default:
+      return state
+  }
+}
+……
+function msgRead({from,num}){
+  return {type:MSG_READ, payload:{from,num}}
+}
+……
+export function readMsg(from){
+  return dispatch=>{
+    axios.post('/user/readmsg',{from})
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          dispatch(msgRead({from,num:res.data.num}))
+        }
+      })
+  }
+}
+……
+
+由于从chat页面返回到Dashboard组件相关页面后Dashboard组件不会再通过getMsgList方法获取一次最新的chatmsg和unread属性, 所以需要通过readMsg方法中从后端返回的num属性(数据库中此次所有被更新了read属性的消息的数量)来更新redux中state.chat.unread; 
+并且readMsg方法还会同时将state.chat.chatmsg中所有from属性等于聊天对象_id的聊天记录的read属性置为true, 这样当用户从chat页面返回到msg页面后就会在消息列表中正确显示未读消息数量了; 
+
+不过目前存在一个问题, 就是这个更新未读消息信息的readMsg方法只绑定在了Chat组件的componentDidMount钩子函数上, 那么如果当用户停留在chat页面, 并且接收到了此次会话中聊天对象发送来的新消息时, 由于Chat组件只会被update而不会再次执行componentDidMount函数, 所以就无法同步消息已读的信息到服务器端以及前端的redux中了, 解决方法是将readMsg方法直接绑定在组件的componentWillUnmount函数中:
+  componentWillUnmount(){
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+  }
+
+当然还有另一种更加实时更新已读消息信息的方式就是在前端socket对象每次接收到’recvmsg’事件时都做一次判断, 如果用户当前处于与某个用户的聊天页面, 并且这条更新的消息的from/to属性也满足聊天双方的信息就执行一次readMsg方法;
+
+补充:
+在react-router2中存在着一些路由的钩子函数(可以参考React-router2笔记中: 11.路由的钩子; 相关内容), 如: onEnter/onLeave, 但是在react-router4中已经没有这样的钩子函数了, 因为react-router4将每一个路由都视为一个组件, 所以当用户进入/离开某个路由时, 直接使用此路由component的componentDidMount/componentWillUnmount就可以达到类似的效果;
 
 
+修改server/user.js;
+……
+Router.post('/readmsg', function(req,res){
+  const userid = req.cookies.userid
+  const {from} = req.body
+  Chat.update(
+    {from, to:userid},
+    {'$set':{read:true}},
+    {'multi':true},
+    function(err,doc){
+      if(!err){
+        return res.json({code:0, num:doc.nModified})
+      }
+      return res.json({code:1, msg:'error'})
+    }
+  )
+})
+……
 
+上例中, 通过mongoose的update方法更新了数据库中的若干条记录后, 返回的doc对象的格式是类似:
+{n:1, nModified:0, ok:1}
+
+这样的形式, n表示此次update涉及到了多少条记录, nModified代表具体有几条记录被实际更新了, ok:1代表此次update方法执行成功, 没有发生错误;
+
+需要注意的是, mongoose的update方法默认只会找到第一条符合查找条件的信息并进行更新, 如果需要全局查找并更新, 需要传入第三个参数对象: {'multi':true};
+
+
+用户boss收到用户genius发来的两条消息:
+￼
+
+用户boss打开消息列表中与genius的会话, 来到chat页面:
+￼
+
+用户boss回到消息列表, 未读消息数量被更新:
+￼
+
+
+目前应用中还存在一个缺陷, 那就是在server/model.js中指定的 new mongoose.Schema 新建集合格式的设置中对chat集合create_time字段的默认值指定为:
+'create_time': {'type':Number, 'default': new Date().getTime()}
+
+其实, 这个new Date().getTime()可以被单纯地视为一个字符串, 也就是说在一次server.js服务器加载后, 所有通过此服务器对数据库添加的chat集合记录的create_time都是相同的, 因为在create chat集合记录时并没有传入create_time这个字段, 所以所有被新建的集合记录都将使用同一个默认值; 
+
+解决办法就是让服务器在每次创建一条新的消息记录到数据库时手动添加以当前时间戳为值的create_time属性:
+
+修改server/server.js;
+……
+Chat.create({chatid, from, to, content:msg, create_time:new Date().getTime()}, function(err, doc){
+……
+
+
+(2)在消息列表中添加最后回复时间功能;
+
+修改msg.js;
+……
+  //将Date对象转换为如: 2018-04-25 12:00:00 这样格式的字符串
+  formatDateTime(date) {  
+                let y = date.getFullYear();  
+                let m = date.getMonth() + 1;  
+                m = m < 10 ? ('0' + m) : m;  
+                let d = date.getDate();  
+                d = d < 10 ? ('0' + d) : d;  
+                let h = date.getHours();  
+                h=h < 10 ? ('0' + h) : h;  
+                let minute = date.getMinutes();  
+                minute = minute < 10 ? ('0' + minute) : minute;  
+                let second=date.getSeconds();  
+                second=second < 10 ? ('0' + second) : second;  
+                return y + '-' + m + '-' + d+' '+h+':'+minute+':'+second;  
+    } 
+……
+                <List key={lastItem._id}>
+                  <Item
+                    extra={<Badge text={unreadNum}></Badge>}
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                    arrow='horizontal'
+                    onClick={()=>{
+                      this.props.history.push(`/chat/${targetId}`)
+                    }}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                    <Brief>🕘{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+                  </Item>
+                </List>
+……
+
+上例中利用消息列表中每个会话的最后一条消息的create_time这个字段来生成一个指定格式的最后回复时间字符串;
+
+关于new Date()格式处理可以参考:
+https://blog.csdn.net/qq_39759115/article/details/78893853
+
+
+￼
+
+
+(3)

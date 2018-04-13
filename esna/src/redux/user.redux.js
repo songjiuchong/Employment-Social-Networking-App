@@ -30,7 +30,7 @@ export function user(state=initState,action){
 	}
 }
 function authSuccess(obj){
-	const {pwd, ...data} = obj
+	const {pwd, __v, ...data} = obj
 	return {type:AUTH_SUCCESS, payload:data}
 }
 function errorMsg(msg){
