@@ -29,15 +29,16 @@ export function user(state=initState,action){
 			return state
 	}
 }
+
+//action creator
 function authSuccess(obj){
 	const {pwd, __v, ...data} = obj
 	return {type:AUTH_SUCCESS, payload:data}
 }
-function errorMsg(msg){
+export function errorMsg(msg){
 	return {msg, type:ERROR_MSG}
 }
 
-//action creator
 export function loadData(userinfo){
 	return {type:LOAD_DATA, payload:userinfo}
 }
@@ -83,16 +84,17 @@ export function register({user,pwd,repeatpwd,type}){
 
 export function update(data){
 	
-	//这里暂时省略了对用户填写信息内容格式等的验证步骤;
-
 	return dispatch=>{
-		axios.post('/user/update',data)
-			.then(res=>{
-					if(res.status==200&&res.data.code===0){
-						dispatch(authSuccess(res.data.data))
-					}else{
-						dispatch(errorMsg(res.data.msg))
-					}
-			})
+		if(!data.avatar)
+			dispatch(errorMsg('请先选择头像再提交'))
+		else
+			axios.post('/user/update',data)
+				.then(res=>{
+						if(res.status==200&&res.data.code===0){
+							dispatch(authSuccess(res.data.data))
+						}else{
+							dispatch(errorMsg(res.data.msg))
+						}
+				})
 	}
 }

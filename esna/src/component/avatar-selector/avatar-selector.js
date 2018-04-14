@@ -31,6 +31,7 @@ class AvatarSelector extends React.Component{
 						  onClick = {ele=>{
 						  		this.setState(ele)
 								this.props.selectAvatar(ele.text)
+								this.props.errorMsg('')
 						  }}
 					/>
 				</List>

@@ -2,13 +2,13 @@ import React from 'react'
 import {NavBar, InputItem, TextareaItem, Button} from 'antd-mobile'
 import AvatarSelector from '../../component/avatar-selector/avatar-selector'
 import {connect} from 'react-redux'
-import {update} from '../../redux/user.redux'
+import {update, errorMsg} from '../../redux/user.redux'
 import {Redirect} from 'react-router-dom'
 import hocForm from '../../component/hoc-form/hoc-form'
 
 @connect(
 	state=>state.user,
-	{update}
+	{update, errorMsg}
 )
 @hocForm
 class BossInfo extends React.Component{
@@ -31,6 +31,7 @@ class BossInfo extends React.Component{
 				<NavBar mode="dark">BOSS完善信息页面</NavBar>
 				{this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
 				<AvatarSelector
+					errorMsg={this.props.errorMsg}
 					selectAvatar={(imgname)=>{
 						this.props.handleChange('avatar', imgname)
 					}}
