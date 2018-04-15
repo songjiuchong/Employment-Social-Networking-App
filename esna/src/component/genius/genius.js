@@ -1,10 +1,11 @@
 import React from 'react'
 import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
 import {getUserList} from '../../redux/chatuser.redux'
 import UserCard from '../usercard/usercard'
 
 @connect(
-	state=>state.chatuser,
+	state=>state,
 	{getUserList}
 )
 class Genius extends React.Component{
@@ -12,7 +13,13 @@ class Genius extends React.Component{
 		this.props.getUserList('boss')
 	}
 	render(){
-		return <UserCard userlist={this.props.userlist}/>
+		const redirect = this.props.user.redirectTo
+		return (
+			<div>
+				{redirect&&redirect.indexOf('genius')==-1&&redirect.indexOf('me')==-1?<Redirect to={'/boss'}/>:null}
+				<UserCard userlist={this.props.chatuser.userlist}/>
+			</div>
+		)
 	}
 }
 

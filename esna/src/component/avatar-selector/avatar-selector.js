@@ -10,6 +10,10 @@ class AvatarSelector extends React.Component{
 		super(props)
 		this.state = {}
 	}
+	componentWillReceiveProps(nextProp){
+		if(nextProp.initAvatar)
+			this.setState({text:nextProp.initAvatar,icon:require(`../img/${nextProp.initAvatar}.png`)})
+	}
 	render(){
 		const avatarList = 'fox,rabbit,fox1,fox2,fox3,fox4,rabbit1,rabbit2,rabbit3,rabbit4'   //src/component/img文件夹中所有头像图片的前缀名组成的字符串数组;
 							.split(',')
@@ -17,6 +21,7 @@ class AvatarSelector extends React.Component{
 								icon:require(`../img/${v}.png`),
 								text:v
 							}))
+
 		const gridHeader = this.state.icon ? 
 							(<div>
 								<span style={{'verticalAlign': 'middle'}}>已选择头像:</span>

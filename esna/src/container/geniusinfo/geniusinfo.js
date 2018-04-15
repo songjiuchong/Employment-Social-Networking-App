@@ -18,6 +18,19 @@ class GeniusInfo extends React.Component{
 		// 	title:'',
 		// 	desc:''
 		// }
+
+		//初始化高阶组件的state
+		if(this.props.user){
+			const iState = {avatar:this.props.avatar, title:this.props.title, desc:this.props.desc}
+			this.props.initState(iState)
+		}
+	}
+	componentWillReceiveProps(newProps){
+		//初始化高阶组件的state
+		if(!newProps.state.hasInit){
+			const iState = {avatar:newProps.avatar, title:newProps.title, desc:newProps.desc}
+			this.props.initState(iState)
+		}
 	}
 	render(){
 		const path = this.props.location.pathname
@@ -25,15 +38,20 @@ class GeniusInfo extends React.Component{
 
 		return (
 			<div>
-				{redirect&&redirect!==path?<Redirect to={this.props.redirectTo}/>:null}
+				{redirect&&redirect!==path&&redirect!=='/genius'&&redirect!=='/boss'?
+					<Redirect to={this.props.redirectTo}/>
+					:(redirect=='/boss'?<Redirect to='/bossinfo' />:null)
+				}
+
 				<NavBar mode="dark">牛人完善信息页面</NavBar>
 				{this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
 				<AvatarSelector
 					errorMsg={this.props.errorMsg}
+					initAvatar = {this.props.state.avatar}
 					selectAvatar={(imgname)=>{
 						this.props.handleChange('avatar',imgname)}}
 				></AvatarSelector> 
-				<InputItem onChange={(v)=>this.props.handleChange('title',v)}>
+				<InputItem onChange={(v)=>this.props.handleChange('title',v)} value={this.props.state.title}>
 					求职岗位
 				</InputItem>
 				<TextareaItem 
@@ -41,6 +59,7 @@ class GeniusInfo extends React.Component{
 					rows={3}
 					autoHeight
 					title='个人简介'
+					value={this.props.state.desc}
 				>
 				</TextareaItem>
 				<Button 

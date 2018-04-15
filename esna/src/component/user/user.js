@@ -3,16 +3,31 @@ import {connect} from 'react-redux'
 import {Redirect} from 'react-router-dom'
 import {Result, List, WhiteSpace, Modal} from 'antd-mobile'
 import browserCookie from 'browser-cookies'
-import {logoutSubmit} from '../../redux/user.redux'
+import {logoutSubmit, authSuccess} from '../../redux/user.redux'
 
 @connect(
 	state=>state.user,
-	{logoutSubmit}
+	{logoutSubmit, authSuccess}
 )
 class User extends React.Component{
 	constructor(props){
 		super(props)
 		this.logout = this.logout.bind(this)
+		this.updateInfo = this.updateInfo.bind(this)
+	}
+	componentWillUnmount(){
+		this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+	}
+	updateInfo(){
+		const alert = Modal.alert
+        alert('提示', '是否前往修改个人信息页面?', [
+          { text: '算了' },
+          { text: '前往', onPress: () => {
+          	const targetPath = this.props.type=='boss'?'/bossinfo':'/geniusinfo'
+          	this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+			this.props.history.push(targetPath)
+          }},
+        ])
 	}
 	logout(){
 		const alert = Modal.alert
@@ -26,10 +41,12 @@ class User extends React.Component{
 	}
 	render(){
 
+		let userImg = this.props.avatar?require(`../img/${this.props.avatar}.png`):require('../img/default.png')
+
 		return this.props.user ? (
 			<div>
 				<Result
-					img={<img src={require(`../img/${this.props.avatar}.png`)} style={{width:50}} alt='' />}
+					img={<img src={userImg} style={{width:50}} alt='' />}
 					title={this.props.user}
 					message={this.props.type=='boss' ? this.props.company:null}
 				/>
@@ -48,10 +65,13 @@ class User extends React.Component{
 				</List>
 				<WhiteSpace></WhiteSpace>
 				<List>
+					<List.Item onClick = {this.updateInfo}>修改个人信息</List.Item>
+				</List>
+				<List>
 					<List.Item onClick = {this.logout}>退出登录</List.Item>
 				</List>
 			</div>
-		): this.props.redirectTo?<Redirect to={this.props.redirectTo} />:null
+		): this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:null
 	}
 }
 

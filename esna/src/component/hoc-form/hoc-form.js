@@ -5,8 +5,14 @@ export default function hocForm(Comp){
 	return class WrapperComp extends React.Component{
 		constructor(props){
 			super(props)
-			this.state = {}
+			this.state = {hasInit:false}
 			this.handleChange = this.handleChange.bind(this)
+			this.initState = this.initState.bind(this)
+		}
+		
+		initState(state){
+			if(!this.state.hasInit)
+				this.setState({hasInit:true, ...state})
 		}
 
 		handleChange(key,val){
@@ -16,7 +22,7 @@ export default function hocForm(Comp){
 		}
 
 		render(){
-			return <Comp handleChange={this.handleChange} state={this.state} {...this.props}></Comp>
+			return <Comp handleChange={this.handleChange} initState={this.initState} state={this.state} {...this.props}></Comp>
 		}
 
 	}

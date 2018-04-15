@@ -1,13 +1,13 @@
 import React from 'react'
 import axios from 'axios'
 import { withRouter } from 'react-router-dom'
-import {loadData} from '../../redux/user.redux'
+import {authSuccess} from '../../redux/user.redux'
 import {connect} from 'react-redux'
 
 @withRouter
 @connect(
 	null,
-	{loadData}
+	{authSuccess}
 )
 class AuthRoute extends React.Component{
 	componentDidMount(){
@@ -18,14 +18,12 @@ class AuthRoute extends React.Component{
 		}
 
 		//通过上传浏览器中userid相关的cookie来获取用户登录信息;
-		axios.get('/user/info').
-			then(res=>{
-				if(res.status==200){
-					if(res.data.code==0){
-						this.props.loadData(res.data.data)
-					}else{
+		axios.get('/user/info')
+			.then(res=>{
+				if(res.status==200&&res.data.code==0){
+						this.props.authSuccess(res.data.data)
+				}else{
 						this.props.history.push('/login')
-					}
 				}
 			})
 	}

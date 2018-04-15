@@ -1,6 +1,7 @@
 import React from 'react'
 import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
 import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
 import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg} from '../../redux/chat.redux'
 import {getChatId} from '../../util'
 
@@ -56,8 +57,11 @@ class Chat extends React.Component{
 
 		const chatid = getChatId(userid, this.props.user._id)
 		const chatmsgs = this.props.chat.chatmsg.filter(v=>v.chatid == chatid)
+		const redirect = this.props.user.redirectTo
 		return (
+			
 			<div id='chat-page'>
+				{redirect&&redirect.indexOf('info')!=-1?<Redirect to={redirect}/>:null}
 				<NavBar 
 					mode='dark'
 					icon={<Icon type='left'/>}

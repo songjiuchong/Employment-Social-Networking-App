@@ -4,7 +4,7 @@ import {getRedirectPath} from '../util'
 
 const AUTH_SUCCESS = 'AUTH_SUCCESS'
 const ERROR_MSG = 'ERROR_MSG'
-const LOAD_DATA = 'LOAD_DATA'
+const UPDATE_DATA = 'UPDATE_DATA'
 const LOGOUT = 'LOGOUT'
 
 const initState={
@@ -19,8 +19,8 @@ export function user(state=initState,action){
 	switch (action.type){
 		case AUTH_SUCCESS: 
 			return {...state, msg:'', redirectTo:getRedirectPath(action.payload), ...action.payload }
-		case LOAD_DATA:
-			return {...state, ...action.payload}
+		case UPDATE_DATA:
+			return {...state, redirectTo:'/me', ...action.payload}
 		case ERROR_MSG: 
 			return {...state, msg:action.msg}
 		case LOGOUT:
@@ -31,7 +31,7 @@ export function user(state=initState,action){
 }
 
 //action creator
-function authSuccess(obj){
+export function authSuccess(obj){
 	const {pwd, __v, ...data} = obj
 	return {type:AUTH_SUCCESS, payload:data}
 }
@@ -39,12 +39,12 @@ export function errorMsg(msg){
 	return {msg, type:ERROR_MSG}
 }
 
-export function loadData(userinfo){
-	return {type:LOAD_DATA, payload:userinfo}
-}
-
 export function logoutSubmit(){
 	return {type:LOGOUT}
+}
+
+export function updateUserInfo(updatedInfo){
+	return {type:UPDATE_DATA, payload:updatedInfo}
 }
 
 export function login({user, pwd}){
@@ -91,7 +91,7 @@ export function update(data){
 			axios.post('/user/update',data)
 				.then(res=>{
 						if(res.status==200&&res.data.code===0){
-							dispatch(authSuccess(res.data.data))
+							dispatch(updateUserInfo(res.data.data))
 						}else{
 							dispatch(errorMsg(res.data.msg))
 						}
