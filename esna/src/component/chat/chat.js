@@ -2,12 +2,12 @@ import React from 'react'
 import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
 import {connect} from 'react-redux'
 import {Redirect} from 'react-router-dom'
-import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg} from '../../redux/chat.redux'
+import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg} from '../../redux/chat.redux'
 import {getChatId} from '../../util'
 
 @connect(
 	state=>state,
-	{getMsgList, sendMsg, recvMsg, listenerSet, readMsg}
+	{getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg}
 )
 class Chat extends React.Component{
 	constructor(props){
@@ -16,6 +16,10 @@ class Chat extends React.Component{
 			text:'',
 			showEmoji:false
 		}
+
+		const msgDraft = this.props.chat.chatdraft[this.props.match.params.user]
+		if(msgDraft)
+			this.state.text = msgDraft
 	}
 	componentDidMount(){
 		this.props.getMsgList()
@@ -27,6 +31,9 @@ class Chat extends React.Component{
 	componentWillUnmount(){
 		const to = this.props.match.params.user
 		this.props.readMsg(to)
+		//聊天输入框未发送消息草稿保存
+		const chatDraft = this.state.text
+		this.props.saveDraftMsg(to, chatDraft)
 	}
 
 	//修正antd-mobile的Grid组件Carousel的问题

@@ -10,12 +10,15 @@ const MSG_RECV = 'MSG_RECV'
 const MSG_READ = 'MSG_READ'
 //应用已经监听了来自服务器端的'recvmsg’事件
 const LISTENER_SET = 'LISTENER_SET'
+//保存用户在聊天窗口未发送的消息
+const MSG_SAVE = 'MSG_SAVE'
 
 const initState = {
 	chatmsg:[],
 	unread:0,
 	users:{},
-	listenerset:false
+	listenerset:false,
+	chatdraft:{}
 }
 
 //reducer
@@ -35,6 +38,9 @@ export function chat(state=initState,action){
 				chatmsg:state.chatmsg.map(v=>({...v, read:from==v.from?true:v.read})), 
 				unread: state.unread-num
 			}
+		case MSG_SAVE:
+			const {to, chatDraft} = action.payload
+			return {...state, chatdraft:{...state.chatdraft, [to]:chatDraft}}
 		default:
 			return state
 	}
@@ -64,6 +70,10 @@ export function readMsg(from){
 				}
 			})
 	}
+}
+
+export function saveDraftMsg(to, chatDraft){
+	return {type:MSG_SAVE, payload:{to, chatDraft}}
 }
 
 export function recvMsg(){
