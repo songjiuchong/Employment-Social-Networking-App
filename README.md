@@ -6842,4 +6842,651 @@ https://blog.csdn.net/qq_39759115/article/details/78893853
 ￼
 
 
-(3)
+(3)增加当用户在完善信息页面未选择头像就提交时的报错信息;
+
+当前在bossinof/geniusinfo页面中, 如果用户未选择头像就点击提交, 那么用户所填写的信息还是会被发送到服务器端更新数据库, 然后更新前端redux的state.user中相关信息的, 但是由于缺失avatar属性, getRedirectPath方法会让state.user.redirectTo仍旧指向bossinof/geniusinfo, 也就是说用户点击提交后会留在bossinof/geniusinfo页面, 并且没有任何提示, 这种情况下用户显然会非常confusing, 解决方法就是在用户点击提交按钮并执行update时对提交的数据做检查, 如果没有包含avatar属性, 那么就通过errorMsg方法在redux上发布一条显示error msg的action, 并且不会提交任何数据到服务器端, 此时只要用户选择了任何头像, 那么在AvatarSelector组件的相关onClick方法中就会通过errorMsg方法在redux上发布一条清空error msg的action; 
+
+修改user.redux.js;
+……
+export function errorMsg(msg){
+  return {msg, type:ERROR_MSG}
+}
+……
+export function update(data){
+  
+  return dispatch=>{
+    if(!data.avatar)
+      dispatch(errorMsg('请先选择头像再提交'))
+    else
+      axios.post('/user/update',data)
+        .then(res=>{
+            if(res.status==200&&res.data.code===0){
+              dispatch(authSuccess(res.data.data))
+            }else{
+              dispatch(errorMsg(res.data.msg))
+            }
+        })
+  }
+}
+……
+
+
+修改geniusinfo.js/bossinfo.js;
+……
+import {update, errorMsg} from '../../redux/user.redux'
+……
+@connect(
+  state=>state.user,
+  {update, errorMsg}
+)
+……
+        <AvatarSelector
+          errorMsg={this.props.errorMsg}
+          selectAvatar={(imgname)=>{
+            this.props.handleChange('avatar',imgname)}}
+        ></AvatarSelector> 
+……
+
+
+修改avatar-selector.js;
+……
+        <List renderHeader={()=>gridHeader}>
+          <Grid data={avatarList} 
+              columnNum='5'
+              onClick = {ele=>{
+                  this.setState(ele)
+                this.props.selectAvatar(ele.text)
+                this.props.errorMsg('')
+              }}
+          />
+        </List>
+……
+
+￼
+￼
+
+
+(4)修复用户在注册但未完成信息完善(选择头像)时直接访问其它需要登录权限的页面时(‘/me’, ‘/chat’等)可能会报错的问题:
+Uncaught Error: Cannot find module './undefined.png'.
+
+因为此时在页面中渲染用户头像的功能会require一个根本不存在的图片地址:’…/undefined.png’; 
+
+
+解决办法:
+
+其实对于一个已经注册但是还未完善头像信息的用户来说, 他除了能够访问bossinfo/geniusinfo页面来继续完善信息外理论上不能进入任何其它需要用户登录权限的页面, 下面来对这些页面进行逐一分析:
+
+对于boss/genius页面来说, 由于当前未完善头像信息的用户不会在这个页面中获取自己的头像(但是可以发起聊天, 这个问题会在下面提到的限制其进入chat页面功能中解决), 所以不会有问题, 而对于其它用户在来到boss/genius页面时由于Boss/Genius组件(其实是它们的子组件:UserCard)本身存在逻辑, 如果待渲染的用户avatar属性不存在, 那么就不会在页面中渲染这个用户的UserCard, 也就避免了报错;
+
+对于chat页面来说, 如果一个头像信息未完善的用户发送了一条消息给其它用户, 那么无论是当前用户还是接收了这条消息的用户的msg页面都会发生渲染头像相关的错误, 所以应该禁止一个没有头像信息的用户来到chat页面;
+
+对于msg页面而言, 由于其他用户在他们的boss/genius页面(牛人/boss列表)中不会显示这些没有头像信息用户的card, 所以也无法发起聊天, 又由于上一条中已经说明了需要禁止一个没有头像信息的用户来到chat页面发起聊天, 所以其他用户的msg页面中也不会出现因为要显示这类用户的头像而发生错误的情况;
+
+对于me页面来说, 目前肯定会因为当前用户没有设置头像而报错, 最好的解决办法(也能与之后将要添加的个人信息页面修改信息功能产生配合)是允许这类用户来到’/me’页面, 但是将用户头像部分显示为一张专门为未设置头像用户默认显示的图片;
+
+根据上面几条内容进行总结: 
+只要限制了未设置头像用户进入chat页面的功能, 并且改进me页面的头像显示, 就能解决上面提到的问题;
+实现这个修复的关键就在于redux的state.user.redirectTo属性, 因为接下来需要在用户访问chat页面后对其是否已经完善了头像信息做一个检查, 如果有头像信息就可以进入chat页面, 如果没有头像信息就跳转到相关的信息完善页面(使用redirectTo属性来判断); 
+对于一个已登录用户来说, 如果它有头像信息, 那么他在redux中保存的redirectTo属性就应该是boss/genius, 如果没有头像信息, 那么这个属性就应该是bossinfo/geniusinfo, 但是目前应用只有在发起一个type为: AUTH_SUCCESS 的action时才会去更新redirectTo属性, 而在最关键的AuthRoute的组件中由于在验证了用户登录信息后发出的是一个type为LOAD_DATA的action(LOAD_DATA与AUTH_SUCCESS在reducer中唯一的区别就是前者不会去更新state.user.redirectTo属性), 所以我们直接在AuthRoute的组件中使用AUTH_SUCCESS来代替LOAD_DATA, 使得AuthRoute组件在验证完用户权限后也能相应更新redirectTo属性:
+
+修改user.redux.js;
+
+删除与LOAD_DATA和loadData相关内容;
+……
+export function authSuccess(obj){
+  const {pwd, __v, ...data} = obj
+  return {type:AUTH_SUCCESS, payload:data}
+}
+
+
+修改component/authroute.js;
+……
+import {authSuccess} from '../../redux/user.redux'
+import {connect} from 'react-redux'
+
+@withRouter
+@connect(
+  null,
+  {authSuccess}
+)
+……
+    axios.get('/user/info')
+      .then(res=>{
+        if(res.status==200&&res.data.code==0){
+            this.props.authSuccess(res.data.data)
+        }else{
+            this.props.history.push('/login')
+        }
+      })
+……
+
+
+修改chat.js;
+……
+import {Redirect} from 'react-router-dom'
+……
+    return (
+      
+      <div id='chat-page'>
+        {redirect&&redirect.indexOf('info')!=-1?<Redirect to={redirect}/>:null}
+……
+
+
+通过上面的优化, 还顺带解决了之前的一个问题: 一个boss或者genius身份的用户可以任意交叉访问’/bossinfo’或’/geniusinfo’, 现在会根据用户的身份以及是否已经完善了头像来限制对’/bossinfo’或’/geniusinfo’页面的访问; 但是任何用户对’boss’或’genius’页面任意交叉访问的问题还存在, 解决方法是在Boss和Genius组件中同样添加redirect相关的判断条件;
+
+
+修改genius.js;
+……
+import {Redirect} from 'react-router-dom'
+……
+@connect(
+  state=>state,
+  {getUserList}
+)
+class Genius extends React.Component{
+  componentDidMount(){
+    this.props.getUserList('boss')
+  }
+  render(){
+    const redirect = this.props.user.redirectTo
+    return (
+      <div>
+        {redirect&&redirect.indexOf('genius')==-1?<Redirect to={'/boss'}/>:null}
+        <UserCard userlist={this.props.chatuser.userlist}/>
+      </div>
+    )
+  }
+}
+……
+
+
+修改boss.js;
+……
+import {Redirect} from 'react-router-dom'
+……
+class Boss extends React.Component{
+  componentDidMount(){
+    this.props.getUserList('genius')
+  }
+  render(){
+    const redirect = this.props.user.redirectTo
+    return (
+      <div>
+        {redirect&&redirect.indexOf('boss')==-1?<Redirect to={'/genius'}/>:null}
+        <UserCard userlist={this.props.chatuser.userlist}/>
+      </div>
+    )
+  }
+}
+……
+
+经过这一系列优化后, 现在的访问规则是: 
+如果一个完善了头像信息的boss用户直接访问bossinfo页面, 那么将会被跳转到boss页面, 如果他试图访问geniusinfo页面, 那么也会被跳转到boss页面; 如果他试图访问genius页面, 那么他还是会被跳转到boss页面(对于genius用户的对应规则是一样的);
+如果一个未完善头像信息的boss用户直接访问bossinfo页面, 那么他是可以访问的, 如果他试图访问geniusinfo页面, 那么他会被跳转到bossinfo页面; 如果他试图访问genius页面, 那么他会被跳转到boss页面(对于genius用户对应规则是一样的);
+
+也就是说一个未完善头像信息的用户是可以根据其身份访问boss/genius页面的, 不会被跳转到完善信息页面;
+而一个已经完善了头像信息的用户无法访问对应其身份的完善信息页面, 会被直接跳转到相应boss/genius页面;
+
+
+(5)为未完善头像信息的用户在个人中心显示一张default的头像图片;
+
+在component/img中添加一张名为default.png的图片;
+
+
+修改user.js;
+……
+render(){
+    const srcImg = this.props.avatar?`../img/${this.props.avatar}.png`:'../img/default.png'
+    return this.props.user ? (
+      <div>
+        <Result
+          img={<img src={require(srcImg)} style={{width:50}} alt='' />}
+          title={this.props.user}
+          message={this.props.type=='boss' ? this.props.company:null}
+        />
+……
+
+上例中, 设计思路是正确的, 但是页面会报错:
+Uncaught Error: Cannot find module "."
+
+这显然是由于require(srcImg)根本没有找到相关模块造成的, 也就是说srcImg无法被require获取;
+这可能是因为webpack的Babel对这种情况下使用require方法有一定的限制(这里的require并非nodejs环境中commonjs的模块获取方法, 而是webpack自行创建的一个用来获取/转换静态资源路径的方法), 只能使用静态的纯字符串或者模板字符串, 而变量或者是字符串与变量的拼接是无法被正确读取的(这个机制还需要进一步核实);
+
+所以上例只能改为:
+……
+    let userImg = this.props.avatar?require(`../img/${this.props.avatar}.png`):require('../img/default.png')
+    
+    return this.props.user ? (
+      <div>
+        <Result
+          img={<img src={userImg} style={{width:50}} alt='' />}
+          title={this.props.user}
+          message={this.props.type=='boss' ? this.props.company:null}
+        />
+……
+
+未完善头像信息用户直接来到’/me’页面:
+￼
+
+
+(6)个人信息页面中添加跳转到完善信息页面以供用户修改个人信息的功能;
+
+想要实现这个功能, 首先需要改变目前头像已完善用户来到bossinfo/geniusinfo页面时会被跳转到boss/genius页面的这一机制, 也就是说, 无论用户头像信息是否完善都应该可以随时访问相关的用户信息完善页面; 
+同时还需要将之前的一个机制优化一下: 对于一个boss身份的头像信息完善的用户而言, 当他直接访问geniusinfo页面时应该被跳转到bossinfo页面(机制与目前已经实现的:当一个头像信息不完善的boss用户访问genius页面后会被跳转到boss页面这一点类似), 而目前会跳转到boss页面, 同理, 对于一个genius身份的头像信息完善的用户, 当他直接访问bossinfo页面时应该被跳转到geniusinfo页面;
+
+修改geniusinfo.js;
+……
+    return (
+      <div>
+        {redirect&&redirect!==path&&redirect!=='/genius'&&redirect!=='/boss'?
+          <Redirect to={this.props.redirectTo}/>
+          :(redirect=='/boss'?<Redirect to='/bossinfo' />:null)
+        }
+
+        <NavBar mode="dark">牛人完善信息页面</NavBar>
+……
+
+
+修改bossinfo.js;
+……
+    return (
+      <div>
+        {redirect&&redirect!==path&&redirect!=='/boss'&&redirect!=='/genius'?
+          <Redirect to={this.props.redirectTo}/>
+          :(redirect=='/genius'?<Redirect to='/geniusinfo'/>:null)
+        }
+        
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+……
+
+
+然后需要修改的一点就是, 目前在信息完善页面完成提交后(update方法执行)会使用user.redux.js中的authSuccess这个action creator方法来更新redux中用户相关的信息, 但是它同时会将state.user.redirectTo这个属性更新为’/boss’或者’/genius’, 然后页面被重新渲染, 由于上面更改后的路由规则, 用户将会停留在当前的信息完善页面; 
+解决方法就是为update方法新建一个对应的action creator, 并且要保证它会把state.user.redirectTo更新为一个非’/boss’或者’/genius’的值; 
+这里将这个redirectTo设计为’/me’, 目的就是为了让用户在完善自己的信息之后能够立刻在个人信息中心页面查看更新后的个人信息, 并且可以立刻选择再次修改个人信息;
+
+修改user.redux.js;
+……
+const UPDATE_DATA = 'UPDATE_DATA'
+……
+    case UPDATE_DATA:
+      return {...state, redirectTo:'/me', ...action.payload}
+……
+export function updateUserInfo(updatedInfo){
+  return {type:UPDATE_DATA, payload:updatedInfo}
+}
+……
+export function update(data){
+  
+  return dispatch=>{
+    if(!data.avatar)
+      dispatch(errorMsg('请先选择头像再提交'))
+    else
+      axios.post('/user/update',data)
+        .then(res=>{
+            if(res.status==200&&res.data.code===0){
+              dispatch(updateUserInfo(res.data.data))
+            }else{
+              dispatch(errorMsg(res.data.msg))
+            }
+        })
+  }
+}
+……
+
+
+修改user.js;
+……
+import {logoutSubmit, authSuccess} from '../../redux/user.redux'
+
+@connect(
+  state=>state.user,
+  {logoutSubmit, authSuccess}
+)
+class User extends React.Component{
+  constructor(props){
+    super(props)
+    this.logout = this.logout.bind(this)
+    this.updateInfo = this.updateInfo.bind(this)
+  }
+  componentWillUnmount(){
+    this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+  }
+  updateInfo(){
+    const alert = Modal.alert
+        alert('提示', '是否前往修改个人信息页面?', [
+          { text: '算了' },
+          { text: '前往', onPress: () => {
+            const targetPath = this.props.type=='boss'?'/bossinfo':'/geniusinfo'
+            this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+    this.props.history.push(targetPath)
+          }},
+        ])
+  }
+……
+        <WhiteSpace></WhiteSpace>
+        <List>
+          <List.Item onClick = {this.updateInfo}>修改个人信息</List.Item>
+        </List>
+        <List>
+          <List.Item onClick = {this.logout}>退出登录</List.Item>
+        </List>
+……
+
+上例中, 在’/me’页面添加了一个修改个人信息的按钮, 点击前往后将首先使用user.redux.js中的authSuccess方法将redux中state.user.redirectTo属性从’/me’改回之前验证登录后的状态, 接着就跳转到相应的用户完善信息页面, 由于已经更新了state.user.redirectTo的值, 所以在render了geniusinfo/bossinfo页面后不会由于路由判断直接又返回’/me’页面; 
+需要注意的是, 在User组件中还使用了componentWillUnmount钩子函数来执行authSuccess方法以更新redux中的state.user.redirectTo属性, 但是它在这里的作用并不是为了修正当用户的state.user.redirectTo属性已经为’/me’后又点击修改个人信息而来到用户完善信息页面但是被路由条件直接跳转回了’/me’页面这个问题, 因为componentWillUnmount钩子函数发生在页面路由跳转, 然后根据路由所有相关组件都被加载(执行它们的render方法), 更新了虚拟dom树, 虚拟树进行对比并重新渲染html页面后, 而在bossinfo/geniusinfo组件重新render时就已经会因为当前state.user.redirectTo属性为’/me’而重新跳转回用户个人信息页面(<Redirect>组件在render方法中一旦加载就会立刻进行react路由的跳转, 进而整个应用重新根据路由进行组件更新), 所以必须在执行this.props.history.push(targetPath)之前就去更新state.user.redirectTo属性(而更新redux中数据引发的update所有被connect封装的组件发生在当前主线程中所有任务执行完毕后, 也就是这一轮html页面更新后);
+其实这里在User组件的componentWillUnmount钩子函数中使用authSuccess的作用是为了当用户从’/me’页面跳转到msg页面或者跳转到boss/genius后, 将当前用户的state.user.redirectTo属性恢复到之前验证登录后的状态以方便后面的操作, 而这里之所以可以等此轮html页面更新后再执行更新redux数据的操作的原因是: 首先, msg页面本身就没有根据路由跳转的判断逻辑, 其次, 在boss/genius页面的路由跳转判断中将会添加与’/me’相关的条件从而使得用户能够正常访问页面而不会跳转回’/me’页面:
+
+修改boss.js;
+……
+{redirect&&redirect.indexOf('boss')==-1&&redirect.indexOf('me')==-1?<Redirect to={'/genius'}/>:null}
+……
+
+
+修改genius.js;
+……
+{redirect&&redirect.indexOf('genius')==-1&&redirect.indexOf('me')==-1?<Redirect to={'/boss'}/>:null}
+……
+
+￼
+￼
+
+
+接下去需要进一步完善的方面就是, 当前从个人中心页面点击修改个人信息按钮并跳转到对应的geniusinfo/bossinfo后页面中所有信息都是空的, 就如同新注册用户第一次来到这个页面时一样, 这里需要将用户之前已经提交的最新内容默认显示在完善信息页面中;
+
+修改component/hoc-form/hoc-form.js;
+……
+    constructor(props){
+      super(props)
+      this.state = {hasInit:false}
+      this.handleChange = this.handleChange.bind(this)
+      this.initState = this.initState.bind(this)
+    }
+    initState(state){
+      if(!this.state.hasInit)
+        this.setState({hasInit:true, ...state})
+    }
+……
+
+上例中为高阶组件方法hocForm添加了一个能让被封装组件一次性将初始状态更新到高阶组件的state中的方法; 并且为这个组件设置了一个默认为false的标识符hasInit, 当initState方法执行过一遍后就将其置true, 因为initState方法是在其子组件的componentWillReceiveProps函数中执行的, 如果不根据标志判断每次initState方法被调用时都执行一遍setState就会形成死循环;
+
+
+修改bossinfo.js;
+……
+@connect(
+  state=>state.user,
+  {update, errorMsg}
+)
+@hocForm
+class BossInfo extends React.Component{
+  constructor(props){
+    super(props)
+    // this.state = {
+    //  title:'',
+    //  company:'',
+    //  money:'',
+    //  desc:''
+    // }
+
+    //初始化高阶组件的state
+    if(this.props.user){
+      const iState = {avatar:this.props.avatar, title:this.props.title, company:this.props.company, money:this.props.money, desc:this.props.desc}
+      this.props.initState(iState)
+    }
+  }
+  componentWillReceiveProps(newProps){
+    //初始化高阶组件的state
+    if(!newProps.state.hasInit){
+      const iState = {avatar:newProps.avatar, title:newProps.title, company:newProps.company, money:newProps.money, desc:newProps.desc}
+      this.props.initState(iState)
+    }
+  }
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+
+    return (
+      <div>
+        {redirect&&redirect!==path&&redirect!=='/boss'&&redirect!=='/genius'?
+          <Redirect to={this.props.redirectTo}/>
+          :(redirect=='/genius'?<Redirect to='/geniusinfo'/>:null)
+        }
+
+        <NavBar mode="dark">BOSS完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+        <AvatarSelector
+          errorMsg={this.props.errorMsg}
+          initAvatar = {this.props.state.avatar}
+          selectAvatar={(imgname)=>{
+            this.props.handleChange('avatar', imgname)
+          }}
+        ></AvatarSelector> 
+        <InputItem onChange={(v)=>this.props.handleChange('title',v)} value={this.props.state.title}>
+          招聘职位
+        </InputItem>
+        <InputItem onChange={(v)=>this.props.handleChange('company',v)} value={this.props.state.company}>
+          公司名称
+        </InputItem>
+        <InputItem onChange={(v)=>this.props.handleChange('money',v)} value={this.props.state.money}>
+          职位薪资
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.props.handleChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='职位要求'
+          value={this.props.state.desc}
+        >
+        </TextareaItem>
+        <Button 
+          onClick={()=>{
+            this.props.update(this.props.state)
+          }}
+          type='primary'>提交</Button>
+      </div>
+    )
+  }
+
+}
+……
+
+
+修改geniusinfo.js;
+……
+@connect(
+  state=>state.user,
+  {update, errorMsg}
+)
+@hocForm
+class GeniusInfo extends React.Component{
+  constructor(props){
+    super(props)
+    // this.state = {
+    //  title:'',
+    //  desc:''
+    // }
+
+    //初始化高阶组件的state
+    if(this.props.user){
+      const iState = {avatar:this.props.avatar, title:this.props.title, desc:this.props.desc}
+      this.props.initState(iState)
+    }
+  }
+  componentWillReceiveProps(newProps){
+    //初始化高阶组件的state
+    if(!newProps.state.hasInit){
+      const iState = {avatar:newProps.avatar, title:newProps.title, desc:newProps.desc}
+      this.props.initState(iState)
+    }
+  }
+  render(){
+    const path = this.props.location.pathname
+    const redirect = this.props.redirectTo
+
+    return (
+      <div>
+        {redirect&&redirect!==path&&redirect!=='/genius'&&redirect!=='/boss'?
+          <Redirect to={this.props.redirectTo}/>
+          :(redirect=='/boss'?<Redirect to='/bossinfo' />:null)
+        }
+
+        <NavBar mode="dark">牛人完善信息页面</NavBar>
+        {this.props.msg?<p className='error-msg'>{this.props.msg}</p>:null}
+        <AvatarSelector
+          errorMsg={this.props.errorMsg}
+          initAvatar = {this.props.state.avatar}
+          selectAvatar={(imgname)=>{
+            this.props.handleChange('avatar',imgname)}}
+        ></AvatarSelector> 
+        <InputItem onChange={(v)=>this.props.handleChange('title',v)} value={this.props.state.title}>
+          求职岗位
+        </InputItem>
+        <TextareaItem 
+          onChange={(v)=>this.props.handleChange('desc',v)}
+          rows={3}
+          autoHeight
+          title='个人简介'
+          value={this.props.state.desc}
+        >
+        </TextareaItem>
+        <Button 
+          onClick={()=>{
+            this.props.update(this.props.state)
+          }}
+          type='primary'>提交</Button>
+      </div>
+    )
+  }
+
+}
+……
+
+
+上例中可以发现, 在geniusinfo和bossinfo组件的constructor方法和componentWillReceiveProps方法中都有使用initState来初始化高阶组件的state的方法, 其实它们分别在两种情况下作用:
+
+<1>用户直接访问geniusinfo/bossinfo页面, 此时高阶组件以及geniusinfo和bossinfo组件的constructor方法中其实获取不到任何有效的props属性, 因为AuthRoute组件在componentDidMount方法执行时才会去获取并更新登录用户信息到redux中, 那么也就是说当redux被更新后, 高阶组件将被update, 重新执行render方法, 从而将redux中更新的用户信息依靠:
+    render(){
+      return <Comp handleChange={this.handleChange} initState={this.initState} state={this.state} {...this.props}></Comp>
+    }
+
+传递给子组件bossinfo/geniusinfo, 接着就会触发这两个组件的componentWillReceiveProps(这里选择使用这个钩子函数是为了保证只在高阶组件更新后引发的子组件更新中来使用initState方法更新高阶组件的state, 而不会在子组件本身因为某些原因被update时使用initState方法), 在componentWillReceiveProps方法中此时已经可以通过传入参数newProps来获取默认应该显示在信息完善页面中的用户信息了, 接着就将这些信息更新到高阶组件的state中以保持高阶组件state中各种用户信息属性与bossinfo/geniusinfo组件中对应输入框内容的统一性; 而又由于之前在高阶组件在设置了hasInit标识符, 所以这里不会发生死循环的情况;
+显然在通过initState方法将初始用户信息更新到高阶组件的state后会引发高阶组件以及其子组件的一次更新, 这次更新中就会将子组件的this.props.state中对应的用户属性依次做为用户完善信息页面中各个输入框的value属性, 这样就保持了输入/输出端数据的统一, 之后提交的数据就不会有问题了;
+对于AvatarSelector组件, 这里传入了一个initAvatar属性, 为了让它能够显示一个初始的用户头像:
+
+修改avatar-selector.js;
+……
+  componentWillReceiveProps(nextProp){
+    if(nextProp.initAvatar)
+      this.setState({text:nextProp.initAvatar,icon:require(`../img/${nextProp.initAvatar}.png`)})
+  }
+  render(){
+    const avatarList = 'fox,rabbit,fox1,fox2,fox3,fox4,rabbit1,rabbit2,rabbit3,rabbit4'   //src/component/img文件夹中所有头像图片的前缀名组成的字符串数组;
+              .split(',')
+              .map(v=>({
+                icon:require(`../img/${v}.png`),
+                text:v
+              }))
+
+    const gridHeader = this.state.icon ? 
+              (<div>
+                <span style={{'verticalAlign': 'middle'}}>已选择头像:</span>
+                <img style={{'verticalAlign': 'middle', 'marginLeft':10,width:30}} src={this.state.icon}/>
+              </div>) 
+              : '请选择头像'
+    return (
+      <div>
+        <List renderHeader={()=>gridHeader}>
+          <Grid data={avatarList} 
+              columnNum='5'
+              onClick = {ele=>{
+                  this.setState(ele)
+                this.props.selectAvatar(ele.text)
+                this.props.errorMsg('')
+              }}
+          />
+        </List>
+      </div>
+    )
+  }
+}
+……
+
+需要注意的是, 这里在AvatarSelector组件的componentWillReceiveProps钩子函数中使用setState方法来放入初始头像, 这点非常关键, 因为componentWillReceiveProps方法是唯一能够在其内部更改当前组件state而不会引发死循环的生命周期方法;
+
+
+很显然, 这上面所介绍的这种访问用户完善信息页面的方式中, 在geniusinfo和bossinfo组件的constructor方法里无须使用initState方法来更新高阶组件state, 如果使用了反而会扰乱对其更新的效果, 因为constructor中根本拿不到任何有效信息, 执行的initState更新的都是空值, 所以这里使用了this.props.user是否存在这个判断条件来屏蔽了它的执行;
+
+
+<2>当用户通过个人中心页面点击修改个人信息而跳转到bossinfo/geniusinfo时, 用户的所有信息早已在redux中存在了, 而且此时通过路由跳转引发的组件重新加载只会触发bossinfo/geniusinfo的constructor方法, 并不会触发componentWillReceiveProps函数(因为在加载过程中没有任何组件的state或者redux发生更新),
+所以就需要在constructor方法中使用initState将redux中最新的用户信息更新到高阶组件的state中, 从而根据这些用户的初始信息重新渲染页面, 达到输入和输出端内容的统一性; 
+很显然, 在这种情况下constructor中的this.props.user判断条件将会通过, 同时componentWillReceiveProps函数中的判断条件: !newProps.state.hasInit将不会通过(因为高阶组件的hasInit已经在constructor中的initState执行时被置true), 所以不会在其中再次执行initState方法;
+
+
+
+(7)用户在chat页面聊天时, 可能输入了一些内容但是并未发送, 此时如果离开chat页面后再返回, 之前输入但是没有发送的内容就不存在了, 这里将添加用户聊天输入草稿保存的功能;
+
+修改chat.redux.js;
+……
+//保存用户在聊天窗口未发送的消息
+const MSG_SAVE = 'MSG_SAVE'
+const initState = {
+  chatmsg:[],
+  unread:0,
+  users:{},
+  listenerset:false,
+  chatdraft:{}
+}
+……
+    case MSG_SAVE:
+      const {to, chatDraft} = action.payload
+      return {...state, chatdraft:{...state.chatdraft, [to]:chatDraft}}
+……
+export function saveDraftMsg(to, chatDraft){
+  return {type:MSG_SAVE, payload:{to, chatDraft}}
+}
+……
+
+
+修改chat.js;
+……
+import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg} from '../../redux/chat.redux'
+……
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg}
+)
+class Chat extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      text:'',
+      showEmoji:false
+    }
+    const msgDraft = this.props.chat.chatdraft[this.props.match.params.user]
+    if(msgDraft)
+      this.state.text = msgDraft
+  }
+……
+  componentWillUnmount(){
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+    //聊天输入框未发送消息草稿保存
+    const chatDraft = this.state.text
+    this.props.saveDraftMsg(to, chatDraft)
+  }
+……
+
+
+上例中, 在chat.redux.js中添加了用来保存用户草稿消息的action creator方法: saveDraftMsg, 在redux的state.chat中新建了一个chatdraft对象属性, 用来以key/value的形式保存当前用户与其他聊天用户的草稿消息; 当saveDraftMsg被执行时一个type为MSG_SAVE的action被发出, 通过reducer方法state.chat.chatdraft中的相关键值对被更新;
+在chat.js中, 当Chat组件的componentWillUnmount函数执行时(用户离开chat页面时)会将当前页面中消息输入框中的内容通过saveDraftMsg方法更新到redux的state.chat.chatdraft对象中, 之后当用户再进入chat页面后(通过其他页面跳转, 而非直接访问chat页面或刷新chat页面), 其constructor方法会执行, 又由于当前redux的信息已经都是最新的了, 所以可以直接将redux中state.chat.chatdraft对象里key为当前聊天用户_id的草稿消息取出更新到组件初始的state.text中, 于是chat页面重新渲染后输入框中会默认显示当前用户之前还未发送给聊天对象的草稿消息;
+
+很显然, 目前的这项保存用户草稿消息的功能只在当前应用执行阶段有效, 也就是说当用户重启应用(刷新页面)后由于redux中内容都会清空, 所以不会再保存之前的草稿消息, 如果想要让草稿消息持久化, 那就需要改进当前设计:
+在saveDraftMsg方法中需要将草稿相关信息(聊天会话chatid和草稿消息内容)发送到服务器并保存到数据库中, 那么数据库的chat集合需要新建立一个字段专门用来保存草稿消息, 当草稿消息在数据库保存完毕后再更新前端redux中state.chat.chatdraft对象;
+而在用户来到chat页面时(这里就存在直接访问chat页面或者在chat页面刷新的情况), 不能仅仅使用在constructor方法中设置初始的state.text值的方式来在消息输入框中显示默认草稿消息了, 而是需要在componentWillReceiveProps钩子函数中判断当: this.props.chat.chatdraft[this.props.match.params.user]成立, 并且当前this.state.text中不存在消息(为了防止已经在constructor中获取了最新的草稿消息并且更新了state的情况)时再去通过this.setState方法更新state.text的值, 然后页面会被重新渲染并且显示最新的草稿消息;
+在Chat组件的handleSubmit方法中需要使用: this.props.saveDraftMsg(to,’’)方法将草稿消息置空, 这是考虑到如果用户在发送了消息之后直接关闭应用, 或者重启应用(刷新页面), 此时Chat组件的componentWillUnmount方法是不会再执行的, 也就是说用户之前的草稿消息虽然已经被发送应该清空了, 但是这一信息并没有被同步到数据库中, 所以之后当用户重新来到chat页面后仍旧会看到输入框中有上一次保存的草稿消息; 
+
+
+
+13.React进阶;
+
+
+
