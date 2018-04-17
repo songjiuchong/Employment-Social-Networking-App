@@ -7422,7 +7422,7 @@ class GeniusInfo extends React.Component{
 
 
 
-(7)用户在chat页面聊天时, 可能输入了一些内容但是并未发送, 此时如果离开chat页面后再返回, 之前输入但是没有发送的内容就不存在了, 这里将添加用户聊天输入草稿保存的功能;
+(7)用户在chat页面聊天时, 可能在输入框输入了一些内容但是并未发送, 此时如果离开chat页面后再返回, 之前输入但是没有发送的内容就不存在了, 这里将添加用户聊天消息草稿保存的功能(保存时长为本次应用的生命周期);
 
 修改chat.redux.js;
 ……
@@ -7476,17 +7476,401 @@ class Chat extends React.Component{
 ……
 
 
-上例中, 在chat.redux.js中添加了用来保存用户草稿消息的action creator方法: saveDraftMsg, 在redux的state.chat中新建了一个chatdraft对象属性, 用来以key/value的形式保存当前用户与其他聊天用户的草稿消息; 当saveDraftMsg被执行时一个type为MSG_SAVE的action被发出, 通过reducer方法state.chat.chatdraft中的相关键值对被更新;
-在chat.js中, 当Chat组件的componentWillUnmount函数执行时(用户离开chat页面时)会将当前页面中消息输入框中的内容通过saveDraftMsg方法更新到redux的state.chat.chatdraft对象中, 之后当用户再进入chat页面后(通过其他页面跳转, 而非直接访问chat页面或刷新chat页面), 其constructor方法会执行, 又由于当前redux的信息已经都是最新的了, 所以可以直接将redux中state.chat.chatdraft对象里key为当前聊天用户_id的草稿消息取出更新到组件初始的state.text中, 于是chat页面重新渲染后输入框中会默认显示当前用户之前还未发送给聊天对象的草稿消息;
+上例中, 在chat.redux.js中添加了用来保存用户草稿消息的action creator方法: saveDraftMsg, 在redux的state.chat中新建了一个chatdraft对象属性, 用来以key/value的形式保存当前用户与其他聊天用户的草稿消息; 当saveDraftMsg被执行时一个type为MSG_SAVE的action被发出, 通过reducer方法后state.chat.chatdraft中的相关键值对被更新;
+在chat.js中, 当Chat组件的componentWillUnmount函数执行时(用户离开chat页面时)会将当前页面中消息输入框中的内容通过saveDraftMsg方法更新到redux的state.chat.chatdraft对象中, 之后当用户再进入chat页面后(通过其他页面跳转, 而非直接访问chat页面或刷新chat页面), 其constructor方法会执行, 又由于当前redux的信息已经都是最新的了, 所以可以直接将redux中state.chat.chatdraft对象里key为当前聊天用户_id的草稿消息取出更新到组件初始的state.text中, 于是chat组件的render执行, 在页面中渲染后输入框中会默认显示当前用户之前还未发送给聊天对象的草稿消息;
 
-很显然, 目前的这项保存用户草稿消息的功能只在当前应用执行阶段有效, 也就是说当用户重启应用(刷新页面)后由于redux中内容都会清空, 所以不会再保存之前的草稿消息, 如果想要让草稿消息持久化, 那就需要改进当前设计:
+很显然, 目前这项保存用户草稿消息的功能只在当前应用执行阶段有效, 也就是说当用户重启应用(刷新页面)后由于redux中内容都会清空, 所以不会再保存之前的草稿消息, 如果想要让草稿消息持久化, 那就需要改进当前设计:
 在saveDraftMsg方法中需要将草稿相关信息(聊天会话chatid和草稿消息内容)发送到服务器并保存到数据库中, 那么数据库的chat集合需要新建立一个字段专门用来保存草稿消息, 当草稿消息在数据库保存完毕后再更新前端redux中state.chat.chatdraft对象;
-而在用户来到chat页面时(这里就存在直接访问chat页面或者在chat页面刷新的情况), 不能仅仅使用在constructor方法中设置初始的state.text值的方式来在消息输入框中显示默认草稿消息了, 而是需要在componentWillReceiveProps钩子函数中判断当: this.props.chat.chatdraft[this.props.match.params.user]成立, 并且当前this.state.text中不存在消息(为了防止已经在constructor中获取了最新的草稿消息并且更新了state的情况)时再去通过this.setState方法更新state.text的值, 然后页面会被重新渲染并且显示最新的草稿消息;
-在Chat组件的handleSubmit方法中需要使用: this.props.saveDraftMsg(to,’’)方法将草稿消息置空, 这是考虑到如果用户在发送了消息之后直接关闭应用, 或者重启应用(刷新页面), 此时Chat组件的componentWillUnmount方法是不会再执行的, 也就是说用户之前的草稿消息虽然已经被发送应该清空了, 但是这一信息并没有被同步到数据库中, 所以之后当用户重新来到chat页面后仍旧会看到输入框中有上一次保存的草稿消息; 
+而在用户来到chat页面时(这里就包括了用户直接访问chat页面或者在chat页面刷新的情况), 不能仅仅使用在constructor方法中设置初始的state.text值的方式来在消息输入框中显示草稿消息了, 而是需要在componentWillReceiveProps钩子函数中判断当: this.props.chat.chatdraft[this.props.match.params.user]存在, 并且当前this.state.text中不存在消息(为了防止已经在constructor中获取了最新的草稿消息并且更新了state的情况)时再去通过this.setState方法更新state.text的值, 然后页面会被重新渲染并且显示最新的草稿消息;
+在Chat组件的handleSubmit方法中需要使用: this.props.saveDraftMsg(to,’’)方法将草稿消息置空, 这是考虑到如果用户在发送了消息之后直接关闭应用, 或者重启应用(刷新页面), 此时Chat组件的componentWillUnmount方法是不会再执行的, 也就是说用户之前的草稿消息虽然已经被发送应该清空了, 但是这一清空的步骤并没有被同步到数据库中, 所以之后当用户重新来到chat页面后仍旧会看到输入框中有上一次保存的草稿消息; 
 
+用户genius来到与用户boss的聊天页面并在输入框输入一些内容:
+￼
+
+返回上一个页面:
+￼
+
+重新进入与用户boss的聊天页面, 发现输入框中已经存在之前未发送的消息草稿:
+￼
+
+
+
+
+
+Redux+React Router+Node.js全栈开发笔记 (三);
+
+
+……
 
 
 13.React进阶;
+
+(1)直接写在js中的jsx代码会被Babel通过React.createElement转换为一个ReactElement;
+￼
+￼
+
+￼
+￼
+
+也就是说每一个jsx元素都存在一个ReactElement对象来描述它;
+
+
+(2)react的setState()方法存在队列的机制, 也就是说setState()方法对状态的更新是异步的, 在同一线程中对某个组件state的多次更新最终会被react合并成一次对这个组件生命周期的update, 之前也提到过:
+当组件的this.setState()执行后, 之后组件的componentWillUpdate()方法开始执行时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
+
+补充:
+1.setState和replaceState区别;
+
+参考:
+https://blog.csdn.net/u013510838/article/details/59486772
+
+
+(3)对redux的createStore函数的简单实现;
+
+export function createStore(reducer, iniState){
+
+  let currentState = iniState?iniState:{}
+  let currentListeners = []
+
+  function getState(){
+    return currentState
+  }
+
+  function subscribe(listener){
+    currentListeners.push(listener)
+  }
+
+  function dispatch(action){
+    currentState = reducer(currentState, action)
+    currentListeners.forEach(v=>v())
+    return action
+  }
+
+  if(!iniState)
+    dispatch({type:'@@redux/INIT'})
+
+  return {getState, subscribe, dispatch}
+}
+
+关于createStore方法的第二个和第三个参数的作用, 可以参考Redux笔记中: 
+'11.Store 的实现；' 和 ’16.中间件的用法;’ 相关内容;
+
+
+(4)对react-redux的Provider组件的简单实现;
+
+import PropTypes from 'prop-types'
+
+export class Provider extends React.Component{
+  static childContextTypes = {
+    store: PropTypes.object
+  }
+  getChildContext(){
+    return {store:this.store}
+  }
+  constructor(props, context){
+    super(props, context)
+    this.store = props.store
+  }
+  render(){
+    return this.props.children
+  }
+}
+
+
+(5)对react-redux的connect方法的简单实现;
+
+import PropTypes from 'prop-types'
+
+function bindActionCreator1(creator, dispatch){
+  return (...args)=> dispatch(creator(...args)) 
+}
+
+function bindActionCreator2(creator, dispatch, getState){
+  return (...args)=> creator(...args)(dispatch, getState) 
+}
+
+function bindActionCreators(creators, dispatch, getState){
+  //let bound = {}
+  //Object.keys(creators).forEach(v=>{
+  //   let creator = creators[v]
+     //根据connect方法的机制, creator可以是一个返回对象的函数, 也可以是一个返回函数的函数, 这里需要分情况
+  //   if(typeof creator() == 'function'){
+  //    bound[v] = bindActionCreator2(creator, dispatch, getState)
+  //   }else{
+  //    bound[v] = bindActionCreator1(creator, dispatch)
+  //   }
+  //})
+  //return bound
+
+  //上面的代码可以使用下面的reduce方法来改造替换
+  return Object.keys(creators).reduce((bound, creatorName)=>{
+     //根据connect方法的机制, creator可以是一个返回对象的函数, 也可以是一个返回函数的函数, 这里需要分情况
+     let creator = creators[creatorName]
+     if(typeof creator() == 'function'){
+      bound[creatorName] = bindActionCreator2(creator, dispatch, getState)
+     }else{
+      bound[creatorName] = bindActionCreator1(creator, dispatch)
+     }
+     return bound
+  },{})
+  
+}
+
+export const connect = (mapStateToProps=state=>state, mapDispatchToProps={})=>(wrapComponent)=>{
+  return class ConnectComponent extends React.Component{
+
+    static contextTypes = {
+      store:PropTypes.object
+    }
+
+    constructor(props, context){
+      super(props, context)
+      this.unsubscribe = null
+      this.state = {
+        props:{}
+      }
+    }
+
+    componentDidMount(){
+      const {store} = this.context
+      this.unsubscribe = store.subscribe(()=>this.update())
+      this.update()
+    }
+
+    componentWillUnmount(){
+      this.unsubscribe()
+    }
+
+    update(){
+      const {store} = this.context
+      const stateProps = mapStateToProps(store.getState())
+      const dispatchPops = bindActionCreators(mapDispatchToProps, store.dispatch, store.getState)
+      this.setState({
+        props:{
+          ...this.state.props,
+          ...this.props,
+          ...stateProps,
+          ...dispatchPops
+        }
+      })
+
+    }
+
+    render(){
+      return <wrapComponent {...this.state.props}></wrapComponent>
+    }
+  }
+}
+
+
+(6)redux的applyMiddleware方法的简单实现;
+
+由于applyMiddleware方法需要做为参数传入createStore方法中, 这里需要改造createStore方法;
+
+export function createStore(reducer, iniState, enhancer){
+  
+  if(typeof iniState == 'function'){
+    enhancer = iniState
+    iniState = undefined
+  }
+
+  if(enhancer){
+    return enhancer(createStore)(reducer,iniState)
+  }
+
+  let currentState = iniState?iniState:{}
+  let currentListeners = []
+
+  function getState(){
+    return currentState
+  }
+
+  function subscribe(listener){
+    currentListeners.push(listener)
+  }
+
+  function dispatch(action){
+    currentState = reducer(currentState, action)
+    currentListeners.forEach(v=>v())
+    return action
+  }
+
+  if(!iniState)
+    dispatch({type:'@@redux/INIT'})
+
+  return {getState, subscribe, dispatch}
+}
+
+上例中, 一开始对参数iniState的判断是为了确保当用户只传入两个参数, 但是第二个参数其实是传入了一个enhancer(相当于跳过了iniState参数的传入)的情况下能够正确执行函数;
+需要注意的是, 如果在严格模式下无法更改函数传入的参数变量, 那么可以在一开始为每个参数创建一个临时变量来保存变更后的参数值, 之后对函数参数的使用都改为使用对应的临时参数变量;
+
+
+applyMiddleware方法的简单实现:
+
+export applyMiddleware(middlewares)=>(createStore)=>{
+  return (...args)=>{
+    const store = createStore(...args)
+    let dispatch = store.dispatch
+
+    let chain = []
+    const midApi = {
+       getState:store.getState,
+       dispatch:(...args)=>dispatch(...args)
+    }
+
+    chain = middlewares.map(middleware => middleware(midApi))
+    dispatch = compose(...chain)(store.dispatch)
+
+    return {
+      ...store,
+      dispatch
+    }
+  }
+}
+
+关于Redux的原生方法applyMiddleware的源码的简写形式, 可以参考Redux笔记中: ’17. applyMiddleware();’ 相关内容;
+
+
+(7)thunk中间件的简单实现;
+
+const thunk = ({dispatch,getState})=>next=>action=>{
+  //action是函数的情况, 将dispatch和getState做为参数传入这个函数
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  //如果action是对象, 则直接使用基本的dispatch(action)这样的形式
+  return next(action)
+}
+
+
+(8)多个中间件的合并机制;
+
+为了更好理解当applyMiddleware方法合并了多个中间件后, 它们是如何链式地处理传入的action对象的, 这里将compose方法执行的效果拆分来观察:
+
+首先, store.dispatch将被传入chain数组中的最后一个函数, 也就是相当于执行了: middleware1(midApi)(store.dispatch), 执行后返回的其实是以下这个函数:
+action=>{
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  return next(action)
+}
+
+其中dispatch是每个middleware之前就存储的最初始的dispatch, 而next是本次函数执行传入的参数, 当然就这里而言传入的是store.dispatch, 也就是说仍旧是一个初始的未经过变更的dispatch方法(也正因为如此, 它会被做为compose方法返回函数的入口参数)
+
+然后上面的这个返回函数将被做为chain中倒数第二个middleware的next参数传入:
+
+middleware2(midApi)(
+  action=>{
+    if(typeof action=='function'){
+      return action(dispatch, getState)
+    }
+    return next(action)
+  }
+)
+
+上面返回的仍旧是一个类似:
+action=>{
+  if(action......){
+    return ......(如果有需要的话, 这里可以随时使用之前存储的最初始的dispatch和getState方法)
+  }
+  return next(action)
+}
+
+这样的dispatch方法, 但是这里的next指代的方法已经不是store.dispatch了, 而是之前middleware1最后返回的改造后的dispatch方法:
+action=>{
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  return next(action)
+}
+
+也就是说, 当一个action传入经过这两个middleware改造后的dispatch方法时首先将会检查是否满足middleware2改造的dispatch方法中的条件, 如果满足就执行相应操作派发这个action, 如果不满足指定条件就去将action传入middleware1改造后的dispatch方法进行判断, 如果满足条件就执行相应操作, 不满足就直接使用初始的store.dispatch来派发这个action;
+
+进一步说, 通过compose方法最终返回的dispatch方法的机制是:
+假设chain中按顺序存放了[middleware1(midApi),middleware2(midApi),middleware3(midApi)...], 那么经过compose(...chain)(store.dispatch)处理后返回一个最终的dispatch方法, 这个方法接收一个action时会先检查它是否满足middleware1返回的改造后的dispatch方法中的指定条件, 如果满足就执行相应内容将action派发给redux, 如果不满足就将action对象传递给middleware2返回的改造后的dispatch方法, 如果还是不满足这个dispatch方法中的指定条件, 就将action继续传递给middleware3返回的改造后的dispatch方法......
+
+其实简单来说中间件改造后的dispatch方法相比原生方法只是多了一层判断条件, 根据传入action的不同情况来做一些定制的处理, 在同时存在多个中间件时如果当前中间件不适用于处理此次传入的action对象, 就会将它传递给下一个中间件改造的dispatch方法, 最终如果所有中间件都去不处理传入的action对象时就会使用最初始的原生dispatch方法来派发action;
+
+这也就说明了next参数存在的重要性, 因为这些中间件需要会链式地保存下一个中间件改造的dispatch方法以便在自身无法处理传入的action时将其交给下一个中间件处理;
+
+action 
+—> 
+action=>{ middleware1依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }  
+—> 
+前一个中间件中的next函数 : action=>{ middleware2依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }
+—> 
+前一个中间件中的next函数 : action=>{ middleware3依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }
+—> 
+……
+—> 
+最后一个中间件中的next函数 : store.dispatch(action)
+
+上面所介绍的这种中间件的处理方式其实结合了: 闭包, 柯里化(currying), compose函数这些特性, 其中比较关键的是在中间件生成改造后的dispatch方法这一过程中采用的柯里化特性; 
+在一个middleware函数最终返回改造后的dispatch方法之前先要通过柯里化和闭包特性来获取并保存足够多的有用信息, 所以先要求传入{dispatch,getState}对象以保存原生dispatch,getState方法, 再要求传入next函数以链式传递action对象, 最后才返回一个接受action对象的dispatch方法(currying延迟计算的特性);
+
+
+补充:
+1.其实不难发现, 之前在研究react-redux的connect方法原理的时候提到了它所接受的mapDispatchToProps参数可以有两种形式, 一种最终返回一个action对象, 另一种最终返回一个接收dispatch和getState为参数的函数, 这其实就与thunk中间件处理action对象的方式完全相同, 也就是说, react-redux的connect方法是自带thunk中间件处理机制的, 可以根据mapDispatchToProps参数的不同情况来选择如何派发action对象; 
+
+2.柯里化（Currying）,又称部分求值(Partial Evaluation), 是把接受多个参数的函数变换成接受一个单一参数(最初函数的第一个参数)的函数，并且返回接受余下的参数的新函数的技术; 
+
+柯里化的作用:
+
+<1>参数复用;
+
+例子:
+function plus(num) {
+        var _args = [];
+        var _adder = function(num) {
+            _args.push(num)
+            return _adder;
+        };
+
+        _adder.toString = function () {
+            return _args.reduce(function (a, b) {
+                return a + b;
+            });
+        }
+
+        return _adder(num);
+}
+
+plus(1)(2)(3).toString() //6;
+
+
+<2>提前返回;
+
+例子:
+var addEvent = (function(){
+    if (window.addEventListener) {
+        return function(el, sType, fn, capture) {
+            el.addEventListener(sType, function(e) {
+                fn.call(el, e);
+            }, (capture));
+        };
+    } else if (window.attachEvent) {
+        return function(el, sType, fn, capture) {
+            el.attachEvent("on" + sType, function(e) {
+                fn.call(el, e);
+            });
+        };
+    }
+})();
+
+上例中, 初始addEvent的执行其实值实现了部分的应用（只有一次的if...else if...判定），而剩余的参数应用都是其返回函数实现的，典型的柯里化; 
+
+
+<3>延迟计算;
+
+ES5中的bind方法, 用来改变Function执行时候的上下文(函数主体本身不执行, 与call/apply直接执行并改变不同), 本质上就是延迟执行;
+
+参考:
+http://www.zhangxinxu.com/wordpress/2013/02/js-currying/
+
+
+
+
+
 
 
 
