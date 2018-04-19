@@ -7515,8 +7515,13 @@ Redux+React Router+Node.js全栈开发笔记 (三);
 也就是说每一个jsx元素都存在一个ReactElement对象来描述它;
 
 
-(2)react的setState()方法存在队列的机制, 也就是说setState()方法对状态的更新是异步的, 在同一线程中对某个组件state的多次更新最终会被react合并成一次对这个组件生命周期的update, 之前也提到过:
-当组件的this.setState()执行后, 之后组件的componentWillUpdate()方法开始执行时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法, 最后继续执行componentDidMount方法中之后的内容;
+(2)react的setState()方法存在队列的机制, 也就是说setState()方法对状态的更新是异步的, 在同一线程中对某个组件state的多次更新最终会被react合并成一次对这个组件生命周期的update:
+当组件的this.setState()执行后将一个检查这个组件state变化的异步任务放入事件队列(在此次主线程中多次对这个组件执行setState()方法只会添加一次异步任务), 之后主线程结束, 任务队列中检查这个组件state变化的执行函数被放入主线程执行, 它会去依次执行组件的: shouldComponentUpdate, componentWillUpdate等方法, 需要注意的是, 当componentWillUpdate开始执行时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法…;
+
+相比之下, dispatch(action)对redux的store中内容的更新是同步的, 并且会同步将所有在store上subscribe的组件的处理事件依次执行; 
+假设某个组件由react-redux的connect方法管理, 当redux的store被更新后, 在store上subscribe的组件处理函数立刻会被遍历出来依次执行, 其中就包括对这个被管理组件的forceUpdate操作, 也就是说当这个组件的处理函数被遍历到并执行后, 它会被强制更新, 走它组件更新的生命周期函数, 并最后更新html页面, 这一系列操作(从dispatch(action)被执行到最后html页面更新)都是同步的; 
+假设在上面说的这种情况下当这个由react-redux的connect方法管理组件被forceUpdate方法强制更新, 并且在重新执行render方法时加载并实例化了一个新的子组件, 那么此时会同步执行这个子组件的一系列生命周期方法(如: render方法), 然后继续完成父组件的render方法之后的内容, 直到最后html页面被更新, 如果子组件存在componentDidMount钩子函数, 那么在html页面更新过程中一旦这个子组件被添加到了页面中后就会立刻同步执行componentDidMount钩子函数的内容, 然后继续更新html页面中剩下的部分, 完成后这一轮主线程执行才算告一段落, 也就是说, 上述的所有操作也都是同步的;
+
 
 补充:
 1.setState和replaceState区别;
@@ -7626,38 +7631,22 @@ export const connect = (mapStateToProps=state=>state, mapDispatchToProps={})=>(w
     constructor(props, context){
       super(props, context)
       this.unsubscribe = null
-      this.state = {
-        props:{}
-      }
     }
 
     componentDidMount(){
-      const {store} = this.context
-      this.unsubscribe = store.subscribe(()=>this.update())
-      this.update()
+      this.unsubscribe = store.subscribe(()=>this.forceUpdate())
     }
 
     componentWillUnmount(){
       this.unsubscribe()
     }
 
-    update(){
+    render(){
       const {store} = this.context
       const stateProps = mapStateToProps(store.getState())
       const dispatchPops = bindActionCreators(mapDispatchToProps, store.dispatch, store.getState)
-      this.setState({
-        props:{
-          ...this.state.props,
-          ...this.props,
-          ...stateProps,
-          ...dispatchPops
-        }
-      })
 
-    }
-
-    render(){
-      return <wrapComponent {...this.state.props}></wrapComponent>
+      return <wrapComponent {...this.props} {...stateProps} {...dispatchPops}></wrapComponent>
     }
   }
 }
@@ -7687,6 +7676,9 @@ export function createStore(reducer, iniState, enhancer){
 
   function subscribe(listener){
     currentListeners.push(listener)
+    return function(){
+      currentListeners.splice(currentListeners.indexOf(listener),1)
+    }
   }
 
   function dispatch(action){
@@ -7728,7 +7720,7 @@ export applyMiddleware(middlewares)=>(createStore)=>{
   }
 }
 
-关于Redux的原生方法applyMiddleware的源码的简写形式, 可以参考Redux笔记中: ’17. applyMiddleware();’ 相关内容;
+关于Redux的原生方法applyMiddleware的源码的简写形式, 还可以参考Redux笔记中: ’17. applyMiddleware();’ 相关内容;
 
 
 (7)thunk中间件的简单实现;
@@ -7738,7 +7730,7 @@ const thunk = ({dispatch,getState})=>next=>action=>{
   if(typeof action=='function'){
     return action(dispatch, getState)
   }
-  //如果action是对象, 则直接使用基本的dispatch(action)这样的形式
+  //如果action不是函数, 则将action传入下一个中间件生成的dispatch方法
   return next(action)
 }
 
@@ -7752,10 +7744,12 @@ action=>{
   if(typeof action=='function'){
     return action(dispatch, getState)
   }
-  return next(action)
+  return store.dispatch(action)
 }
 
-其中dispatch是每个middleware之前就存储的最初始的dispatch, 而next是本次函数执行传入的参数, 当然就这里而言传入的是store.dispatch, 也就是说仍旧是一个初始的未经过变更的dispatch方法(也正因为如此, 它会被做为compose方法返回函数的入口参数)
+这里需要特别注意的是, 在applyMiddleware中之所以使用: dispatch:(...args)=>dispatch(...args) 这样的方式来将dispatch方法传入每个middleware中保存, 是因为由于在当前applyMiddleware方法中设置了 let dispatch = store.dispatch, 如果使用dispatch: dispatch来赋值, 那就相当于直接把store.dispatch这个原生的dispatch方法保存在了每个middleware中(因为dispatch变量保存的只是一个指向store.dispatch的地址); 而使用dispatch:(...args)=>dispatch(...args) 这样的方式相当于将一个新的匿名函数保存在每个middleware中, 而这个新的函数在每次被执行时会去所在作用域(也就是applyMiddleware函数中)找一个名为dispatch的函数变量并执行, 也就是说匿名函数中的dispatch指向的是其所在作用域中的变量dispatch, 至于这个dispatch变量的值是什么由获取它时决定, 所以上例中: return action(dispatch, getState) 这条语句拿到的dispatch是已经被所有中间件改造过的最新的dispatch方法: dispatch = compose(...chain)(store.dispatch); 
+
+而next是函数middleware1(midApi)()执行时传入的参数, 当然就这里而言传入的是store.dispatch, 是一个初始的未经过变更的dispatch方法(也正因为如此, 它会被做为compose方法返回函数的入口参数, 因为一个不满足所有中间件改造条件的action对象最终应该被原生的dispatch方法来处理)
 
 然后上面的这个返回函数将被做为chain中倒数第二个middleware的next参数传入:
 
@@ -7771,46 +7765,48 @@ middleware2(midApi)(
 上面返回的仍旧是一个类似:
 action=>{
   if(action......){
-    return ......(如果有需要的话, 这里可以随时使用之前存储的最初始的dispatch和getState方法)
+    return ......(如果有需要的话, 这里可以随时使用之前存储的dispatch和getState方法)
   }
   return next(action)
 }
 
-这样的dispatch方法, 但是这里的next指代的方法已经不是store.dispatch了, 而是之前middleware1最后返回的改造后的dispatch方法:
+这样的dispatch方法, 但是这里的next指代的方法已经不是store.dispatch了, 而是之前middleware1返回的改造后的dispatch方法:
 action=>{
   if(typeof action=='function'){
     return action(dispatch, getState)
   }
-  return next(action)
+  return store.dispatch(action)
 }
 
 也就是说, 当一个action传入经过这两个middleware改造后的dispatch方法时首先将会检查是否满足middleware2改造的dispatch方法中的条件, 如果满足就执行相应操作派发这个action, 如果不满足指定条件就去将action传入middleware1改造后的dispatch方法进行判断, 如果满足条件就执行相应操作, 不满足就直接使用初始的store.dispatch来派发这个action;
 
+需要特别注意的是, 上例中如果传入的acton对象满足了中间件的判断条件, 那么会执行action(dispatch, getState), 而这里的dispatch其实将会调用经过所有中间件改造的最新的dispatch方法, 也就是说之后被传入此dispatch方法的action对象将会重新走一遍经过各个中间件判断的流程, 只有当所有中间件的判断条件都不满足时才能够被原生的dispatch方法派发出去;
+
 进一步说, 通过compose方法最终返回的dispatch方法的机制是:
-假设chain中按顺序存放了[middleware1(midApi),middleware2(midApi),middleware3(midApi)...], 那么经过compose(...chain)(store.dispatch)处理后返回一个最终的dispatch方法, 这个方法接收一个action时会先检查它是否满足middleware1返回的改造后的dispatch方法中的指定条件, 如果满足就执行相应内容将action派发给redux, 如果不满足就将action对象传递给middleware2返回的改造后的dispatch方法, 如果还是不满足这个dispatch方法中的指定条件, 就将action继续传递给middleware3返回的改造后的dispatch方法......
+假设chain中按顺序存放了[middleware1(midApi),middleware2(midApi),middleware3(midApi)...], 那么经过compose(...chain)(store.dispatch)处理后返回一个最终的dispatch方法, 这个方法接收一个action时会先检查它是否满足middleware1返回的改造后的dispatch方法中的指定条件, 如果满足就执行相应内容并将action重新传入改造后的最新dispatch方法进行一轮中间件的过滤(有点类似递归对action进行操作, 因为一个action很可能在被某个middleware处理之后, 又满足了其它middleware的处理条件, 如: 类型为数组的action被某个middleware处理后其中每个元素都被当成新的action来dispatch, 而这些新的action又同时是函数而不是对象, 所以需要thunk中间的处理, 这种情况下就需要将经过处理后的action重新放入经过中间件改造的dispatch方法中再次被每个middleware过滤处理直到它被传递到thunk中间件的dispatch方法后才能被正确处理, 这也同时说明了applyMiddleware方法中的多个middleware参数的传入顺序并不重要), 如果不满足就将action对象传递给middleware2返回的改造后的dispatch方法, 如果还是不满足这个dispatch方法中的指定条件, 就将action继续传递给middleware3返回的改造后的dispatch方法......
 
 其实简单来说中间件改造后的dispatch方法相比原生方法只是多了一层判断条件, 根据传入action的不同情况来做一些定制的处理, 在同时存在多个中间件时如果当前中间件不适用于处理此次传入的action对象, 就会将它传递给下一个中间件改造的dispatch方法, 最终如果所有中间件都去不处理传入的action对象时就会使用最初始的原生dispatch方法来派发action;
 
 这也就说明了next参数存在的重要性, 因为这些中间件需要会链式地保存下一个中间件改造的dispatch方法以便在自身无法处理传入的action时将其交给下一个中间件处理;
 
-action 
+<step 1> action 
 —> 
-action=>{ middleware1依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }  
+<step 2> action=>{ middleware1依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 3>}  
 —> 
-前一个中间件中的next函数 : action=>{ middleware2依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }
+<step 3> 前一个中间件中的next函数 : action=>{ middleware2依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 4>}
 —> 
-前一个中间件中的next函数 : action=>{ middleware3依靠之前存储的原生dispatch和getState函数处理并派发action / 如果无法处理就执行 next(action) }
+<step 4> 前一个中间件中的next函数 : action=>{ middleware3依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 5>}
 —> 
-……
+<step 5> …
 —> 
-最后一个中间件中的next函数 : store.dispatch(action)
+<step final> 最后一个中间件中的next函数 : store.dispatch(action)
 
 上面所介绍的这种中间件的处理方式其实结合了: 闭包, 柯里化(currying), compose函数这些特性, 其中比较关键的是在中间件生成改造后的dispatch方法这一过程中采用的柯里化特性; 
-在一个middleware函数最终返回改造后的dispatch方法之前先要通过柯里化和闭包特性来获取并保存足够多的有用信息, 所以先要求传入{dispatch,getState}对象以保存原生dispatch,getState方法, 再要求传入next函数以链式传递action对象, 最后才返回一个接受action对象的dispatch方法(currying延迟计算的特性);
+在一个middleware函数最终返回改造后的dispatch方法之前先要通过柯里化和闭包特性来获取并保存足够多的有用信息, 所以先要求传入{dispatch,getState}对象以保存中间件改造后的最新dispatch, 原生getState方法(提前返回), 再要求传入next函数保存, 以便之后链式传递action对象, 最后才返回一个接受action对象的dispatch方法(延迟计算), 也就是说, currying的提前返回和延迟计算这两个特性都在此处实现了一定效果;
 
 
 补充:
-1.其实不难发现, 之前在研究react-redux的connect方法原理的时候提到了它所接受的mapDispatchToProps参数可以有两种形式, 一种最终返回一个action对象, 另一种最终返回一个接收dispatch和getState为参数的函数, 这其实就与thunk中间件处理action对象的方式完全相同, 也就是说, react-redux的connect方法是自带thunk中间件处理机制的, 可以根据mapDispatchToProps参数的不同情况来选择如何派发action对象; 
+1.其实不难发现, 之前在研究react-redux的connect方法原理的时候提到了它所接受的mapDispatchToProps参数可以有两种形式, 一种最终返回一个action对象, 另一种最终返回一个接收dispatch和getState为参数的函数, 这其实就与thunk中间件处理action对象的方式相同, 也就是说, react-redux的connect方法是自带thunk中间件处理机制的, 可以根据mapDispatchToProps参数的不同情况来选择如何派发action对象; 
 
 2.柯里化（Currying）,又称部分求值(Partial Evaluation), 是把接受多个参数的函数变换成接受一个单一参数(最初函数的第一个参数)的函数，并且返回接受余下的参数的新函数的技术; 
 
@@ -7866,6 +7862,344 @@ ES5中的bind方法, 用来改变Function执行时候的上下文(函数主体�
 
 参考:
 http://www.zhangxinxu.com/wordpress/2013/02/js-currying/
+
+
+(9)定制一个中间件: arrThunk;
+
+const arrayThunk = ({dispatch,getState})=>next=>action=>{
+  if(Array.isArray(action)){
+    return action.forEach(v=>dispatch(v))
+  }
+  reutrn next(action)
+}
+
+export default arrayThunk
+
+需要注意的是, 上例中满足中间件判断条件时的处理语句不能写成: return action.forEach(v=>next(v)), 因为如果传入next方法的action是一个以函数为元素的数组, 而处理函数action的thunk中间件又在arrThunk之前传入了applyMiddleware方法, 那么就会出现最终使用原生的store.dispatch方法处理函数类型的action的情况, 显然会发生问题;
+
+
+
+13.React性能优化;
+
+(1)单组件的性能优化;
+
+class Test extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      num:0,
+      title:’react’,
+      age:28
+    }
+    //this.handleClick = this.handleClick.bind(this)
+  }
+  handleClick(){
+    this.setState({num:this.state.num+1})
+  }
+  render(){
+    return (
+      <div>
+        <h2>App, state has changed {this.state.num}</h2>
+        <button onClick={this.handleClick}>btn1</button>
+        <button onClick={this.handleClick.bind(this)}>btn2</button>
+        <button onClick={()=>this.handleClick()}>btn3</button>
+        <p style={{color:'red'}} name={{one:song}}></p>
+        <Demo title={…this.state}></Demo>
+        <Demo title={this.state.title} age={this.state.age}></Demo>
+      </div>
+    )
+  }
+}
+
+上例中, <button onClick={this.handleClick.bind(this)}>btn2</button>这种绑定点击事件处理函数的方法会造成每次组件render都会重新执行一次bind(this)方法, 从而每次都生成一个新的函数;
+<button onClick={()=>this.handleClick()}>btn3</button>这种方式会造成每次组件render都会生成一个新的匿名函数, 不仅影响性能, 并且还有内存泄漏的问题;
+所以最好的方式是在组件的constructor中使用: this.handleClick = this.handleClick.bind(this) 这样的方式将this对象绑定在点击事件处理函数上, 之后在render方法中直接使用: <button onClick={this.handleClick}>btn1</button> 绑定方法即可;
+
+其次, 上例中的: <p style={{color:'red'}} name={{one:song}}></p> 这样传递参数的方式显然也存在性能问题, 因为同样会在每次render时创建新的对象{color:'red'} 和 {one:song}, 改进方法同样可以是将这两个对象定义在constructor中, 如:
+this.color = {color:’red’}
+this.name = {one:song}
+……
+<p style={this.color} name={this.name}></p>
+
+上例中: <Demo title={…this.state}></Demo> 这样传递多余属性的形式也是不推荐的, 并且Test组件的state很可能会在之后被扩展, 无效属性的传递可能会不可预计; 所以改为按需传递: <Demo title={this.state.title} age={this.state.age}></Demo> 会更好;
+
+
+(2)使用shouldComponentUpdate钩子函数优化组件;
+
+安装react-addons-perf模块并相应配置后, 报错: 
+Uncaught Error: Cannot find module "react-dom/lib/ReactPerf"
+
+￼
+
+错误原因是:
+￼
+
+参考:
+https://stackoverflow.com/questions/46578145/module-not-found-cant-resolve-react-dom-lib-reactperf-in-node-modules-reac
+
+也就是说, React 16开始就不支持 react-addons-perf这个插件了;
+
+
+所以需要改用Chrome浏览器自带的performance监测工具:
+
+￼
+
+
+实际操作后发现, 目前在Chrome浏览器Developer tools的performance选项已经支持对react 16的监测了, 也就是说不添加?react_perf参数也能达到同样的效果;
+
+￼
+
+
+补充:
+1.查看模块的当前版本号;
+使用 npm view 模块名 version 命令来查看该模块在远程仓库的版本号;
+使用 npm list 模块名 version 命令来查看模块在当前库中安装的版本号;
+￼
+
+
+Debugging React performance with React 16 and Chrome Devtools, 可以参考:
+https://building.calibreapp.com/debugging-react-performance-with-react-16-and-chrome-devtools-c90698a522ad
+
+
+例子:
+class Test extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      num:0,
+      title:''
+    }
+    this.handleNum = this.handleNum.bind(this)
+    this.handleTitle = this.handleTitle.bind(this)
+  }
+  handleNum(){
+    this.setState({num:this.state.num+1})
+  }
+  handleTitle(){
+    this.setState({title:this.state.title+'!'})
+  }
+  render(){
+
+    return (
+      <div>
+        <h2>App, state has changed {this.state.num}</h2>
+        <button onClick={this.handleNum}>btn1</button>
+        <button onClick={this.handleTitle}>btn2</button>
+        <Demo title={this.state.title}></Demo>
+      </div>
+    )
+  }
+}
+
+class Demo extends React.Component{
+  shouldComponentUpdate(nextProps, nextState){
+    if(nextProps.title == this.props.title){
+      return false
+    }
+    return true
+  }
+  render(){
+    return (
+      <h2>{this.props.title}</h2>
+    )
+  }
+}
+
+上例中, 当点击btn1按钮时, 由于只改变了Test组件的state, 而没有影响到Demo组件需要render的内容, 所以Demo组件设置的shouldComponentUpdate函数阻止了它将要进行的更新行为; 如果点击btn2按钮, 那么由于传入Demo组件的props.title会发生改变从而影响它render的内容, 所以shouldComponentUpdate函数返回true, 就是让其继续执行更新相关的一系列生命周期方法;
+
+之后会介绍react 16提供的PureComponent组件, 它将会默认重写组件的shouldComponentUpdate方法来判断当前组件是否需要被更新(浅对比当前state/props和待更新的state/props);
+
+
+(3)immutable.js;
+
+
+js中对象深度比较的方法:
+
+function compare(origin, target) {
+    if (typeof target === 'object')    {
+        if (typeof origin !== 'object') return false
+        for (let key of Object.keys(target))
+            if (!compare(origin[key], target[key])) return false
+        return true
+    } else return origin === target
+}
+
+其实上面这个方法是存在错误的, 因为当target对象的属性个数少于origin对象的属性个数, target对象拥有的所有属性都同时被origin对象拥有, 并且这两个对象中的这些属性都相等, 那么这个方法会返回true, 其实这两个对象属性个数本身就是不同的, 如:
+let a = {x:1, y:2}
+let b = {x:1, y:2, z:3}
+compare(b,a) //true
+
+
+对上面的方法进行改造:
+
+function compare(origin, target) {
+    if (typeof target === 'object' && typeof origin === 'object')    {
+  if(Object.keys(target).length !== Object.keys(origin).length) 
+    return false
+        for (let key of Object.keys(target))
+            if (!compare(origin[key], target[key])) return false
+        return true
+    }else{
+  return origin === target
+    }
+}
+
+但是像上面这种深层递归对比的复杂度较高, 就性能上来说react是不能接受的, 也就是说, 如果不做任何对比直接去更新组件所消耗的性能可能与这种深层递归对比后再判断是否需要更新组件差不多, react考虑到这个原因所以建议使用者在react内部只做浅层比较; 
+PureComponent组件创建了默认的shouldComponentUpdate行为, 这个默认的shouldComponentUpdate行为会一一比较props和state中所有的属性, 只有当其中任意一项发生改变时才会进行重绘;
+
+PureComponent的作用及一些使用陷阱, 可以参考:
+https://www.jianshu.com/p/33cda0dc316a
+
+
+安装immutable.js;
+
+npm install immutable —save
+
+
+引入并使用immutable.js;
+
+例子:
+  import {Map,is} from 'immutable'
+
+    let obj = Map({
+      name:'song',
+      course:Map({name:'song'})
+    })
+
+    let obj1 = obj.set('name', 'song1')
+    console.log(obj.name) //undefined
+    console.log(obj.course) //undefined
+    console.log(obj.get('course')) //Map{...}
+    console.log(obj.get('course') == obj1.get('course')) //true
+    console.log(is(obj.get('course'),obj1.get('course'))) //true
+    console.log(obj==obj1) //false
+
+    obj.name = 'song'
+    console.log(obj.name) //song
+    console.log(obj1.name) //undefined
+    console.log(obj1.get('name')) //song1
+    console.log(obj1.get('name') == obj.get('name')) //false
+    console.log(obj.name == obj.get('name')) //true
+    console.log(is(obj.name,obj.get('name'))) //true
+
+    obj1.name2 = 'song3'
+    console.log(obj1.get('name2')) //undefined
+    let obj2 = obj.set('name','song1')
+    console.log(is(obj1,obj2)) //true
+
+    let obj3 = Map({
+      name:'song',
+      course:Map({name:'song'})
+    })
+    console.log(is(obj,obj3)) //true
+    console.log(is({a:1},{a:1})) //false
+    console.log(is(Map({}),Map({}))) //true
+
+
+上例中可以发现immutable.js的机制:
+
+对于赋值操作(set), 只有在immutable对象(被immutable.js封装的对象)上使用immutable.js的相关API才能存储一个被immutable.js认可属性值(当然由于immutable机制, 这个赋值操作返回一个新的immutable对象, 赋值其实是在这个新对象上完成的, 已经被创建的immutable对象是无法被改变的), 直接使用obj.xxx=xxx 这样的方式虽然会在这个immutable对象上设置一个名为xxx的属性, 但是这个属性不会参与任何与immutable.js API有关的操作;
+
+对于取值操作(get), 只有在被immutable.js封装的对象上使用immutable.js的相关API才能在immutable对象中取到一个被immutable.js认可的属性值, 而直接在一个immutable对象上使用类似: obj.xxx=xxx这种方式设置的属性无法被immutable.js的相关API获取, 会返回undefined; 同样使用obj.xxx这样的方式也无法取到一个被immutable.js认可的属性值, 返回undefined;
+
+对于对比操作(is), 由于immutable.js采用了对比immutable数据结构的hashcode来比较两个immutable对象的方式, 所以效率非常高, 并且只要是属性结构与属性值相同的immutable对象, 无论声明多少个, 它们使用is方法对比的结果一定是相等的, 而使用’==’对比的结果一定是不相等的; 
+使用obj.xxx=xxx这种方式在immutable对象上设置的属性会被is方法直接忽略;
+
+如果使用is方法比较两个非immutable.js封装的对象(或者一个是immutable对象, 另一个不是), 那么就相当于使用’===’来对比它们;
+
+
+immutable.js优点:
+<1>减少内存使用, 因为immutable.js只会深拷贝此次变更的属性中的所有内容, 其它无关属性将仍旧复用上一个immutable对象中的值, 也就是说由于变更属性而生成的新immutable对象只会为变更的属性开辟新的内存空间来保存, 在对新属性的访问时就会去这块内存中获取值, 而对其他未变更属性的访问会直接到上一个(或者最初的immutable对象, 如果被访问属性一直没有被变更过的话)immutable对象相应属性的内存地址去获取, 所以并不会每次新建immutable对象都为其中所有属性重新创建一份内存空间;
+<2>并发安全, 无须担心某个被操作数据同时也在被其他用户修改(多个用户其实各自都在修改对原始数据深拷贝获得的自己独有的数据), 但是由于JS目前还是单线程的, 所以暂时没有享受到这个特性带来的优势
+<3>降低项目复杂度, 因为避免了对mutable对象的误操作而带来的连锁反应
+<4>便于比较复杂数据, 定制shouldComponentUpdate更方便, immutable使用数据结构的hash值来进行对比, 所以复杂度很低; 
+<5>时间旅行功能
+<6>函数式编程, 由于其不可变性, 对纯函数的支持较好
+
+
+react配合immutable.js使用;
+
+React建议把this.state设置为immutable的(防止发生误操作直接在this.state上修改), 因此修改前需要做一个deepCopy, 比较麻烦:
+
+import '_' from 'lodash';
+
+const Component = React.createClass({
+  getInitialState() {
+    return {
+      data: { times: 0 }
+    }
+  },
+  handleAdd() {
+    let data = _.cloneDeep(this.state.data);
+    data.times = data.times + 1;
+    this.setState({ data: data });
+    // 如果上面不做 cloneDeep，而将let data赋值为this.state.data, 那么下面打印的结果会是已经加 1 后的值;
+    console.log(this.state.data.times); 
+  }
+}
+
+
+使用 Immutable 后: 
+
+  getInitialState() {
+    return {
+      data: Map({ times: 0 })
+    }
+  },
+  handleAdd() {
+    this.setState({ data: this.state.data.update('times', v => v + 1) });
+    // 这时的 times 并不会改变
+    console.log(this.state.data.get('times'));
+  }
+
+对于react而言(其setState方法的执行一定会在之后触发一系列组件更新相关的生命周期函数, 这里经过测试发现react并不会去比较通过setState方法变更后组件的state与之前组件的state有何不同), 由于在生命周期函数: shouldComponentUpdate等方法中需要传入组件的state即将被更新为的值(nextState), 所以相当于react需要同时保存新/旧两份state值, 只有在componentWillUpdate执行完毕后更新后的state值才会被赋值到当前的state上(当然此时最新的props属性也会被更新到当前的this.props中), 这也就说明了为什么react需要使用setState方法来更新组件的state, 而不是直接在state上修改, 当然更多的原因还和其异步更新state的机制有关;  
+那么immutable.js配合react来使用首先是为了防止用户在setState阶段发生误操作直接对this.state进行修改, 其次在shouldComponentUpdate方法中可以使用immutable.js特有的高性能深层对比方法来比较新/旧两个state对象(不过先要保证这两个state对象是被immutablejs封装过得);
+
+不过现在存在的react配合immutable.js使用的问题是: 
+根据之前对immutable.js使用机制的研究, 如果将react的state都设置为immutable对象, 那么首先要保证应用中所有对this.state的取值都要使用相关的immutable.js的API, 其次, 由于react的setState方法本身存在这样一个机制: 如果使用setState方法传递的对象中仅仅包含当前组件state中某个或某些属性的更新, 甚至是当前组件state中还没有指定的属性, 那么react就会选择性的只更新setState方法中传递的对象中的那些属性而保留所有当前已经存在的其它属性, 相当于使用了类似: Object.assign({},this.state,newState) 这样的方式来构造组件的新state, 那么问题就是如果react组件的state对象现在都改为了immutable对象, 那么这一操作它如何来实现呢?
+
+
+redux配合immutable.js使用;
+
+redux中沿用了flux的设计(但是它简化了Flux中多个Store的概念, 只存在一个 Store), 需要为每一次state状态的改变保存一份历史记录(这样的设计思路可以很好的实现历史数据变更的记录和检查, 时间旅行等功能, 并且也是实现在chrome浏览器控制台中使用支持redux的插件来监控每一次state变化的基础), 所以需要用户遵循immutable的方式来完成state的更新: 每一次更新state不会去更改当前的state本身, 而是生成一个包含了变更后属性的新state对象, 也就是说每一次dispatch(action)将action传入reducer方法后都将返回一个新的state对象做为当前redux的state, 而不能直接在当前的state对象上做修改, 因为每次传入reducer方法的第一个参数是当前的state对象(或者是state对象中的某个指定分支属性, 它同样也是一个对象), 为了保持每次的state改变而生成的历史记录都是唯一的, 并且新state的产生不会影响旧的state的内容, 那就不能对当前传入的这个state对象进行操作, 而又因为state中存储的属性很可能是引用类型的, 如果用户不小心修改了引用类型属性中的值, 那么将造成连锁反应, 也就是之前所有保存的state历史记录中相关属性中的值都同时变更了, 所以在reducer方法中需要做的是不对当前state做任何修改, 只读取其中需要的值来创建一个新state的快照并返回, 很显然在这种情况下为了不让用户发生误操作改变当前state对象, 可以配合immutablejs使用: 将reducer中返回的新state对象设置为immutable对象, 这样的话, 传入reducer方法中的当前state对象也是immutable对象, 就不会发生之前提到的误操作了; 
+
+由于redux本身不会在reducer方法执行并返回新state对象后来对比新/旧state对象, 也就是说, 只要是subscribe在store对象上的执行函数一定会立刻执行, 一般情况下这些执行函数都是用来update组件的, 而又因为无论是在组件的shouldComponentUpdate还是componentWillUpdate方法中都无法取得redux的state对象变更前的历史记录(只能获取当前最新的redux的state, 因为reducer方法执行后redux的state就立刻被更新了), 所以就需要在这个传入store.subscribe方法的执行函数中来判断组件是否需要被更新(相当于起到了shouldComponentUpdate的作用), 最好的做法(有可能也是react-redux所采用的做法, 有待核实)就是当组件在store上绑定subscribe方法时使用类似:
+
+componentDidMount(){
+  let lastState = this.context.store.getState()
+  this.unsubscribe = this.context.store.subscribe(
+    ()=>{
+      const currentState = this.context.store.getState()
+      const result = … //此处深度比较lastState和currentState;
+      if(!result){
+        lastState = currentState
+         this.forceUpdate()
+      }
+    }
+  )
+}
+
+这样的方式来实现某个监听redux中state变化的组件在深层对比了新/旧state(当然可以只对比state中某个与当前组件render相关的属性)的变化后决定是否需要update这个组件;
+很显然, 如果使用了immutablejs配合redux使用, 那么这里在componentDidMount方法中获取到的redux的state都应该是immutable对象, 于是使用immutable.js的is方法就能更高效的完成深度比较了; 
+
+
+参考:
+
+immutable.js解析(重要):
+https://github.com/camsong/blog/issues/3
+
+immutable.js常用API简介:
+https://segmentfault.com/a/1190000010676878
+
+关于immutable.js的官方资料可以参考:
+http://facebook.github.io/immutable-js/docs/#/Map (官方API)
+https://github.com/facebook/immutable-js/ (官方Github)
+
+另外, 由于immutable.js本身比较庞大, 如果想要使用只包含核心功能的轻量级库(seamless-immutable), 参考:
+https://github.com/rtfeldman/seamless-immutable (官方Github)
+
+
+(4)使用reselect优化redux选择器;
 
 
 
