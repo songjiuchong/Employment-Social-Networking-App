@@ -8095,26 +8095,90 @@ npm install immutable —save
     console.log(is({a:1},{a:1})) //false
     console.log(is(Map({}),Map({}))) //true
 
+    //setIn,updateIn,getIn,clear
+    console.log(obj.getIn(['course','name'])) //song
+    console.log(obj.get('course').get('name')) //song
+    let objx1 = obj.get('course').set('name','songsong')
+    let objx2 = obj.getIn(['course']).set('name','songsong')
+    let objy = obj.setIn(['course','name'],'songsong')
+    let objz = obj.updateIn(['course','name'],v=>'songsong')
+    console.log(is(objx1,objx2)) //true
+    console.log(is(objx1,objy)) //false
+    console.log(is(objy,objz)) //true
+    let objx3 = objx1.clear()
+    console.log(is(objx1,objx3)) //false
+    let objx4 = Map()
+    console.log(is(objx4,objx3)) //true
+
 
 上例中可以发现immutable.js的机制:
 
-对于赋值操作(set), 只有在immutable对象(被immutable.js封装的对象)上使用immutable.js的相关API才能存储一个被immutable.js认可属性值(当然由于immutable机制, 这个赋值操作返回一个新的immutable对象, 赋值其实是在这个新对象上完成的, 已经被创建的immutable对象是无法被改变的), 直接使用obj.xxx=xxx 这样的方式虽然会在这个immutable对象上设置一个名为xxx的属性, 但是这个属性不会参与任何与immutable.js API有关的操作;
+对于赋值操作(set), 只有在immutable对象(被immutable.js封装的对象)上使用immutable.js的相关API才能存储一个被immutable.js认可属性值(当然由于immutable机制, 这个赋值操作返回一个新的immutable对象, 赋值其实是在这个新对象上完成的, 已经被创建的immutable对象是无法被改变的), 直接使用obj.xxx=xxx 这样的方式虽然会在这个immutable对象上设置一个名为xxx的属性(这个属性与使用immutablejs的set等赋值方法设置的同名属性是分离的, 各自存在的, 不会互相影响), 但是这个属性不会参与任何与immutable.js API有关的操作;
 
 对于取值操作(get), 只有在被immutable.js封装的对象上使用immutable.js的相关API才能在immutable对象中取到一个被immutable.js认可的属性值, 而直接在一个immutable对象上使用类似: obj.xxx=xxx这种方式设置的属性无法被immutable.js的相关API获取, 会返回undefined; 同样使用obj.xxx这样的方式也无法取到一个被immutable.js认可的属性值, 返回undefined;
 
-对于对比操作(is), 由于immutable.js采用了对比immutable数据结构的hashcode来比较两个immutable对象的方式, 所以效率非常高, 并且只要是属性结构与属性值相同的immutable对象, 无论声明多少个, 它们使用is方法对比的结果一定是相等的, 而使用’==’对比的结果一定是不相等的; 
+对于对比操作(is), 由于immutable.js采用了对比immutable对象数据结构的hashcode来比较两个immutable对象的方式, 所以效率非常高, 并且只要是属性结构与属性值相同的immutable对象, 无论声明多少个, 它们使用is方法对比的结果一定是相等的, 而使用’==’对比的结果一定是不相等的; 
 使用obj.xxx=xxx这种方式在immutable对象上设置的属性会被is方法直接忽略;
 
 如果使用is方法比较两个非immutable.js封装的对象(或者一个是immutable对象, 另一个不是), 那么就相当于使用’===’来对比它们;
 
 
+关于setIn,updateIn,getIn方法, 需要注意的是:
+
+obj.get('course').set('name','songsong')
+obj.getIn(['course']).set('name','songsong')
+
+这两个操作返回的是一个新的immutable对象, 它们的结构对应的是obj中的course对象而不是obj对象, 如果想要对一个immutable对象的深层对象属性进行更新同时想要返回这个immutable对象本身结构的一个新immutable对象就需要使用setIn或者updateIn方法;
+
+
 immutable.js优点:
-<1>减少内存使用, 因为immutable.js只会深拷贝此次变更的属性中的所有内容, 其它无关属性将仍旧复用上一个immutable对象中的值, 也就是说由于变更属性而生成的新immutable对象只会为变更的属性开辟新的内存空间来保存, 在对新属性的访问时就会去这块内存中获取值, 而对其他未变更属性的访问会直接到上一个(或者最初的immutable对象, 如果被访问属性一直没有被变更过的话)immutable对象相应属性的内存地址去获取, 所以并不会每次新建immutable对象都为其中所有属性重新创建一份内存空间;
+
+<1>减少内存使用; 
+因为immutable.js只为此次变更相关的所有属性开辟新的内存空间, 在对新生成的immutable对象中的这些新创建属性的访问会去这块内存中取值, 其它无关属性将仍旧复用之前immutable对象中对应的值, 所以并不会深拷贝这些属性到新的immutable对象, 而是直接指向之前已经保存的属性;
+
+Immutable 使用了 Structural Sharing（结构共享）, 即如果对象树中一个节点发生变化, 只修改这个节点和受它影响的所有祖先节点, 其它节点则进行共享:
+
+￼
+
+
+上例的整个节点树可以视为一个immutable对象, 其中根节点是immutable对象本身, 子节点代表其下的属性, 而属性本身可以是引用类型的(也可以是普通类型的值), 所以可以通过指定自己的属性延伸出其它分支:
+
+immutable1: 
+{
+  x1:{
+    y1:1, y2:2, y3:3
+  },
+  x2:{
+    y1:{
+      z1:1
+    }
+  }
+}
+
+如果更新上例中的immutable1.x2.y1属性:
+
+immutable1.setIn([‘x2’,’y1’],Map({z1:1}))
+
+那么immutable1到immutable2对象的变更详情为下图所示:
+
+￼
+
+可以发现, 其实只有immutable2的x2分支中的y1节点发生了变更(为其重新赋值了一个Map({z1:1})对象), 但是连带需要改变的是它所有的父节点(这里的改变指的是内存空间地址发生了改变, 因为需要为这些节点新创建内存空间); 
+也就是说, 变更后的immutable2对象:
+
+Map({x1:指向immutable1对象对应结构中的内容, x2:Map{(
+    y1:Map({z1:1})
+  )}
+})
+
+其中immutable2.x1属性中的所有内容都复用了immutable1中的相应内容, 无须创建新的内存空间, 获取时将直接访问immutable1中保存的x1属性相关内容;
+
+
 <2>并发安全, 无须担心某个被操作数据同时也在被其他用户修改(多个用户其实各自都在修改对原始数据深拷贝获得的自己独有的数据), 但是由于JS目前还是单线程的, 所以暂时没有享受到这个特性带来的优势
-<3>降低项目复杂度, 因为避免了对mutable对象的误操作而带来的连锁反应
+<3>降低项目复杂度, 因为避免了对mutable对象的误操作而带来的连锁反应, 并且无须自行在每次更新一个对象时先深拷贝这个对象
 <4>便于比较复杂数据, 定制shouldComponentUpdate更方便, immutable使用数据结构的hash值来进行对比, 所以复杂度很低; 
 <5>时间旅行功能
-<6>函数式编程, 由于其不可变性, 对纯函数的支持较好
+<6>函数式编程, 由于其不可变性, 对纯函数的支持较好(函数式编程要求不能更改传入参数本身, 只能读取这个参数, 并且返回相应的固定输出)
 
 
 react配合immutable.js使用;
@@ -8161,7 +8225,7 @@ const Component = React.createClass({
 
 redux配合immutable.js使用;
 
-redux中沿用了flux的设计(但是它简化了Flux中多个Store的概念, 只存在一个 Store), 需要为每一次state状态的改变保存一份历史记录(这样的设计思路可以很好的实现历史数据变更的记录和检查, 时间旅行等功能, 并且也是实现在chrome浏览器控制台中使用支持redux的插件来监控每一次state变化的基础), 所以需要用户遵循immutable的方式来完成state的更新: 每一次更新state不会去更改当前的state本身, 而是生成一个包含了变更后属性的新state对象, 也就是说每一次dispatch(action)将action传入reducer方法后都将返回一个新的state对象做为当前redux的state, 而不能直接在当前的state对象上做修改, 因为每次传入reducer方法的第一个参数是当前的state对象(或者是state对象中的某个指定分支属性, 它同样也是一个对象), 为了保持每次的state改变而生成的历史记录都是唯一的, 并且新state的产生不会影响旧的state的内容, 那就不能对当前传入的这个state对象进行操作, 而又因为state中存储的属性很可能是引用类型的, 如果用户不小心修改了引用类型属性中的值, 那么将造成连锁反应, 也就是之前所有保存的state历史记录中相关属性中的值都同时变更了, 所以在reducer方法中需要做的是不对当前state做任何修改, 只读取其中需要的值来创建一个新state的快照并返回, 很显然在这种情况下为了不让用户发生误操作改变当前state对象, 可以配合immutablejs使用: 将reducer中返回的新state对象设置为immutable对象, 这样的话, 传入reducer方法中的当前state对象也是immutable对象, 就不会发生之前提到的误操作了; 
+redux中沿用了flux的设计(但是它简化了Flux中多个Store的概念, 只存在一个 Store), 需要为每一次state状态的改变保存一份历史记录(这样的设计思路可以很好的实现历史数据变更的记录和检查, 时间旅行等功能, 并且也是实现在chrome浏览器控制台中使用支持redux的插件来监控每一次state变化的基础), 所以需要用户遵循immutable的方式来完成state的更新: 每一次更新state不会去更改当前的state本身, 而是生成一个包含了变更后属性的新state对象, 也就是说每一次dispatch(action)将action传入reducer方法后都将返回一个新的state对象做为当前redux的state, 而不能直接在当前的state对象上做修改, 因为每次传入reducer方法的第一个参数是当前的state对象(或者是state对象中的某个指定分支属性, 它同样也是一个对象), 为了保持每次的state改变而生成的历史记录都是唯一的, 并且新state的产生不会影响旧的state的内容, 那就不能对当前传入的这个state对象进行操作, 而又因为state中存储的属性很可能是引用类型的, 如果用户不小心修改了引用类型属性中的值, 那么将造成连锁反应, 也就是之前所有保存的state历史记录中相关属性中的值都同时变更了, 所以在reducer方法(纯函数)中需要做的是不对传入当前state做任何修改, 只读取其中需要的值来创建一个新state的快照并返回, 很显然在这种情况下为了不让用户发生误操作改变当前state对象, 可以配合immutablejs使用: 将reducer中返回的新state对象设置为immutable对象, 这样的话, 传入reducer方法中的当前state对象也是immutable对象, 就不会发生之前提到的误操作了; 
 
 由于redux本身不会在reducer方法执行并返回新state对象后来对比新/旧state对象, 也就是说, 只要是subscribe在store对象上的执行函数一定会立刻执行, 一般情况下这些执行函数都是用来update组件的, 而又因为无论是在组件的shouldComponentUpdate还是componentWillUpdate方法中都无法取得redux的state对象变更前的历史记录(只能获取当前最新的redux的state, 因为reducer方法执行后redux的state就立刻被更新了), 所以就需要在这个传入store.subscribe方法的执行函数中来判断组件是否需要被更新(相当于起到了shouldComponentUpdate的作用), 最好的做法(有可能也是react-redux所采用的做法, 有待核实)就是当组件在store上绑定subscribe方法时使用类似:
 
@@ -8201,8 +8265,575 @@ https://github.com/rtfeldman/seamless-immutable (官方Github)
 
 (4)使用reselect优化redux选择器;
 
+selector是一个简单的Redux库;
+selector提供一个函数createSelector(接受一个input-selectors和一个计算函数作为参数)来创建一个记忆selectors; 如果传入selectors的state发生改变造成input-selector的值发生改变, selectors会依据input-selector返回值做参数调用计算函数, 计算函数返回一个计算结果并在缓存中记录; 如果input-selector返回的结果和之前记录过的相同,那么就会直接返回记录中的对应数据, 省去了对计算函数的调用; 
 
 
+安装reselect;
+
+$npm install reselect --save
+
+
+使用reselect;
+
+例子1:
+
+import { createSelector } from 'reselect'
+
+const numSelector = createSelector(
+  state=>state.test.num,
+   //第一个函数的返回值是第二个函数的参数
+  num=>({num:num*2})
+)
+
+@connect(
+  state=>numSelector(state),
+  {……}
+)
+
+上例中使用createSelector方法生成了一个新的selectors函数, 使用这个函数将当前react-redux的mapStateToProps函数返回的state进行封装后就能返回经过一系列自定义复杂计算后的最终希望组件通过this.props属性获取的值, 并且这个计算结果会被加入缓存, 也就是说如果下次这个selectors函数发现接收到的state.test.num已经被记录过, 就会立刻返回缓存的结果, 不再使用计算函数;
+
+
+例子2:
+
+import { createSelector } from 'reselect'
+
+const getVisibilityFilter = (state) => state.visibilityFilter
+const getTodos = (state) => state.todos
+
+export const getVisibleTodos = createSelector( 
+  [ getVisibilityFilter, getTodos ], 
+  (visibilityFilter, todos) => { 
+    switch (visibilityFilter) { 
+      case 'SHOW_ALL': 
+        return todos 
+      case 'SHOW_COMPLETED': 
+        return todos.filter(t => t.completed) 
+      case 'SHOW_ACTIVE': 
+        return todos.filter(t => !t.completed)
+ } } )
+
+上例中, createSelector函数的第一个参数传入了数组, 那么它的第二个参数函数将会接收若干个数组函数元素的返回结果作为它的参数, 如果state.todos或state.visibilityFilter发生变化就会重新通过计算函数返回最终的值, 如果是发生在state其他部分的变化就不会重新计算而直接获取之前缓存的值; 
+
+所以总的来说, reselect主要就是用来缓存: 从redux获得的最新state中的指定属性通过复杂计算获得的组件渲染页面需要用到的最终数据这一过程中产生的所有不同输入/输出结果的, 对于那些需要使用来回反复变化的state中数据的组件来说能够减少性能消耗, 提升响应速度;
+不过需要注意的是, reselect到底是如何判断输入的内容(input-selector中返回的内容)是否已经在缓存中了呢, 它是用深层对比的方式来进行查找吗? 那如果redux使用了immutable.js的支持, 那么输入的内容很可能是一个immutable对象, 那它又如何来对比呢? 这点有待核实; 
+
+参考:
+https://github.com/reactjs/reselect (官方github)
+https://www.jianshu.com/p/6e38c66366cd (重要)
+
+
+(5)React中对元素设置key属性时的注意点;
+
+例子:
+……
+this.state={
+  users:[‘hello’,’world’,’!!!’]
+}
+……
+<ul>
+  {this.state.users.map((v,i)=><li key={i}>{v}</li>)}
+</ul>
+
+上例中这种将数组索引值设置为生成元素的key值其实作用仅仅是消除了控制台的警告, 并没有提高react virtual dom对比和更新的效率, 原因是:
+如果在一次setState方法中state的users属性被更新为了: users:[‘test’,‘hello’,’world’,’!!!’], 那么虚拟树对比这些<li>元素时就会出现这样的情况:
+
+之前的virtual dom:
+
+<li key=0>hello</li>
+<li key=1>world</li>
+<li key=2>!!!</li>
+
+
+更新后的virtual dom:
+
+<li key=0>test</li>
+<li key=1>hello</li>
+<li key=2>world</li>
+<li key=3>!!!</li>
+
+react会默认将key相等的元素进行对比(如果没有key或没有相等的key属性就只能逐个按对应顺序对比: 第一个和第一个对比, 第二个和第二个对比…), 检查出的相同元素越多, 最终对dom元素的操作就越少(其实react对比virtual dom的算法还是比较复杂的, 但是只要能够让最终在html页面上的dom操作降低, 复杂对比计算还是值得的, 因为在html上操作dom非常耗费资源), 上例中这种情况由于每次对比相同key的元素结果都不同(通过key属性比较virtual dom主要是为了减少在同级中插入,删除或移动元素这种变化带来的dom操作, 如果没有这类变化, 那么效率就相当于是横向逐一对比), 所以最终会重新将所有<li>元素更新一遍, 而如果上例改为:
+ ……
+<ul>
+  {this.state.users.map((v,i)=><li key={v}>{v}</li>)}
+</ul>
+
+由于state.users数组中每个元素的内容都不相同, 所以用它作为<li>元素的key属性能使每个<li>元素具有唯一性, 这种情况下虚拟树对比这些<li>元素就会是这种情况:
+
+之前的virtual dom:
+
+<li key=‘hello’>hello</li>
+<li key=‘world’>world</li>
+<li key=‘!!!’>!!!</li>
+
+
+更新后的virtual dom:
+
+<li key=‘test’>test</li>
+<li key=‘hello’>hello</li>
+<li key=‘world’>world</li>
+<li key=‘!!!’>!!!</li>
+
+当react对比key相同的<li>元素后发现它们都是相同的, 而只有key为’test’的元素是新增插入的, 所以最终对元素的操作就只有一项: 在key为’hello’的<li>元素前插入一个: <li key=‘test’>test</li> 元素, 这样在react更新html页面时的效率就提高了;
+
+
+对react virtual dom对比算法的推测:
+
+使用key属性的最大优势是可以定位指定元素改变前后处于这个层级元素中的具体位置(以这个位置作为参照就能很方便地新增/删除/移动元素了), 并且可以根据key属性来对应更新元素;
+
+假设在同一层级中存在100个元素, 这里分别来推测react根据key属性处理新增/删除/移动元素的对比算法, 以此也能比较其与不使用key属性的算法最终在html页面上对dom的操作有多大差异;
+
+
+<1>存在新增元素的情况;
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=0>0</li>
+<li key=1>1</li>
+……
+<li key=100>100!!!</li>
+
+这种情况下react会将旧virtual dom中与新virtual dom中key属性相同的元素进行对比, 对比后记录所有需要被更新的元素, 比如: <li key=100>这个元素的内容需要从100变为100!!!, 这个更新操作将在dom元素的排序操作后(如果有排序操作的话, 这里的排序操作就是指对dom的新增, 删除和移动)根据key属性定位更新;
+然后检查新virtual dom中还未被对比过的元素, 上例中是<li key=0>0</li>, 然这些后根据它与之前已经对比过key属性的元素的相对位置, 以这些元素为参照制定html中对dom元素的操作: 上例中是新建一个<li key=0>0</li>元素, 并将其插入<li key=1>1</li>元素之前, 最后修改<li key=100>100</li>元素的内容100->100!!!; 
+
+那如果这个virtual dom的更新过程中没有key属性的协助, 那么react将会按照顺序逐个对比新/旧virtual dom中每一个元素:
+<li>1</li>  —>  <li>0</li>
+<li>2</li>  —>  <li>1</li>
+……
+<li>100</li>  —>  <li>99</li>
+                      —>  <li>100!!!</li>
+
+那么最后在html上的dom操作有101个步骤; 显然要比使用了key属性的对比算法最终制定的dom操作要冗余太多;
+
+
+<2>存在删除元素的情况;
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=2>2</li>
+……
+<li key=100>100!!!</li>
+
+这种情况下react还是先根据key属性来比较元素, 然后会发现新virtual dom中不存在key=1的元素, 于是就会标记<li key=1>1</li>为需要被删除的元素, 然后继续对比其它的元素… 那么最后通过对比算法react制定的dom操作将会是: 删除<li key=1>1</li>元素, 然后修改<li key=100>100</li>元素的内容100->100!!!;
+
+那如果这个virtual dom的更新过程中没有key属性的协助, 那么react将会按照顺序逐个对比新/旧virtual dom中每一个元素:
+<li>1</li>  —>  <li>2</li>
+……
+<li>99</li>  —>  <li>100!!!</li>
+<li>100</li>  —> 
+
+那么最后在html上的dom操作有100个步骤; 显然要比使用了key属性的对比算法最终制定的dom操作要冗余太多;
+
+
+<3>这里补充: 如果存在相同key属性元素时的对比算法;
+如果在同一层级元素中存在key属性相同的元素(虽然这种设计方式本身就是错误的, 但是react肯定不会因为这个问题而影响最终的元素更新结果), react是如何来处理对比算法和最终更新dom元素的呢?
+
+react在第一次在新/旧virtual dom上找到对应的key属性元素后其实会做一个标记, 表示这个元素已经被对比过了, 之后如果又遇到查找相同key属性元素的情况, 就会跳过被标记的元素去找下一个满足key属性值的元素来进行对比, 并做另一个标记......, 如:
+
+旧virtual dom:
+
+<li key=1>1</li>
+<li key=1>2</li>
+<li key=1>3</li>
+……
+
+
+新virtual dom:
+
+<li key=1>2</li>
+<li key=0>0</li>
+<li key=1>1</li>
+……
+
+上例中, 当react查找到新virtual dom中第一个key=1属性对应的元素时会同时标记新/旧virtual dom中这个元素的key属性为, 如: key=‘1-1’, 之后再去查找key=1属性的元素时就会跳过这个key=‘1-1’的元素来查找下一个key=1的元素并标记为key=‘1-2’, 如果在新virtual dom中查找不到其它key=1的元素就标记这个旧virtual dom中的元素为待删除......, 那么最后对比算法得出的dom操作将会是:
+在key=‘1-1’和key=‘1-2’的元素之间新增一个<li key=0>0</li>元素, 然后删除<li key=1>3</li>元素, 最后修改key=‘1-1’和key=‘1-2’元素中的内容; 不过需要注意的是, 最终在html上操作dom时不会将原本的key值改变为标记的值, 如: key=1不会更新为key=‘1-1’; 
+
+
+<4>存在元素移动的情况(原有元素变化了自己在这个层级中的位置);
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=100>100!!!</li>
+……
+<li key=1>1</li>
+
+这种情况下react会先通过对比来记录是否有key属性相同的元素需要在最后更新(这里就是key=100的元素), 然后根据新/旧所有元素key属性的排列顺序进行对比计算(这种情况下的算法非常复杂, 这里就不像上面推测单纯的新增/删除元素的算法一样来做深究了), 如:
+
+1
+…
+100
+
+变为:
+
+100
+…
+1
+
+这种情况下react在计算后将会采用某一种算法来制定最终在html上的dom操作(之所以算法复杂是因为它能保证最终的dom操作步骤是最少的);
+
+
+也可能是相邻元素顺序的变化, 如:
+
+……
+19
+20
+……
+
+变为:
+
+……
+20
+19
+……
+
+这种情况下react在计算后显然会采用比上一种情况更精简的步骤来在html上操作dom元素(因为只需移动其中一个元素即可);
+
+
+当然还包括了结合之前所提到的多种情况(新增/删除)下的复杂情况下的对比算法, 如:
+
+1
+2
+3
+4
+5
+
+变为:
+
+5
+3
+2
+1
+0
+
+上例中不但有相邻和非相邻元素位置的变换, 还存在新增和删除元素的情况, 那么react当然也会利用它的复杂算法来计算出最终在html上需要执行的dom操作, 不过需要注意的是, 无论最终的dom操作如何复杂, 理论上其步骤不会超过没有key属性支持情况下需要的步骤(逐一更新dom元素), 但是在对比计算的过程中(制定dom元素操作步骤的计算)其复杂度很可能高于没有key属性支持的情况的, 不过由于通过JS操作dom是最占资源的行为, 所以只要能够令dom操作最简化, 之前的对比计算的消耗可以忽略不计;
+
+
+(6)服务器端渲染SSR(Server Side Render);
+
+传统的服务器渲染技术有: JAVA使用的JSP, PHP使用的Smarty, 包括之前在Nodejs+Express项目中使用的EJS这个JS模板引擎;  
+
+Server Side Render的最直接的优势就是: 减少首屏加载的时间, 对SEO友好;
+
+关于ReactDOMServer对象提供的在服务端渲染组件的方法:
+* renderToString()
+* renderToStaticMarkup()
+* renderToNodeStream()
+* renderToStaticNodeStream()
+
+上面的方法都属于React同构API, 其中前两个是React16之前提供的方法, 后两个是React16提供的新方法, 其性能更好; 
+
+关于ReactDOMServer对象提供的API可以参考:
+http://www.css88.com/react/docs/react-dom-server.html 
+
+
+对于SSR可以这么理解, 当客户端收到SSR后的HTML页面会直接显示在浏览器中(前端首屏加载时HTML页面中id=‘root’的元素是空的), 然后同样会加载build后的js和css文件, 而为了之后能够让react继续支持其单页面应用的所有操作, 这里需要满足两个重要的条件:
+<1>服务器端必须同时传递给前端当前页面对应的virtual dom并保存在内存中;
+<2>如果使用redux的话, 那么需要在createStore中传入一个对应当前应用状态的初始state值;
+
+因为当前端渲染了直接从server端拿到的html页面后仍旧会根据当前路由去执行一遍react代码(和前端首屏加载时的流程一致), 那么在这个加载过程中就会需要对比当前已存在的virtual dom(如果当前不存在virtual dom则会按照所有组件都是新建的流程最后重新在html中添加一遍应用组件, 这显然是不行的), 当对比之后发现没有需要更改的内容, 则不会再去重新操作html页面中的dom元素, 不过要做到对比结果相同那就要满足redux的store初始值与当前页面的状态一致, 所以需要满足上述这两点要求;
+不过还需要注意的是, 由于这种SSR加载方式不会执行原本绑定在组件componentDidMount函数中的内容(这点有待核实, 因为如果后端不执行componentDidMount函数, 那么就无法拿到最新的redux中的数据), 也不会去绑定react管理的onClick等需要页面DOMContentLoaded事件触发后才能绑定的用户交互事件执行函数, 所以需要在客户端使用ReactDOM.hydrate()方法来’注水’, 手动在组件上添加这些执行函数, 这就需要在这些使用了react管理的onClick等事件绑定函数和componentDidMount函数的组件对应的html元素中指定类似: data-reactid这样的属性, 使得前端能够直接获取到需要’注水’的元素; 而在上面介绍的四个ReactDOMServer对象提供的API中, 带有’Static’字段的方法都不会自动为react元素指定data-reactid这样的属性, 虽然这样可以节省额外字节, 但是也让react应用失去了交互性, 所以只在把React作为一个简单的静态页面生成器时才会使用; 
+
+还有两个与上面提到的SSR这种加载方式是否会在后端执行componentDidMount函数中的内容相关的问题:
+<1>由于前/后端渲染时所创建的socket对象不同, 那么在SSR后前端需要重新绑定发送消息时对前端socket对象的操作:socket.emit('sendmsg', {from, to, msg}), 包括在Dashboard和Chat模块的componentDidMount函数中的socket.on('recvmsg', function(data){……})也需要重新绑定, 但是如果SSR中执行了组件的componentDidMount函数, 那么也就是说redux的state.chat.listenerset已经被置true了, 那么在前端再次执行Dashboard和Chat模块的componentDidMount函数时就不会去绑定socket.on('recvmsg', function(data){……})了;
+<2>如果SSR会执行组件的componentDidMount函数, 那么也就会传递最新的redux的state给前端, 对于前端来说虽然拿到了最新的state, 但是如果想继续监听来自redux的state的改变就必须重新执行一遍所有componentDidMount函数, 因为react-redux是在componentDidMount函数中使用store.subscribe()来绑定redux的state变化时的处理函数的, 而又由于前端的store对象与SSR的store对象不同, 所以必须重新绑定一遍;
+
+
+14.react项目相关的内容;
+
+(1)eslint代码规范;
+
+当在localhost:3000上运行webpack-dev-server装载的项目内容时, 可以发现在nodejs控制台中会打印许多warning信息(这些信息也会在前端浏览器加载应用后显示在console中), 如:
+
+￼
+
+这是因为在项目的package.json中设置了:
+……
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+……
+
+而config/webpack.config.dev.js中指定了eslint-loader相关配置:
+……
+      {
+        test: /\.(js|jsx|mjs)$/,
+        enforce: 'pre',
+        use: [
+          {
+            options: {
+              formatter: eslintFormatter,
+              eslintPath: require.resolve('eslint'),
+              
+            },
+            loader: require.resolve('eslint-loader'),
+          },
+        ],
+        include: paths.appSrc,
+      },
+……
+
+所以可以取读取package.json中的eslintConfig配置;
+
+
+那么, 如果我不需要eslint提醒我关于将’==‘改为’===‘和将’!=’改为’!==’的warning, 我希望在应用中只做非绝对的比较, 那么就需要在package.json中进行额外配置:
+……
+  "eslintConfig": {
+    "extends": "react-app",
+    "rules":{
+      "eqeqeq":["off"]
+    }
+  },
+……
+
+上例中, 对eslintConfig做了额外配置, 在react-app这个规则下关闭了对’eqeqeq’这类规则的检查, 其中”off”代表关闭, 也可以设置为”warning”(默认)或者”error”;
+修改后重启webpack-dev-server, 发现控制台已经不会在打印相关warning了;
+
+
+如果这里想要对JS中’;’的使用创建新的ESLint规则, 如:
+……
+  "eslintConfig": {
+    "extends": "react-app",
+    "rules":{
+      "eqeqeq":["off"],
+      "semi":["warn","never"]
+    }
+  },
+……
+
+上例中, 设置了对分号使用的规则, 要求任何情况下都不能出现(‘never’, 相对于’always’), 一旦出现就会打印warning;
+
+于是就会检查出应用中所有设置了分号的地方:
+￼
+￼
+
+ESLint官网规则参考:
+http://eslint.cn/docs/4.0.0/rules/
+
+
+补充:
+上例中存在一个eslint的warning信息: Emojis should be wrapped in <span>, have role="img", and have an accessible description with aria-label or aria-labelledby
+
+aria-label, aria-labelledby 和 role属性, 都是HTML5针对html tag增加的属性，一般是为不方便的人士提供的功能，比如屏幕阅读器;
+
+role的作用是描述一个非标准的tag的实际作用; 比如用div做button，那么设置div 的 role="button"，辅助工具就可以认出这实际上是个button;
+这里提到的aria-*是一种特殊的属性, aria的意思是Accessible Rich Internet Application，aria-*的作用就是描述这个它所在标签在可视化的情境中的具体信息; 
+
+需要注意的是, aria-*只有加在可被tab到的元素上，读屏才会读出其中的内容, 如:
+<span tabindex="0″ aria-label="标签提示内容">可被tab的span标签</span>  
+
+
+当想要的aria-label文本在其他元素中做为内容存在时, 可以将该元素的id做为aria-labelledby属性的值, 在标签被tab时就直接去读取对应id元素中的内容, 如:
+……
+<div role="form" aria-labelledby="form-title">  
+<span id="form-title">使用手机号码注册</span>  
+<form>……</form>  
+</div>  
+……
+
+上例中, 当跳转到该区域时, 浏览器不仅会读出"表单区”, 也会读出"使用手机号码注册”;
+
+需要注意的是, 如果一个元素同时有aria-labelledby和aria-label，读屏软件会优先读出aria-labelledby的内容; 
+
+关于HTML5中的aria-*与role属性的使用, 可以参考:
+https://blog.csdn.net/dearcode/article/details/52218689 (重要)
+
+
+关于tabindex属性;
+
+一些元素默认就是focusable, 并且能被键盘focus; 所谓focusable指的是元素可以被鼠标或者JS focus，在Chrome浏览器下表现为会有outline发光效果，IE浏览器下是虚框，同时能够响应focus事件, 如: input, button等元素, 此时就可以将它们的tabindex默认视为0;
+当一个元素设置tabindex属性值为-1的时候, 元素会变得focusable，但是却不能被键盘focus;
+tabindex="0"和tabindex="-1"的唯一区别就是键盘也能focus，索引的顺序没有任何的变化;  
+
+tabindex属性的键盘索引顺序其实是从数值1开始的，不是0; 1索引顺序是最靠前的; 也就是说哪怕你在页面的最底部、文档流的最后一个元素设置了tabindex="1"，当按下Tab键的时候，首先focus就是这最后一个元素;
+
+tabindex属性值的最大值不能超过32767, 索引顺序由1开始从小到大排列, 顺序为0的排在最后, 如果索引值相同, 那么会根据DOM元素在文档中的位置决定的，越靠前越外层的元素索引顺序更高;
+
+关于HTML tabindex属性与web网页键盘无障碍访问, 可以参考:
+http://www.zhangxinxu.com/wordpress/2017/05/html-tabindex/ (重要)
+
+
+(2)使用async函数优化异步代码;
+
+使用ES7的async+await可以以更优雅的, 同步的方式编写异步代码, 这里将chat.redux.js中的readMsg方法中原先使用Promise的部分用async函数来改写:
+……
+export function readMsg(from){
+  return dispatch=>{
+    axios.post('/user/readmsg',{from})
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          dispatch(msgRead({from,num:res.data.num}))
+        }
+      })
+  }
+}
+……
+
+改为
+
+……
+export function readMsg(from){
+  return async dispatch=>{
+    const res = await axios.post('/user/readmsg',{from})
+    if(res.status==200 && res.data.code==0){
+      dispatch(msgRead({from,num:res.data.num}))
+    }
+  }
+}
+……
+
+
+(3)react动画解决方案: Ant motion;
+
+传统的页面动画解决方案分为:
+使用CSS3 提供的新API 来实现;
+使用JS操作DOM来实现;
+
+React提供了一个ReactCSSTransitionGroup组件来封装需要被动画效果渲染的子组件, 实现在子组件被mount/unmount时为其添加相关css, 并且可以指定组件mount到HTLM页面后的一段时间后自动删除相关CSS样式, 甚至可以推迟组件被移除HTML页面的时间来保证为其添加的CSS效果显示完毕; 
+react-addons-css-transition-group这个库是受到了angularjs的ng-animate库的启发而创建的;
+
+
+ReactCSSTransitionGroup组件使用的例子:
+
+js;
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'; // ES6
+var ReactCSSTransitionGroup = require('react-addons-css-transition-group'); // ES5 with npm
+……
+return (
+      <div>
+        <button onClick={this.handleAdd}>Add Item</button>
+        <ReactCSSTransitionGroup
+          transitionName="example"
+          transitionEnterTimeout={500}
+          transitionLeaveTimeout={300}>
+          {items}
+        </ReactCSSTransitionGroup>
+      </div>
+  );
+……
+
+css;
+
+.example-enter {
+  opacity: 0.01;
+}
+
+.example-enter.example-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.example-leave {
+  opacity: 1;
+}
+
+.example-leave.example-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}
+
+上例中, ReactCSSTransitionGroup组件的transitionName="example”属性决定了为其子组件添加CSS class的名称, 当然用户要保证在css文件中也要遵循这个规则来设计样式; 
+ReactCSSTransitionGroup组件的transitionEnterTimeout={500}属性指定了当其子组件被正常mount到html页面的多少时间后删除指定在这个子组件上的相关css class;
+ReactCSSTransitionGroup组件的transitionLeaveTimeout={300}属性决定了在子组件被从HTML页面中移除前需要等待的时间(也就是延迟多次时间再执行unmount操作), 这样就能让此次添加到这个子组件上的css效果生效后再移除组件;
+
+需要注意的是: 
+You must provide the key attribute for all children of ReactCSSTransitionGroup, even when only rendering a single item. This is how React will determine which children have entered, left, or stayed;
+这是由于ReactCSSTransitionGroup组件需要为其下每一个子组件(this.props.children)指定key值来方便检查此次render中哪些组件是属于被新增/删除/原本就存在的, 并且指定额外的生命周期任务, 其实就是在子组件的componentDidUpdate/componentWillUnmount函数中为元素添加相关css class属性后: 在组件中延迟删除css class属性/设置等待时间让主线程稍作停留再继续执行删除DOM的操作, 不过需要注意的是, 这些操作属于纯粹的JS操作DOM, 又因为是发生在组件的render方法之后的钩子函数中, 所以不会被react记录在最新的virtual dom中, 也就不会扰乱下一次的virtual dom对比了;  
+
+参考:
+https://reactjs.org/docs/animation.html
+
+
+使用ReactCSSTransitionGroup来对msg页面中新增的消息列表添加淡入的动画效果;
+
+安装react-addons-css-transition-group依赖库;
+
+$ npm install react-addons-css-transition-group —save
+
+
+修改msg.js;
+……
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
+……
+return  (
+      <ReactCSSTransitionGroup
+        transitionName="esna"
+              transitionEnterTimeout={500}
+              transitionLeaveTimeout={300}
+      >
+          {
+            chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              const unreadNum = v.filter(v=>
+                !v.read&&v.to==userid
+              ).length
+
+              return (
+                <List key={lastItem.chatid}>
+                  <Item
+                    extra={<Badge text={unreadNum}></Badge>}
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                    arrow='horizontal'
+                    onClick={()=>{
+                      this.props.history.push(`/chat/${targetId}`)
+                    }}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                    <Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+                  </Item>
+                </List>
+              )
+            })
+          }
+      </ReactCSSTransitionGroup>
+    )
+……
+
+上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性, 但是之前使用了{lastItem._id}来指定这个key值, 问题就是这个key值每次更新时都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个此次被认为是新增<List>组件的元素, 然后移除之存在的<List>组件对应的元素, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
+
+
+修改index.css;
+……
+/*for ReactCSSTransitionGroup*/
+.esna-enter {
+  opacity: 0.01;
+}
+
+.esna-enter.esna-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.esna-leave {
+  opacity: 1;
+}
+
+.esna-leave.esna-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}
 
 
 
