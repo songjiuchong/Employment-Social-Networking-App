@@ -1,6 +1,7 @@
 import React from 'react'
 import {connect} from 'react-redux'
 import {List, Badge} from 'antd-mobile'
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
 
 @connect(
 	state=>state
@@ -13,18 +14,18 @@ class Msg extends React.Component{
 	
 	//将Date对象转换为如: 2018-04-25 12:00:00 这样格式的字符串
 	formatDateTime(date) {  
-                let y = date.getFullYear();  
-                let m = date.getMonth() + 1;  
-                m = m < 10 ? ('0' + m) : m;  
-                let d = date.getDate();  
-                d = d < 10 ? ('0' + d) : d;  
-                let h = date.getHours();  
-                h=h < 10 ? ('0' + h) : h;  
-                let minute = date.getMinutes();  
-                minute = minute < 10 ? ('0' + minute) : minute;  
-                let second=date.getSeconds();  
-                second=second < 10 ? ('0' + second) : second;  
-                return y + '-' + m + '-' + d+' '+h+':'+minute+':'+second;  
+                let y = date.getFullYear()
+                let m = date.getMonth() + 1
+                m = m < 10 ? ('0' + m) : m
+                let d = date.getDate()
+                d = d < 10 ? ('0' + d) : d
+                let h = date.getHours() 
+                h=h < 10 ? ('0' + h) : h
+                let minute = date.getMinutes()
+                minute = minute < 10 ? ('0' + minute) : minute
+                let second=date.getSeconds() 
+                second=second < 10 ? ('0' + second) : second
+                return y + '-' + m + '-' + d+' '+h+':'+minute+':'+second
     } 
 
 	render(){
@@ -46,7 +47,11 @@ class Msg extends React.Component{
 			return b_last - a_last
 		})
 		return  (
-			<div>
+			<ReactCSSTransitionGroup
+				transitionName="esna"
+          		transitionEnterTimeout={500}
+          		transitionLeaveTimeout={300}
+			>
 					{
 						chatList.map(v=>{
 							const lastItem = this.getLast(v)
@@ -56,7 +61,7 @@ class Msg extends React.Component{
 							).length
 
 							return (
-								<List key={lastItem._id}>
+								<List key={lastItem.chatid}>
 									<Item
 										extra={<Badge text={unreadNum}></Badge>}
 										thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
@@ -67,13 +72,13 @@ class Msg extends React.Component{
 									>	
 										{lastItem.content}
 										<Brief>{this.props.chat.users[targetId].name}</Brief>
-										<Brief>🕘{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+										<Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
 									</Item>
 								</List>
 							)
 						})
 					}
-			</div>
+			</ReactCSSTransitionGroup>
 		)
 	}
 }

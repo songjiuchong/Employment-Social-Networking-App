@@ -40,3 +40,22 @@
 	bottom: 0;
 	width: 100%;
 }
+
+/*for ReactCSSTransitionGroup*/
+.esna-enter {
+  opacity: 0.01;
+}
+
+.esna-enter.esna-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.esna-leave {
+  opacity: 1;
+}
+
+.esna-leave.esna-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}

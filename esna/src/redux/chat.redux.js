@@ -61,14 +61,23 @@ export function listenerSet(){
 	return {type:LISTENER_SET}
 }
 
+// export function readMsg(from){
+// 	return dispatch=>{
+// 		axios.post('/user/readmsg',{from})
+// 			.then(res=>{
+// 				if(res.status==200 && res.data.code==0){
+// 					dispatch(msgRead({from,num:res.data.num}))
+// 				}
+// 			})
+// 	}
+// }
+
 export function readMsg(from){
-	return dispatch=>{
-		axios.post('/user/readmsg',{from})
-			.then(res=>{
-				if(res.status==200 && res.data.code==0){
-					dispatch(msgRead({from,num:res.data.num}))
-				}
-			})
+	return async dispatch=>{
+		const res = await axios.post('/user/readmsg',{from})
+		if(res.status==200 && res.data.code==0){
+			dispatch(msgRead({from,num:res.data.num}))
+		}
 	}
 }
 

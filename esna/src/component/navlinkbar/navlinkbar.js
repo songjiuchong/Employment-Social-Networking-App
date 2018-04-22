@@ -17,6 +17,7 @@ class NavLinkBar extends React.Component{
 		const navList = this.props.data.filter(v=>!v.hide)
 		const {pathname} = this.props.location
 		return (
+			<div>
 			<TabBar>
 				{navList.map(v=>(
 					<TabBar.Item 
@@ -32,6 +33,8 @@ class NavLinkBar extends React.Component{
 					></TabBar.Item>
 				))}
 			</TabBar>
+			{this.props.children}
+			</div>
 		)
 	}
 }

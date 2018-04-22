@@ -90,7 +90,7 @@ class Chat extends React.Component{
 					):(
 						<List key={v._id}>
 							<Item 
-								extra={<img src={avatar}/>}
+								extra={<img src={avatar} alt=''/>}
 								className='chat-me'
 							>{v.content}</Item>
 						</List>
@@ -111,6 +111,8 @@ class Chat extends React.Component{
 											this.setState({showEmoji:!this.state.showEmoji})
 											this.fixCarousel()
 										}}
+										role='img'
+										aria-label='emoji'
 									>😀</span>,
 									<span key='2' onClick={()=>this.handleSubmit()}>发送</span>
 							]}
