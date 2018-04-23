@@ -59,3 +59,12 @@
   opacity: 0.01;
   transition: opacity 300ms ease-in;
 }
+
+.esna-appear {
+  opacity: 0.01;
+}
+
+.esna-appear.esna-appear-active {
+  opacity: 1;
+  transition: opacity .5s ease-in;
+}

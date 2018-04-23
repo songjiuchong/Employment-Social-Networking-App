@@ -12,6 +12,8 @@ const MSG_READ = 'MSG_READ'
 const LISTENER_SET = 'LISTENER_SET'
 //保存用户在聊天窗口未发送的消息
 const MSG_SAVE = 'MSG_SAVE'
+//删除msg页面中的某条聊天会话记录
+const MSG_REMOVE = 'MSG_REMOVE'
 
 const initState = {
 	chatmsg:[],
@@ -41,6 +43,16 @@ export function chat(state=initState,action){
 		case MSG_SAVE:
 			const {to, chatDraft} = action.payload
 			return {...state, chatdraft:{...state.chatdraft, [to]:chatDraft}}
+		case MSG_REMOVE:
+			//需要注意的是这里返回redux的更新state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进
+			return {...state, chatmsg:[...state.chatmsg.map(v=>{
+								if(v._id == action.payload.lastMsgId){
+									v.removed = true
+								}
+								return v
+							})
+						]
+					}	
 		default:
 			return state
 	}
@@ -61,16 +73,10 @@ export function listenerSet(){
 	return {type:LISTENER_SET}
 }
 
-// export function readMsg(from){
-// 	return dispatch=>{
-// 		axios.post('/user/readmsg',{from})
-// 			.then(res=>{
-// 				if(res.status==200 && res.data.code==0){
-// 					dispatch(msgRead({from,num:res.data.num}))
-// 				}
-// 			})
-// 	}
-// }
+//这里暂时不将删除聊天会话记录的标记更新到数据库中, 也就是说目前删除的会话只会记录在本地, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除记录就会被覆盖
+export function removeMsg(lastMsgId){
+	return {type:MSG_REMOVE, payload:{lastMsgId}}
+}
 
 export function readMsg(from){
 	return async dispatch=>{

@@ -1,17 +1,23 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import {List, Badge} from 'antd-mobile'
+import {List, Badge, SwipeAction} from 'antd-mobile'
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
+import {removeMsg, readMsg} from '../../redux/chat.redux'
 
 @connect(
-	state=>state
+	state=>state,
+	{removeMsg, readMsg}
 )
 class Msg extends React.Component{
-
 	getLast(arr){
 		return arr[arr.length-1]
 	}
-	
+	//给被删除聊天会话的最后一条消息添加一个标志, 之后渲染msg页面时如果某个会话的最后一条消息的标志为已删除就不显示这个会话;
+	//并且在用户删除某项聊天会话时将其中所有对方发来的消息置为已读
+	handleDeleteMsg(from, lastMsgId){
+		this.props.removeMsg(lastMsgId)
+		this.props.readMsg(from)
+	}
 	//将Date对象转换为如: 2018-04-25 12:00:00 这样格式的字符串
 	formatDateTime(date) {  
                 let y = date.getFullYear()
@@ -49,6 +55,8 @@ class Msg extends React.Component{
 		return  (
 			<ReactCSSTransitionGroup
 				transitionName="esna"
+				transitionAppear={true}
+      			transitionAppearTimeout={500}
           		transitionEnterTimeout={500}
           		transitionLeaveTimeout={300}
 			>
@@ -60,20 +68,37 @@ class Msg extends React.Component{
 								!v.read&&v.to==userid
 							).length
 
-							return (
+							return lastItem.removed?null:
+								(
 								<List key={lastItem.chatid}>
-									<Item
-										extra={<Badge text={unreadNum}></Badge>}
-										thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
-										arrow='horizontal'
-										onClick={()=>{
-											this.props.history.push(`/chat/${targetId}`)
-										}}
-									>	
-										{lastItem.content}
-										<Brief>{this.props.chat.users[targetId].name}</Brief>
-										<Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
-									</Item>
+									<SwipeAction
+										style={{ backgroundColor: 'gray' }}
+										autoClose
+										right={[
+									        {
+									          text: '取消',
+									          style: { backgroundColor: '#ddd', color: 'white' },
+									        },
+									        {
+									          text: '删除',
+									          onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id)},
+									          style: { backgroundColor: '#F4333C', color: 'white' },
+									        },
+									    ]}
+									>
+										<Item
+											extra={<Badge text={unreadNum}></Badge>}
+											thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+											arrow='horizontal'
+											onClick={()=>{
+												this.props.history.push(`/chat/${targetId}`)
+											}}
+										>	
+											{lastItem.content}
+											<Brief>{this.props.chat.users[targetId].name}</Brief>
+											<Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+										</Item>
+									</SwipeAction>
 								</List>
 							)
 						})
