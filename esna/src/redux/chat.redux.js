@@ -47,7 +47,7 @@ export function chat(state=initState,action){
 			//需要注意的是这里返回redux的更新state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进
 			return {...state, chatmsg:[...state.chatmsg.map(v=>{
 								if(v._id == action.payload.lastMsgId){
-									v.removed = true
+									v.removed = action.payload.removedBy
 								}
 								return v
 							})
@@ -68,14 +68,21 @@ function msgRecv(msg, users, userid){
 function msgRead({from,num}){
 	return {type:MSG_READ, payload:{from,num}}
 }
+function msgRemoved(lastMsgId, removedBy){
+	return {type:MSG_REMOVE, payload:{lastMsgId, removedBy}}
+}
 
 export function listenerSet(){
 	return {type:LISTENER_SET}
 }
 
-//这里暂时不将删除聊天会话记录的标记更新到数据库中, 也就是说目前删除的会话只会记录在本地, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除记录就会被覆盖
-export function removeMsg(lastMsgId){
-	return {type:MSG_REMOVE, payload:{lastMsgId}}
+export function removeMsg(lastMsgId, removedBy){
+	return async dispatch=>{
+		const res = await axios.post('/user/removemsg',{lastMsgId, removedBy})
+		if(res.status=200 && res.data.code==0){
+			dispatch(msgRemoved(lastMsgId, removedBy))
+		}
+	}
 }
 
 export function readMsg(from){

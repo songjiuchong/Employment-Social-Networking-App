@@ -14,8 +14,8 @@ class Msg extends React.Component{
 	}
 	//给被删除聊天会话的最后一条消息添加一个标志, 之后渲染msg页面时如果某个会话的最后一条消息的标志为已删除就不显示这个会话;
 	//并且在用户删除某项聊天会话时将其中所有对方发来的消息置为已读
-	handleDeleteMsg(from, lastMsgId){
-		this.props.removeMsg(lastMsgId)
+	handleDeleteMsg(from, lastMsgId, removedBy){
+		this.props.removeMsg(lastMsgId, removedBy)
 		this.props.readMsg(from)
 	}
 	//将Date对象转换为如: 2018-04-25 12:00:00 这样格式的字符串
@@ -68,7 +68,7 @@ class Msg extends React.Component{
 								!v.read&&v.to==userid
 							).length
 
-							return lastItem.removed?null:
+							return lastItem.removed == userid?null:
 								(
 								<List key={lastItem.chatid}>
 									<SwipeAction
@@ -81,7 +81,7 @@ class Msg extends React.Component{
 									        },
 									        {
 									          text: '删除',
-									          onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id)},
+									          onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id,userid)},
 									          style: { backgroundColor: '#F4333C', color: 'white' },
 									        },
 									    ]}

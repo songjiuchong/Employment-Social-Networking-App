@@ -51,6 +51,15 @@ Router.post('/readmsg', function(req,res){
 	)
 })
 
+Router.post('/removemsg', function(req,res){
+	const {lastMsgId, removedBy} = req.body
+	Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+		if(!err){
+			return res.json({code:0})
+		}
+	})
+})
+
 Router.post('/update',function(req,res){
 	const userid = req.cookies.userid
 	if(!userid){
