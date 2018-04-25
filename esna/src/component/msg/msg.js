@@ -67,8 +67,7 @@ class Msg extends React.Component{
 							const unreadNum = v.filter(v=>
 								!v.read&&v.to==userid
 							).length
-
-							return lastItem.removed == userid?null:
+							return (lastItem.removed == userid || lastItem.removed == 'both')?null:
 								(
 								<List key={lastItem.chatid}>
 									<SwipeAction

@@ -53,9 +53,21 @@ Router.post('/readmsg', function(req,res){
 
 Router.post('/removemsg', function(req,res){
 	const {lastMsgId, removedBy} = req.body
-	Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
-		if(!err){
-			return res.json({code:0})
+
+	Chat.findOne({'_id':lastMsgId},function(err,doc){
+		if(err) return res.json({code:1})
+		if(!doc.removed){
+			Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+				if(!err){
+					return res.json({code:0,removed:removedBy})
+				}
+			})
+		}else{
+			Chat.findByIdAndUpdate(lastMsgId, {'removed':'both'}, function(err, doc){
+				if(!err){
+					return res.json({code:0,removed:'both'})
+				}
+			})
 		}
 	})
 })

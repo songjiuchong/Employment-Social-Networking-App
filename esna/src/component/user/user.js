@@ -15,7 +15,7 @@ class User extends React.Component{
 		this.logout = this.logout.bind(this)
 		this.updateInfo = this.updateInfo.bind(this)
 	}
-	componentWillUnmount(){
+	componentWillMount(){
 		this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
 	}
 	updateInfo(){
@@ -24,7 +24,6 @@ class User extends React.Component{
           { text: '算了' },
           { text: '前往', onPress: () => {
           	const targetPath = this.props.type=='boss'?'/bossinfo':'/geniusinfo'
-          	this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
 			this.props.history.push(targetPath)
           }},
         ])
@@ -42,7 +41,8 @@ class User extends React.Component{
 	render(){
 
 		let userImg = this.props.avatar?require(`../img/${this.props.avatar}.png`):require('../img/default.png')
-
+		console.log(111)
+		console.log(this.props.redirectTo)
 		return this.props.user ? (
 			<div>
 				<Result
