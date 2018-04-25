@@ -8563,7 +8563,7 @@ http://www.css88.com/react/docs/react-dom-server.html
 
 (1)eslint代码规范;
 
-当在localhost:3000上运行webpack-dev-server装载的项目内容时, 可以发现在nodejs控制台中会打印许多warning信息(这些信息也会在前端浏览器加载应用后显示在console中), 如:
+当在localhost:3000上运行webpack-dev-server装载的项目时, 可以发现在nodejs控制台中会打印许多warning信息(这些信息也会在前端浏览器加载应用后显示在console中), 如:
 
 ￼
 
@@ -8593,10 +8593,10 @@ http://www.css88.com/react/docs/react-dom-server.html
       },
 ……
 
-所以可以取读取package.json中的eslintConfig配置;
+所以会去取读取package.json中的eslintConfig配置;
 
 
-那么, 如果我不需要eslint提醒我关于将’==‘改为’===‘和将’!=’改为’!==’的warning, 我希望在应用中只做非绝对的比较, 那么就需要在package.json中进行额外配置:
+那么, 如果我不需要eslint提醒我关于将’==‘改为’===‘和将’!=’改为’!==’的warning, 我希望在应用中可以有非严格的比较, 那么就需要在package.json中进行额外配置:
 ……
   "eslintConfig": {
     "extends": "react-app",
@@ -8606,8 +8606,8 @@ http://www.css88.com/react/docs/react-dom-server.html
   },
 ……
 
-上例中, 对eslintConfig做了额外配置, 在react-app这个规则下关闭了对’eqeqeq’这类规则的检查, 其中”off”代表关闭, 也可以设置为”warning”(默认)或者”error”;
-修改后重启webpack-dev-server, 发现控制台已经不会在打印相关warning了;
+上例中, 对eslintConfig做了额外配置, 在react-app这个类型下关闭了对’eqeqeq’这类规则的检查, 其中”off”代表关闭, 也可以设置为”warning”(默认)或者”error”;
+修改后重启webpack-dev-server, 发现控制台已经不会在打印’eqeqeq’相关warning了;
 
 
 如果这里想要对JS中’;’的使用创建新的ESLint规则, 如:
@@ -8651,9 +8651,9 @@ role的作用是描述一个非标准的tag的实际作用; 比如用div做butto
 </div>  
 ……
 
-上例中, 当跳转到该区域时, 浏览器不仅会读出"表单区”, 也会读出"使用手机号码注册”;
+上例中, 当来到该区域时, 浏览器不仅会读出"表单区”, 也会读出"使用手机号码注册”;
 
-需要注意的是, 如果一个元素同时有aria-labelledby和aria-label，读屏软件会优先读出aria-labelledby的内容; 
+需要注意的是, 如果一个元素同时存在aria-labelledby和aria-label这两个属性，读屏软件会优先读出aria-labelledby的内容; 
 
 关于HTML5中的aria-*与role属性的使用, 可以参考:
 https://blog.csdn.net/dearcode/article/details/52218689 (重要)
@@ -8661,7 +8661,7 @@ https://blog.csdn.net/dearcode/article/details/52218689 (重要)
 
 关于tabindex属性;
 
-一些元素默认就是focusable, 并且能被键盘focus; 所谓focusable指的是元素可以被鼠标或者JS focus，在Chrome浏览器下表现为会有outline发光效果，IE浏览器下是虚框，同时能够响应focus事件, 如: input, button等元素, 此时就可以将它们的tabindex默认视为0;
+一些元素默认就是focusable, 并且能被键盘focus; 所谓focusable指的是元素可以被鼠标或者JS focus，在Chrome浏览器下表现为会有outline发光效果，IE浏览器下是虚框，同时能够响应focus事件, 如: input, button等元素, 可以将它们的tabindex默认视为0;
 当一个元素设置tabindex属性值为-1的时候, 元素会变得focusable，但是却不能被键盘focus;
 tabindex="0"和tabindex="-1"的唯一区别就是键盘也能focus，索引的顺序没有任何的变化;  
 
@@ -8669,7 +8669,7 @@ tabindex属性的键盘索引顺序其实是从数值1开始的，不是0; 1索�
 
 tabindex属性值的最大值不能超过32767, 索引顺序由1开始从小到大排列, 顺序为0的排在最后, 如果索引值相同, 那么会根据DOM元素在文档中的位置决定的，越靠前越外层的元素索引顺序更高;
 
-关于HTML tabindex属性与web网页键盘无障碍访问, 可以参考:
+关于HTML tabindex属性与键盘无障碍访问web网页, 可以参考:
 http://www.zhangxinxu.com/wordpress/2017/05/html-tabindex/ (重要)
 
 
@@ -8703,7 +8703,7 @@ export function readMsg(from){
 ……
 
 
-(3)react动画解决方案: Ant motion;
+(3)ReactCSSTransitionGroup组件的使用; 
 
 传统的页面动画解决方案分为:
 使用CSS3 提供的新API 来实现;
@@ -8754,14 +8754,58 @@ css;
 
 上例中, ReactCSSTransitionGroup组件的transitionName="example”属性决定了为其子组件添加CSS class的名称, 当然用户要保证在css文件中也要遵循这个规则来设计样式; 
 ReactCSSTransitionGroup组件的transitionEnterTimeout={500}属性指定了当其子组件被正常mount到html页面的多少时间后删除指定在这个子组件上的相关css class;
-ReactCSSTransitionGroup组件的transitionLeaveTimeout={300}属性决定了在子组件被从HTML页面中移除前需要等待的时间(也就是延迟多次时间再执行unmount操作), 这样就能让此次添加到这个子组件上的css效果生效后再移除组件;
+ReactCSSTransitionGroup组件的transitionLeaveTimeout={300}属性决定了在子组件被从HTML页面中移除前需要等待的时间(也就是延迟多长时间再执行unmount操作), 这样就能让此次添加到这个子组件上的css效果生效后再移除组件;
 
 需要注意的是: 
 You must provide the key attribute for all children of ReactCSSTransitionGroup, even when only rendering a single item. This is how React will determine which children have entered, left, or stayed;
-这是由于ReactCSSTransitionGroup组件需要为其下每一个子组件(this.props.children)指定key值来方便检查此次render中哪些组件是属于被新增/删除/原本就存在的, 并且指定额外的生命周期任务, 其实就是在子组件的componentDidUpdate/componentWillUnmount函数中为元素添加相关css class属性后: 在组件中延迟删除css class属性/设置等待时间让主线程稍作停留再继续执行删除DOM的操作, 不过需要注意的是, 这些操作属于纯粹的JS操作DOM, 又因为是发生在组件的render方法之后的钩子函数中, 所以不会被react记录在最新的virtual dom中, 也就不会扰乱下一次的virtual dom对比了;  
+
+这是由于ReactCSSTransitionGroup组件需要为其下每一个子组件(this.props.children)指定key值来方便检查此次render中哪些组件是属于被新增/删除/原本就存在的, 并且根据此来指定额外的生命周期任务:
+
+<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其render方法中为其添加对应的className属性(example-enter), 然后在它的componentDidUpdate函数中为元素再添加动画效果相关的后续css类(example-enter-active), 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除动画效果相关css类; 当然还有一种可能是example-enter属性名是在componentDidUpdate函数中设置的, 然后再添加example-enter-active......(用户体验可能会不好)
+<2>对于待移除组件而言, ReactCSSTransitionGroup组件会在其componentWillUnmount函数中为元素先添加example-leave属性, 然后再添加动画效果相关的后续css类(example-leave-active), 接着设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作从而能让组件能够将动画效果显示完成后再被真正移除; 不过这样设置会出现所有待移除组件的动画效果逐个展示而非一同展示的情况, 如果想要让ReactCSSTransitionGroup组件中所有待移除组件同时展示动画效果, 可以让ReactCSSTransitionGroup只在第一个子组件的componentWillUnmount函数中为所有待删除组件添加example-leave样式, 然后再添加example-leave-active样式, 接着使用设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作, 也就是说除了第一个待删除子组件, ReactCSSTransitionGroup组件不会为其它子组件设置componentWillUnmount函数;
 
 参考:
 https://reactjs.org/docs/animation.html
+
+
+补充:
+1.JS中实现阻塞线程的sleep方法;
+
+function sleep(numberMillis) { 
+  var now = new Date(); 
+  var exitTime = now.getTime() + numberMillis; 
+  while (true) { 
+    now = new Date(); 
+    if (now.getTime() > exitTime) 
+      return; 
+  } 
+}
+
+参考:
+http://www.jb51.net/article/52105.htm
+
+2.关于使用JS给元素添加样式类的问题;
+
+如果使用JS直接给元素添加class name, 如:
+
+css;
+
+.esna-enter {
+  opacity:0;
+}
+.esna-enter.esna-enter-active {
+  opacity:1;
+  transition: opacity 0.5s ease
+}
+
+
+js;
+
+$('.banner-bottom').addClass('esna-enter');
+$('.banner-bottom’).attr(‘class’);  //banner-bottom esna-enter
+$('.banner-bottom').addClass('esna-enter-active');
+
+上例中, 虽然第二条语句就可以取到页面中.banner-bottom元素的class name, 说明addClass方法确实是实时地将页面中元素的class元素更新了, 但是由于两次addClass操作之间没有页面的重绘和回流(也就是页面不会去根据更新的class name去匹配css中的对应内容重新渲染元素从而改变元素的样式状态), 这就会造成当页面根据元素class属性进行重新渲染时相当于直接跳过了元素的: class= ‘banner-bottom esna-enter’这个状态, 而是直接取读取了元素的: class= ‘banner-bottom esna-enter esna-enter-active’这个状态, 那么当然会让浏览器认为这个元素上并没有opacity的变化(假设这个元素原型的opacity就是1), 所以也不会触发transition属性指定的动画效果;
 
 
 使用ReactCSSTransitionGroup来对msg页面中新增的消息列表添加淡入的动画效果;
@@ -8778,8 +8822,8 @@ import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
 return  (
       <ReactCSSTransitionGroup
         transitionName="esna"
-              transitionEnterTimeout={500}
-              transitionLeaveTimeout={300}
+                transitionEnterTimeout={500}
+                transitionLeaveTimeout={300}
       >
           {
             chatList.map(v=>{
@@ -8811,7 +8855,7 @@ return  (
     )
 ……
 
-上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性, 但是之前使用了{lastItem._id}来指定这个key值, 问题就是这个key值每次更新时都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个此次被认为是新增<List>组件的元素, 然后移除之存在的<List>组件对应的元素, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
+上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性(其实由于会用了ReactCSSTransitionGroup组件, 无论这里存在多少个子元素都需要指定key属性), 但是之前使用了{lastItem._id}来指定这个key值, 问题是每次同一个<List>组件更新时这个key值都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次需要被更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个被认为是此次新增<List>组件, 然后移除之前存在的这个<List>组件, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
 
 
 修改index.css;
@@ -8836,6 +8880,374 @@ return  (
 }
 
 
+不过需要注意的是, 默认情况下ReactCSSTransitionGroup组件只会在自身update的时候才会对子组件执行生命周期的设置操作(在ReactCSSTransitionGroup组件自身将要被移除的情况下是无法为其子组件设置任何动画效果的), 当首次加载时并不会去做设置, 所以上例中当应用已经加载的情况下, 用户在navlinkbar中来回点击的msg和其他图标来在msg页面与其它页面之间切换时, msg页面的消息列表并不会显示淡入的css效果, 解决办法就是通过设置:
+transitionAppear={true}
+transitionAppearTimeout={500}
+
+这两个属性来让ReactCSSTransitionGroup组件在首次加载时也对其子元素的生命周期函数进行设置; 其实transitionAppearTimeout就相当于transitionEnterTimeout属性;
+当然, 同样需要添加对应的css样式设置;
+
+
+修改msg.js;
+……
+      <ReactCSSTransitionGroup
+        transitionName="esna"
+        transitionAppear={true}
+            transitionAppearTimeout={500}
+              transitionEnterTimeout={500}
+              transitionLeaveTimeout={300}
+      >
+……
+
+
+修改index.css;
+……
+
+.esna-appear {
+  opacity: 0.01;
+}
+
+.esna-appear.esna-appear-active {
+  opacity: 1;
+  transition: opacity .5s ease-in;
+}
+
+
+(4)react动画解决方案: Ant motion;
+
+安装QueueAnim进出场动画组件库:
+
+$ npm install rc-queue-anim --save
+
+
+修改chat.js;
+……
+import QueueAnim from 'rc-queue-anim'
+……
+        <QueueAnim type='scale' delay={100}>
+          {chatmsgs.map(v=>{
+            const avatar = require(`../img/${users[v.from].avatar}.png`)
+            return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                >{v.content}</Item>
+              </List>
+            )
+          })}
+        </QueueAnim>
+……
+
+上例中, QueueAnim组件的type属性指定了每个直接子元素出入场的动画样式; 
+
+对于需要’入场’效果的子组件而言, 多个子元素会按所在位置的顺序根据type样式’先后入场’, 其实QueueAnim会先为每一个待’入场’的子元素先添加一个初始的css类(一般这个css类中指定了组件的opacity为一个近乎透明的值), 然后在这些子元素的componentDidMount函数中为子组件添加一个延迟时间根据子组件所处顺序来递增的setTimeout函数(第一个子组件无须设置setTimeout函数, 除非QueueAnim函数中指定了deplay属性), setTimeout返回函数中将为这个组件指定与type属性效果相关的css样式(使用类似transition这样的css功能), 所以当子元素的componentDidMount方法依次执行后就会在页面上有’先后入场’的效果; 
+
+而对于需要’出场’效果的子组件, 实现机制与之前介绍的ReactCSSTransitionGroup组件在处理将要被移除的子组件的componentWillUnmount函数的方法类似, 不同的是由于这里需要依次’出场’的效果, 所以需要为每个子组件的componentWillUnmount中在添加了指定css类(实现一个与type属性相关的出场效果)后使用阻塞相同时间的sleep方法使得每一个子组件在展示完自己的出场效果后再真正被从HTML页面中移除;
+
+delay指定了所有子元素出入场延迟的时间, 其实就是在每个入场子组件的componentDidMount方法中(包括第一个’进场’的子组件)在原有setTimeout设置的延迟时间上统一都加上这个delay的值; 
+对于出场延迟来说, 其实就是在第一个需要出场的子组件的componentWillUnmount方法中在添加出场css效果之前先使用sleep()阻塞方法延迟delay数值的时间;
+
+与ReactCSSTransitionGroup类似, 上面所描述的’进出场’效果只有在QueueAnim组件首次被加载或者被update时才会为其子组件添加, 当其自身被移除时不会为子组件添加任何动态效果; 并且QueueAnim组件中的每个子标签也都必须指定key属性, 如果未设置 key 将不执行动画;
+
+
+那么如果这里需要在每次用户点击navlinkbar中的图标后跳转到不同的页面时为页面添加一个转场(进出场)切换的效果, 最简单地设计思路是:
+
+修改dashboard.js;
+……
+import QueueAnim from 'rc-queue-anim'
+……
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+          <Switch key='1'>
+            {navList.map(v=>(
+              <Route key={v.path} path={v.path} component={v.component}/>
+            ))}
+          </Switch>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+……
+
+但是上面这种对QueueAnim组件的使用方法无法正确生成动画效果, 原因是QueueAnim组件是通过改造其直接子元素的新增/移除生命周期函数来实现动画效果的, 但是上面这种设计的问题是, QueueAnim的直接子组件是Switch组件, 它除了页面第一次加载时是属于新增的组件, 其它情况下会一直属于被update的组件, 那么显然不满足我们需要的页面跳转时的动画效果, 解决方法是改造dashboard.js中的render函数:
+
+修改dashboard.js;
+……
+    const page = navList.find(v=>v.path == pathname)
+
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+            <Route key={page.path} path={page.path} component={page.component}/>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+……
+
+
+参考:
+https://motion.ant.design/ (官网)
+https://motion.ant.design/api/queue-anim (进出场动画相关API)
+https://motion.ant.design/edit/#t%3Dnav_0_0%2Ccontent_0_0%2Ccontent_2_0%2Ccontent_3_0%2Ccontent_4_0%2Cfooter_0_0 (动效模板, 支持自定义选择多个带有动效的模板组件然后自动整合生成一个完整的页面应用的功能)
+
+
+(5)在msg页面添加删除聊天会话记录的功能;
+
+使用antd-mobile的SwipeAction组件实现在msg页面消息列表中的某条聊天会话记录上向左滑动后(只支持Touch事件)出现删除/取消选项, 当用户点击删除后就会将这条聊天会话记录从列表中删除(同时将会话中所有收到的消息置为已读), 之后用户再来到msg页面时只要被删除会话中没有新的消息产生(无论是用户发送的还是用户收到的), 这条会话记录就不会出现在列表中; 
+实现这个功能的关键就是为被删除会话记录中的最后一条消息添加一个removed标记, 这样在msg页面渲染会话列表时就可以通过某条会话记录的最后一条消息来判断是否应该显示这一条会话记录了; 也就是说一旦被删除的聊天会话中收到了新的消息或者用户发送了新消息那么msg页面的聊天会话列表中又会重新显示这一条会话记录了;
+不过目前在项目中暂时没有将删除会话记录而生成的removed标记更新到数据库中, 也就是说目前删除的会话只会在本地被标记, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除会话记录就会重新显示在msg页面列表中;
+
+修改chat.redux.js;
+……
+//删除msg页面中的某条聊天会话记录
+const MSG_REMOVE = 'MSG_REMOVE'
+……
+    case MSG_REMOVE:
+      return {...state, chatmsg:[...state.chatmsg.map(v=>{
+                if(v._id == action.payload.lastMsgId){
+                  v.removed = true
+                }
+                return v
+              })
+            ]
+          } 
+……
+//这里暂时不将删除聊天会话记录的标记更新到数据库中, 也就是说目前删除的会话只会记录在本地, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除记录就会被覆盖
+export function removeMsg(lastMsgId){
+  return {type:MSG_REMOVE, payload:{lastMsgId}}
+}
+……
+
+需要注意的是, 上例中reducer函数在action.type为MSG_REMOVE时返回的最新的state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进;
+
+
+修改msg.js;
+……
+import {List, Badge, SwipeAction} from 'antd-mobile'
+import {removeMsg, readMsg} from '../../redux/chat.redux'
+
+@connect(
+  state=>state,
+  {removeMsg, readMsg}
+)
+class Msg extends React.Component{
+  getLast(arr){
+    return arr[arr.length-1]
+  }
+  //给被删除聊天会话的最后一条消息添加一个标志, 之后渲染msg页面时如果某个会话的最后一条消息的标志为已删除就不显示这个会话;
+  //并且在用户删除某项聊天会话时将其中所有对方发来的消息置为已读
+  handleDeleteMsg(from, lastMsgId){
+    this.props.removeMsg(lastMsgId)
+    this.props.readMsg(from)
+  }
+……
+chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              const unreadNum = v.filter(v=>
+                !v.read&&v.to==userid
+              ).length
+
+              return lastItem.removed?null:
+                (
+                <List key={lastItem.chatid}>
+                  <SwipeAction
+                    style={{ backgroundColor: 'gray' }}
+                    autoClose
+                    right={[
+                          {
+                            text: '取消',
+                            style: { backgroundColor: '#ddd', color: 'white' },
+                          },
+                          {
+                            text: '删除',
+                            onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id)},
+                            style: { backgroundColor: '#F4333C', color: 'white' },
+                          },
+                      ]}
+                  >
+                    <Item
+                      extra={<Badge text={unreadNum}></Badge>}
+                      thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                      arrow='horizontal'
+                      onClick={()=>{
+                        this.props.history.push(`/chat/${targetId}`)
+                      }}
+                    > 
+                      {lastItem.content}
+                      <Brief>{this.props.chat.users[targetId].name}</Brief>
+                      <Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+                    </Item>
+                  </SwipeAction>
+                </List>
+              )
+            })
+……
+
+
+SwipeAction组件的默认规则:
+<1>结合手势操作, 从屏幕一侧唤出操作, 一次只可滑动一行列表
+<2>点击任意按钮之外处或往回滑动该列表可隐藏操作
+
+更多关于antd-mobile中SwipeAction(滑动操作组件)相关内容, 可以参考:
+https://mobile.ant.design/components/swipe-action-cn/
+
+￼
+￼
+￼
+￼
+￼
+
+
+
+将应用的聊天会话删除功能实现持久化, 以删除者_id做为删除标识的值保存在数据库中;
+
+将一条消息置为removed:true并更新到数据库中存在一个新的问题, 那就是这条消息对于聊天双方此时都是属于被删除状态, 也就是说, 当此次会话没有被更新的情况下, 在双方的聊天会话列表中都不会显示与对方的这条会话记录了, 这显然是不合理的, 只有主动删除的用户才需要在msg页面的会话记录列表中过滤掉这条记录;
+
+
+
+修改server/user.js;
+……
+Router.post('/removemsg', function(req,res){
+  const {lastMsgId, removedBy} = req.body
+  Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+    if(!err){
+      return res.json({code:0})
+    }
+  })
+})
+……
+
+修改server/model.js;
+……
+  chat:{
+    'chatid': {'type':String, 'require':true},
+    'from':{'type':String, 'require': true},
+    'to':{'type':String, 'require': true},
+    'read':{'type':Boolean, 'default':false},
+    'content':{'type':String, 'require':true, 'default':''},
+    'create_time': {'type':Number, 'default': new Date().getTime()},
+    'removed': {'type':String, 'default':''}
+  }
+……
+
+修改chat.redux.js;
+……
+    case MSG_REMOVE:
+      //需要注意的是这里返回redux的更新state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进
+      return {...state, chatmsg:[...state.chatmsg.map(v=>{
+                if(v._id == action.payload.lastMsgId){
+                  v.removed = action.payload.removedBy
+                }
+                return v
+              })
+            ]
+          } 
+……
+function msgRemoved(lastMsgId, removedBy){
+  return {type:MSG_REMOVE, payload:{lastMsgId, removedBy}}
+}
+……
+export function removeMsg(lastMsgId, removedBy){
+  return async dispatch=>{
+    const res = await axios.post('/user/removemsg',{lastMsgId, removedBy})
+    if(res.status=200 && res.data.code==0){
+      dispatch(msgRemoved(lastMsgId, removedBy))
+    }
+  }
+}
+……
+
+
+msg.js;
+……
+return lastItem.removed == userid?null:
+……
+onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id,userid)},
+……
+
+上例中将原本的removed标识默认的boolean类型改为了字符串类型, 用来标识执行这次删除操作的用户_id, 如果消息没有被删除就是空字符串, 之后在生成msg页面的聊天会话列表时会判断如果某个会话中最后一条消息的removed标识为当前登录用户, 那么就不显示这条会话记录;
+
+
+不过目前还存在一个问题:
+如果两个用户同时删除了某条会话记录, 并且此条会话中又没有任何更新的话, 先删除会话的用户仍旧会在msg页面的会话记录列表中显示这条记录, 因为最后一条消息的removed属性被替换了, 解决办法就是为removed属性新增一个’both’状态, 来代表某条会话记录被双方同时删除了;
+
+
+修改server/user.js;
+……
+Router.post('/removemsg', function(req,res){
+  const {lastMsgId, removedBy} = req.body
+
+  Chat.findOne({'_id':lastMsgId},function(err,doc){
+    if(err) return res.json({code:1})
+    if(!doc.removed){
+      Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+        if(!err){
+          return res.json({code:0,removed:removedBy})
+        }
+      })
+    }else{
+      Chat.findByIdAndUpdate(lastMsgId, {'removed':'both'}, function(err, doc){
+        if(!err){
+          return res.json({code:0,removed:'both'})
+        }
+      })
+    }
+  })
+})
+……
+
+
+修改msg.js;
+……
+return (lastItem.removed == userid || lastItem.removed == 'both')?null:
+……
+
+上例中, 当用户删除了某条会话记录后, 服务器端会将对用消息的removed标识更新为删除这的_id, 如果已经存在removed标识则将其统一更新为’both’字符串, 代表消息对应的会话记录被聊天双方同时删除了, 之后在msg页面渲染会话列表时进行判断, 如果会话最后一条消息的removed属性为’both’, 则也需要过滤掉这条会话记录;
+
+
+(6)修改应用的2个bug;
+
+<1>来到用户的个人中心页面’/me’后, 点击’退出登录’按钮后会跳转到’/geniusinfo’页面, 而应该跳转到’/login’页面, 这是因为之前在设计当用户从完善信息页面提交信息后需要跳转到’/me’页面, 也就是说会将state.user.redirectTo更新为’/me’, 所以之后从个人中心页面点击’修改个人信息’按钮或者点击NavLinkBar导航图标直接离开当前页时需要将state.user.redirectTo重新更改为之前AUTH_SUCCESS后的状态以免被跳转回’/me’页面, 那么之前的做法是在user.js中用户点击’修改个人信息’按钮并跳转到相应个人完善信息页面之前, 和用户离开’/me’页面时, 也就是User模块的componentWillUnmount方法中: 利用authSuccess方法来更新当前state.user.redirectTo的值; 
+
+这样的设计的问题是: 当用户点击’退出登录’按钮后会直接将state.user.redirectTo更新为’/login’, 这会让应用跳转到’/login’页面没有问题, 但是由于之前还在User组件的componentWillUnmount中再次使用authSuccess方法将state.user.redirectTo更新, 所以又立刻会跳转到’/geniusinfo’页面; 
+
+解决方法就是删除上述提到的两处使用authSuccess方法的地方, 直接在User组件中设置componentWillMount:
+
+修改component/user/user.js;
+……
+  componentWillMount(){
+    this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+  }
+……
+
+<2>当用户通过注销回到login页面后点击注册按钮后无法跳转到register页面, 仍旧停留在login页面;
+
+原因是: 通过注销回到login页面时应用的state.user.redirectTo为’/login’, 所以需要对Register模块的路由判断条件做修改;
+
+修改register.js;
+……
+{this.props.redirectTo&&this.props.redirectTo!='/login'?<Redirect to={this.props.redirectTo} />:null}
+……
+
+
+
+(7)打包编译;
 
 
 
