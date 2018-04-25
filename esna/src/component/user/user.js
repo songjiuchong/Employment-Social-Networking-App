@@ -41,8 +41,6 @@ class User extends React.Component{
 	render(){
 
 		let userImg = this.props.avatar?require(`../img/${this.props.avatar}.png`):require('../img/default.png')
-		console.log(111)
-		console.log(this.props.redirectTo)
 		return this.props.user ? (
 			<div>
 				<Result
