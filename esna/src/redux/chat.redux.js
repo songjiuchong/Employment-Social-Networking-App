@@ -79,7 +79,7 @@ export function listenerSet(){
 export function removeMsg(lastMsgId, removedBy){
 	return async dispatch=>{
 		const res = await axios.post('/user/removemsg',{lastMsgId, removedBy})
-		if(res.status=200 && res.data.code==0){
+		if(res.status==200 && res.data.code==0){
 			dispatch(msgRemoved(lastMsgId, res.data.removed))
 		}
 	}
