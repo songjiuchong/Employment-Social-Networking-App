@@ -7519,11 +7519,111 @@ Redux+React Router+Node.js全栈开发笔记 (三);
 当组件的this.setState()执行后将一个检查这个组件state变化的异步任务放入事件队列(在此次主线程中多次对这个组件执行setState()方法只会添加一次异步任务), 之后主线程结束, 任务队列中检查这个组件state变化的执行函数被放入主线程执行, 它会去依次执行组件的: shouldComponentUpdate, componentWillUpdate等方法, 需要注意的是, 当componentWillUpdate开始执行时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法…;
 
 相比之下, dispatch(action)对redux的store中内容的更新是同步的, 并且会同步将所有在store上subscribe的组件的处理事件依次执行; 
-假设某个组件由react-redux的connect方法管理, 当redux的store被更新后, 在store上subscribe的组件处理函数立刻会被遍历出来依次执行, 其中就包括对这个被管理组件的forceUpdate操作, 也就是说当这个组件的处理函数被遍历到并执行后, 它会被强制更新, 走它组件更新的生命周期函数, 并最后更新html页面, 这一系列操作(从dispatch(action)被执行到最后html页面更新)都是同步的; 
-假设在上面说的这种情况下当这个由react-redux的connect方法管理组件被forceUpdate方法强制更新, 并且在重新执行render方法时加载并实例化了一个新的子组件, 那么此时会同步执行这个子组件的一系列生命周期方法(如: render方法), 然后继续完成父组件的render方法之后的内容, 直到最后html页面被更新, 如果子组件存在componentDidMount钩子函数, 那么在html页面更新过程中一旦这个子组件被添加到了页面中后就会立刻同步执行componentDidMount钩子函数的内容, 然后继续更新html页面中剩下的部分, 完成后这一轮主线程执行才算告一段落, 也就是说, 上述的所有操作也都是同步的;
+假设某个组件在store上使用subscribe注册了自己的forceUpdate方法, 当redux的store被更新后, 在store上subscribe的组件处理函数立刻会被遍历出来依次执行, 其中就包括对这个组件的forceUpdate操作,也就是说当这个组件的处理函数被遍历到并执行后, 它会被强制更新, 走它组件更新的生命周期函数, 并最后更新html页面, 这一系列操作(从dispatch(action)被执行到最后html页面更新)都是同步的; 
+假设在上面说的这种情况下当这个组件被forceUpdate方法强制更新, 在重新执行render方法时加载并实例化了一个新的子组件, 那么此时会同步执行这个子组件的一系列生命周期方法(如: render方法), 然后继续完成父组件的render方法之后的内容, 直到最后html页面被更新, 如果子组件存在componentDidMount钩子函数, 那么在html页面更新过程中一旦这个子组件被添加到了页面中后就会立刻同步执行componentDidMount钩子函数的内容, 然后继续更新html页面中剩下的部分, 更新完成后这一轮主线程任务才算告一段落, 也就是说, 上述的所有操作也都是同步的;
+
+但是需要特别注意的是, react-redux虽然是完全建立在redux机制上的, 但是它对那些由它管理的, 在store上subscribe的组件有自己的处理方式; 之前提到当store中state值被更新后, redux会同步将所有在store上subscribe的组件的处理事件依次执行, 这点是redux的处理机制, 无法改变, 但是react-redux为其封装组件在store上通过subscribe方法绑定执行函数时会先判断是否需要更新这个组件(主要是判断此组建是否存在同样被redux-react管理的父组件, 如果有就跳过对这个组件的forceUpdate, 这样就可以只对最外层的受管理组件执行forceUpdate, 避免了在一次store的state更新中重复update相同组件的情况), 如果需要更新就会将组件的forceUpdate放在任务队列中, 以异步的形式更新组件; 这种设计思路类似上面提到的react的setState()方法的队列机制, 不同的是dispatch方法对store的state值的更新是实时同步的, 并非异步的; 
+react-redux这样设计的好处是, 避免了组件在还未被mount到html之前, 用户在constructor中更新了redux的state而造成的报错: Can only update a mounted or mounting component. This usually means you called setState, replaceState, or forceUpdate on an unmounted component. This is a no-op.
+并且能够让用户在componentWillMount中更新redux的state并且在组件被添加到html页面后对所有相关组件进行一次更新; 
 
 
-补充:
+关于react的mounted和mounting的概念;
+
+在react中mounted的组件就是那些已经被放入html中, 也就是已经通过了componentDidMount钩子函数的组件;
+而mounting这个状态指组件处于componentWillMount和componentDidMount函数之间的状态, 其实就是说明了componentWillMount是属于mounting这个状态的, 在其中可以调用组件的setState, replaceState, or forceUpdate方法;
+
+其实, react允许用户在组件的除了constructor之外的所有其它钩子函数中使用forceUpdate()方法或者setState()方法来更新组件(这里的允许只是不报错, 而用户还需要自己避免在组件更新相关的钩子函数/render方法中使用forceUpdate/setState而造成的死循环, 当然用户可以在这类函数中先判断新/旧state状态再决定是否需要使用forceUpdate/setState); 
+而如果用户在constructor中使用forceUpdate/setState就会报错:
+Can only update a mounted or mounting component. This usually means you called setState, replaceState, or forceUpdate on an unmounted component. This is a no-op.
+
+而对于componentWillMount这个钩子函数react做了特殊的处理: 如果在这个函数中用户使用了setState/replaceState/forceUpdate方法, 组件不会被同步/异步更新, 并且在componentWillMount函数执行完后(注意不是在setState/replaceState/forceUpdate方法执行完后)就将当前组件的state更新为replaceState/setState中的传入的state(一般情况下是在componentWillUpdate执行完后更新的);
+
+例子1:
+
+class Logo extends React.Component{
+  constructor(){
+    super()
+    this.state = {test:1}
+  }
+  componentWillMount(){
+    this.setState({test:2})
+    console.log(this.state.test) //1
+    console.log('will mount')
+  }
+  componentDidMount(){
+    console.log('did mount')
+  }
+  componentWillUpdate(){
+    console.log('will update!')
+  }
+  componentDidUpdate(){
+    console.log('did update!')
+  }
+  render(){
+    console.log(this.state.test) //2
+    return null
+  }
+}
+
+上例中组件加载后在控制台的输出为:
+
+1
+will mount
+2
+did mount
+
+
+例子2:
+使用react-redux在组件的constructor和componentWillMount方法中更新redux的state;
+
+@connect(
+  state=>state,
+  {test}
+)
+class Logo extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {test:1}
+    this.props.test()  //这里是一个引入的redux的mapDispatchToProps方法, 它会异步对组件执行forceUpdate; 所以不会报错;
+  }
+  componentWillMount(){
+    console.log(this.state.test)  //1
+    //this.props.test()  如果将redux的mapDispatchToProps方法在这里执行, 最后控制台输出相同;
+    console.log('will mount')
+  }
+  componentDidMount(){
+    console.log('did mount')
+  }
+  componentWillUpdate(){
+    console.log('will update!')
+  }
+  componentDidUpdate(){
+    console.log('did update!')
+  }
+  render(){
+    console.log(this.state.test)  //1
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+
+上例中组件加载后在控制台的输出为:
+
+1
+will mount
+1
+did mount
+will update!
+1
+did update!
+
+所以react-redux的异步更新组件机制能够很好的与react配合使用, 还能避免报错;
+
+
+补充
 1.setState和replaceState区别;
 
 参考:
@@ -8761,11 +8861,38 @@ You must provide the key attribute for all children of ReactCSSTransitionGr
 
 这是由于ReactCSSTransitionGroup组件需要为其下每一个子组件(this.props.children)指定key值来方便检查此次render中哪些组件是属于被新增/删除/原本就存在的, 并且根据此来指定额外的生命周期任务:
 
-<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其render方法中为其添加对应的className属性(example-enter), 然后在它的componentDidUpdate函数中为元素再添加动画效果相关的后续css类(example-enter-active), 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除动画效果相关css类; 当然还有一种可能是example-enter属性名是在componentDidUpdate函数中设置的, 然后再添加example-enter-active......(用户体验可能会不好)
-<2>对于待移除组件而言, ReactCSSTransitionGroup组件会在其componentWillUnmount函数中为元素先添加example-leave属性, 然后再添加动画效果相关的后续css类(example-leave-active), 接着设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作从而能让组件能够将动画效果显示完成后再被真正移除; 不过这样设置会出现所有待移除组件的动画效果逐个展示而非一同展示的情况, 如果想要让ReactCSSTransitionGroup组件中所有待移除组件同时展示动画效果, 可以让ReactCSSTransitionGroup只在第一个子组件的componentWillUnmount函数中为所有待删除组件添加example-leave样式, 然后再添加example-leave-active样式, 接着使用设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作, 也就是说除了第一个待删除子组件, ReactCSSTransitionGroup组件不会为其它子组件设置componentWillUnmount函数;
+其实, ReactTransitionGroup会利用ReactCSSTransitionGroupChild给每个children加一层封装, 如:
 
-参考:
-https://reactjs.org/docs/animation.html
+￼
+
+之后, 当有列表元素添加或删除的时候，其实是ReactCSSTransitionGroupChild组件通过钩子函数来控制其中组件的样式显示, 这样就不需要ReactCSSTransitionGroup直接去修改传入的子组件的生命周期函数了, 并且由于ReactCSSTransitionGroupChild组件会利用传入子组件的key值来标记自己, 所以每次ReactCSSTransitionGroup组件更新就能很方便地区分哪些组件是属于新增/删除/原本就存在的, 然后就可以在对应ReactCSSTransitionGroupChild组件上设置对应的钩子函数了;
+
+￼
+
+从上面ReactCSSTransitionGroupChild组件可以看出, 它自定义了三种钩子函数, 会分别在其componentDidMount, componentWillUnmount中被调用; 其中的transition方法属于dom操作, 它将按需求添加/删除对应元素的className;
+
+￼
+
+从上面的transition方法中可以看出, 它的作用主要就是对指定dom元素进行className的添加/删除, 其中:
+
+ReactAddonsDOMDependencies.getReactDOM().findDOMNode(this);
+
+这条语句的目的是为了获取这个react jsx对象在html中对应的元素, 真实项目中的使用方法如下:
+
+import ReactDOM from 'react-dom'
+ReactDOM.findDOMNode(this)
+
+所以只要能够获取子组件在html中对应的元素, 那么就可以控制它的样式和显示动画效果了;
+
+
+不过很显然上面的例子只是针对子组件enter时, 也就是新增子组件时在钩子函数中设置的方法, 而当组件被移除时的方法完全不同:
+
+<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其ReactCSSTransitionGroupChild组件的componentDidUpdate函数中为元素再添加动画效果相关的class: example-enter, 然后又在下一个tick添加另一个class: example-enter-active, 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除动画效果相关css类; 
+<2>对于待移除组件而言, ReactCSSTransitionGroupChild组件会在其componentWillUnmount函数中为元素先添加example-leave属性, 然后再添加动画效果相关的后续css类(example-leave-active), 接着设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作从而能让组件能够将动画效果显示完成后再被真正移除; 不过需要注意的是, 这样设置会出现所有待移除组件的动画效果逐个展示而非一同展示的情况;
+
+具体的实现方法可以参考:
+https://ivweb.io/topic/586099050e2a26d26bb1c029(ReactTransitionGroup 动画原理, 重要)
+https://reactjs.org/docs/animation.html(官方)
 
 
 补充:
@@ -8798,7 +8925,6 @@ css;
   transition: opacity 0.5s ease
 }
 
-
 js;
 
 $('.banner-bottom').addClass('esna-enter');
@@ -8806,6 +8932,15 @@ $('.banner-bottom’).attr(‘class’);  //banner-bottom esna-enter
 $('.banner-bottom').addClass('esna-enter-active');
 
 上例中, 虽然第二条语句就可以取到页面中.banner-bottom元素的class name, 说明addClass方法确实是实时地将页面中元素的class元素更新了, 但是由于两次addClass操作之间没有页面的重绘和回流(也就是页面不会去根据更新的class name去匹配css中的对应内容重新渲染元素从而改变元素的样式状态), 这就会造成当页面根据元素class属性进行重新渲染时相当于直接跳过了元素的: class= ‘banner-bottom esna-enter’这个状态, 而是直接取读取了元素的: class= ‘banner-bottom esna-enter esna-enter-active’这个状态, 那么当然会让浏览器认为这个元素上并没有opacity的变化(假设这个元素原型的opacity就是1), 所以也不会触发transition属性指定的动画效果;
+
+解决方法可以是在下一个tick中再为元素添加第二个类, 如:
+
+$('.banner-bottom').addClass('esna-enter');
+setTimeout(
+  function(){
+    $('.banner-bottom').addClass('esna-enter-active');
+  }
+,0)
 
 
 使用ReactCSSTransitionGroup来对msg页面中新增的消息列表添加淡入的动画效果;
@@ -8887,7 +9022,6 @@ transitionAppearTimeout={500}
 这两个属性来让ReactCSSTransitionGroup组件在首次加载时也对其子元素的生命周期函数进行设置; 其实transitionAppearTimeout就相当于transitionEnterTimeout属性;
 当然, 同样需要添加对应的css样式设置;
 
-
 修改msg.js;
 ……
       <ReactCSSTransitionGroup
@@ -8946,6 +9080,10 @@ import QueueAnim from 'rc-queue-anim'
 ……
 
 上例中, QueueAnim组件的type属性指定了每个直接子元素出入场的动画样式; 
+
+需要注意的是, 这里以及下面将要提到的子元素特指类似上面在介绍ReactCSSTransitionGroup组件时提到的ReactCSSTransitionGroupChild封装组件(原理类似);
+
+QueueAnim组件在首次加载时存在一个特别的机制, 这点与ReactCSSTransitionGroup组件不同, 当QueueAnim组件本身被加载时它不会在其render方法中render被传入的子组件, 而是将加载新增的子组件这一个步骤放在它被加入了html之后, 也就是componentDidMount中, 并且设置为在下一个tick中执行(父组件componentDidMount了之后的下一个tick, 子组件开始执行render一系列的生命周期函数), 这样设计的原因可能是考虑到了首次加载QueueAnim组件时其子组件内的信息很可能还没有获取到(redux处于初始状态), 而由于应用对全局数据的获取大部分是设置在各个组件的componentDidMount中的, 所以这里将加载新增子组件放在QueueAnim组件加载完成后(也代表了应用中组件的一轮装载完成)的下一个tick执行可以一定程度地保证当子组件在被渲染到html页面并添加了动画样式的这段时间内是有数据的;
 
 对于需要’入场’效果的子组件而言, 多个子元素会按所在位置的顺序根据type样式’先后入场’, 其实QueueAnim会先为每一个待’入场’的子元素先添加一个初始的css类(一般这个css类中指定了组件的opacity为一个近乎透明的值), 然后在这些子元素的componentDidMount函数中为子组件添加一个延迟时间根据子组件所处顺序来递增的setTimeout函数(第一个子组件无须设置setTimeout函数, 除非QueueAnim函数中指定了deplay属性), setTimeout返回函数中将为这个组件指定与type属性效果相关的css样式(使用类似transition这样的css功能), 所以当子元素的componentDidMount方法依次执行后就会在页面上有’先后入场’的效果; 
 
@@ -9120,7 +9258,6 @@ https://mobile.ant.design/components/swipe-action-cn/
 将一条消息置为removed:true并更新到数据库中存在一个新的问题, 那就是这条消息对于聊天双方此时都是属于被删除状态, 也就是说, 当此次会话没有被更新的情况下, 在双方的聊天会话列表中都不会显示与对方的这条会话记录了, 这显然是不合理的, 只有主动删除的用户才需要在msg页面的会话记录列表中过滤掉这条记录;
 
 
-
 修改server/user.js;
 ……
 Router.post('/removemsg', function(req,res){
@@ -9185,7 +9322,7 @@ onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id,userid)},
 
 
 不过目前还存在一个问题:
-如果两个用户同时删除了某条会话记录, 并且此条会话中又没有任何更新的话, 先删除会话的用户仍旧会在msg页面的会话记录列表中显示这条记录, 因为最后一条消息的removed属性被替换了, 解决办法就是为removed属性新增一个’both’状态, 来代表某条会话记录被双方同时删除了;
+如果两个用户同时删除了某条会话记录, 并且此条会话中又没有任何更新的话, 先删除会话的用户仍旧会在msg页面的会话记录列表中显示这条记录, 因为最后一条消息的removed属性被替换为了后删除对应会话用户的_id了, 解决办法就是为removed属性新增一个’both’状态, 来代表某条会话记录被双方同时删除了;
 
 
 修改server/user.js;
@@ -9218,20 +9355,20 @@ Router.post('/removemsg', function(req,res){
 return (lastItem.removed == userid || lastItem.removed == 'both')?null:
 ……
 
-上例中, 当用户删除了某条会话记录后, 服务器端会将对用消息的removed标识更新为删除这的_id, 如果已经存在removed标识则将其统一更新为’both’字符串, 代表消息对应的会话记录被聊天双方同时删除了, 之后在msg页面渲染会话列表时进行判断, 如果会话最后一条消息的removed属性为’both’, 则也需要过滤掉这条会话记录;
+上例中, 当用户删除了某条会话记录后, 服务器端会将对应消息的removed标识更新为删除这条会话的用户_id, 如果发现removed标识已经存在内容而不是默认值空字符串, 则将其统一更新为’both’字符串, 代表消息对应的会话记录被聊天双方同时删除了, 之后在msg页面渲染会话列表时会进行判断, 如果会话最后一条消息的removed属性为’both’, 则也需要过滤掉这条会话记录;
 
 
-(6)修改应用的2个bug;
+(6)修改应用的3个bug;
 
-<1>来到用户的个人中心页面’/me’后, 点击’退出登录’按钮后会跳转到’/geniusinfo’页面, 而应该跳转到’/login’页面, 这是因为之前在设计当用户从完善信息页面提交信息后需要跳转到’/me’页面, 也就是说会将state.user.redirectTo更新为’/me’, 所以之后从个人中心页面点击’修改个人信息’按钮或者点击NavLinkBar导航图标直接离开当前页时需要将state.user.redirectTo重新更改为之前AUTH_SUCCESS后的状态以免被跳转回’/me’页面, 那么之前的做法是在user.js中用户点击’修改个人信息’按钮并跳转到相应个人完善信息页面之前, 和用户离开’/me’页面时, 也就是User模块的componentWillUnmount方法中: 利用authSuccess方法来更新当前state.user.redirectTo的值; 
+<1>来到用户的个人中心页面’/me’后, 点击’退出登录’按钮后会跳转到’/geniusinfo’页面, 而应该跳转到’/login’页面, 这是因为之前在设计当用户从完善信息页面提交信息后需要跳转到’/me’页面, 也就是说会将state.user.redirectTo更新为’/me’, 所以之后从个人中心页面点击’修改个人信息’按钮或者点击NavLinkBar导航图标离开当前页时需要将state.user.redirectTo重新更改为之前AUTH_SUCCESS后的状态以免被跳转回’/me’页面, 那么之前的做法是在user.js中用户点击’修改个人信息’按钮并跳转到相应个人完善信息页面之前, 和用户离开’/me’页面时, 也就是User模块的componentWillUnmount方法中利用authSuccess方法来更新当前state.user.redirectTo的值; 
 
 这样的设计的问题是: 当用户点击’退出登录’按钮后会直接将state.user.redirectTo更新为’/login’, 这会让应用跳转到’/login’页面没有问题, 但是由于之前还在User组件的componentWillUnmount中再次使用authSuccess方法将state.user.redirectTo更新, 所以又立刻会跳转到’/geniusinfo’页面; 
 
-解决方法就是删除上述提到的两处使用authSuccess方法的地方, 直接在User组件中设置componentWillMount:
+解决方法就是删除上述提到的两处使用authSuccess方法的地方, 直接在User组件中设置componentDidMount:
 
 修改component/user/user.js;
 ……
-  componentWillMount(){
+  componentDidMount(){
     this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
   }
 ……
@@ -9245,9 +9382,134 @@ return (lastItem.removed == userid || lastItem.removed == 'both')?null:
 {this.props.redirectTo&&this.props.redirectTo!='/login'?<Redirect to={this.props.redirectTo} />:null}
 ……
 
+<3>在’/me’页面直接刷新页面会报以下错误:
+￼
+
+但是同样的’/msg’,’/boss’,’/genius’页面就不会有问题, 在没有找到问题之前, 只能做了如下修改, 使得’/me’页面不会被rc-queue-anim组件封装改造;
+
+修改dashboard.js;
+……
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+          {
+            page.path == '/me'? <Route path={page.path} component={page.component}/>: <Route key={page.path} path={page.path} component={page.component}/>
+          }
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+
+……
+
+上例中, 当QueueAnim的子组件为User时就不给它添加key属性, 这样QueueAnim组件就不会去封装改造这个子组件了;
 
 
-(7)打包编译;
+后来发现了问题的原因:
+不能在QueueAnim组件中返回null, 由于之前在user.js的render方法最后存在: this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:null 这样的语句, 而由于User组件第一次被加载时不存在this.props.user和this.props.redirectTo属性, 所以最后会返回null, 于是就会报上面的错误, 解决方法:
+
+修改user.js;
+……
+this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:<div/>
+……
+
+
+(7)项目打包编译;
+
+$ npm run build
+
+￼
+
+webpack会将开发代码进行编译, 打包, 压缩, 最后生成一个build文件夹, 其中包括了所有项目打包后的文件(包括图片等静态文件), 可以直接deploy到生产环境;
+
+查看在项目根目录下新生成的build文件夹结构;
+
+￼
+ 
+补充:
+1.在MAC终端上使用tree命令显示文件夹结构;
+
+安装tree;
+$ brew install tree
+
+windows cmd中使用: sudo apt-get install tree
+
+
+￼
+
+可以发现, 打包后的文件名中都带有hash值, 这是为了让上线的项目不会与之前项目的缓存冲突, 能够让用户第一时间获得更新后的内容;
+
+
+目前项目使用了webpack-dev-server提供的3000端口的服务器来容纳开发环境的项目, 那么项目打包后我们这里就将它移至之前专门用来管理API接口的端口为9093的自建express服务器, 这样也就不需要代理了, 因为不会出现跨域问题了;
+
+
+(8)设置静态资源地址, 和服务器端地址过滤;
+
+修改server/server.js;
+……
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+app.use(function(req,res,next){
+  if(req.url.startWith('/user/') || req.url.startWith('/static/')){
+    return next()
+  }
+  return res.sendFile(path.resolve('build/index.html'))
+})
+console.log(path.resolve('build'))
+app.use('/',express.static(path.resolve('build')))
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+……
+
+上例中, 当进入项目的server目录执行node server后, 终端打印的path.resolve('build’)值为: 
+/Users/jiusong/mygit/Employment-Social-Networking-App/esna/server/build
+
+也就是说, path.resolve是以当前node启动线程所在路径做为参考来返回一个绝对路径的, 那么由于目前build目处于项目的根目录下, 所以需要在项目根目录下启动server.js;
+
+修改package.json;
+……
+  "scripts": {
+    "start": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "nodemon server/server.js"
+  },
+……
+
+在项目根目录下执行:
+$ npm run server
+
+￼
+
+上例中server.js中获取到了build文件夹的正确绝对路径;
+
+
+然后就可以通过9093端口来访问生产环境的项目了;
+￼
+
+
+(9)项目上线;
+
+<1>购买域名;
+<2>DNS解析到服务器IP
+<3>安装nginx, 配置反向代理等
+<4>使用pm2来管理node进程
+
+(或者使用免费云服务器(heroku)来装载项目)
+
+
+
+15.首屏服务器渲染;
+
+
 
 
 
