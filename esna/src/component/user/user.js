@@ -15,7 +15,7 @@ class User extends React.Component{
 		this.logout = this.logout.bind(this)
 		this.updateInfo = this.updateInfo.bind(this)
 	}
-	componentWillMount(){
+	componentDidMount(){
 		this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
 	}
 	updateInfo(){
@@ -69,7 +69,7 @@ class User extends React.Component{
 					<List.Item onClick = {this.logout}>退出登录</List.Item>
 				</List>
 			</div>
-		): this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:null
+		): this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:<div/>
 	}
 }
 
