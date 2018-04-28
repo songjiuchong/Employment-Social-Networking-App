@@ -68,3 +68,9 @@
   opacity: 1;
   transition: opacity .5s ease-in;
 }
+
+/*for error img*/
+.error-container{
+	display:block;
+	margin:50px auto;
+}

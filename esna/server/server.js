@@ -1,10 +1,28 @@
-const express = require('express')
-const bodyParser = require('body-parser')
-const cookieParser = require('cookie-parser')
-const model = require('./model')
+import express from 'express'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import model from './model'
 const Chat = model.getModel('chat')
 const User = model.getModel('user')
-const path = require('path')
+import path from 'path'
+
+//https://github.com/css-modules/css-modules-require-hook
+import csshook from 'css-modules-require-hook/preset'
+//https://github.com/aribouius/asset-require-hook
+import assethook from 'asset-require-hook'
+assethook(
+	{extensions:['png']}
+)
+
+import React from 'react'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {StaticRouter} from 'react-router-dom'
+import App from '../src/container/app/app'
+import {renderToString, renderToNodeStream} from 'react-dom/server'
+import reducers from '../src/reducer'
+import staticPath from '../build/asset-manifest.json'
 
 const app = express();
 //work with express
@@ -48,7 +66,86 @@ app.use(function(req,res,next){
 	if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
 		return next()
 	}
-	return res.sendFile(path.resolve('build/index.html'))
+	
+	const store = createStore(reducers, compose(
+		applyMiddleware(thunk)
+	))
+
+	let context = {}
+	// const markup = renderToString(
+	// 	(<Provider store={store}>
+	// 		<StaticRouter
+	// 			location={req.url}
+	// 			context={context}
+	// 		>
+	// 			<App></App>
+	// 		</StaticRouter>
+	// 	</Provider>)
+	// )
+	
+	const seoDescription = {
+		'/msg':'esna聊天消息列表',
+		'/boss':'esna查看牛人列表页面',
+		'/genius':'esna查看genius列表页面',
+		'/me':'esna查看个人信息页面',
+		'/login':'esna登录页面',
+		'/register':'esna注册页面'
+	}
+
+	res.write(`<!DOCTYPE html>
+						<html lang="en">
+							<head>
+								<meta charset="utf-8">
+								<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+								<meta name="theme-color" content="#000000">
+								<title>React App</title>
+								<link href="/${staticPath['main.css']}" rel="stylesheet">
+								<meta name='description' content='${seoDescription[req.url]}'>
+							</head>
+							<body>
+								<noscript>You need to enable JavaScript to run this app.</noscript>
+								<div id="root">`)
+
+	const markupStream = renderToNodeStream(
+		(<Provider store={store}>
+			<StaticRouter
+				location={req.url}
+				context={context}
+			>
+				<App></App>
+			</StaticRouter>
+		</Provider>)
+	)
+
+	markupStream.pipe(res,{end:false})
+	markupStream.on('end', ()=>{
+		res.write(`</div>
+								<script type="text/javascript" src="/${staticPath['main.js']}"></script>
+							</body>
+						</html>`
+		)
+		res.end()
+	})
+
+	
+	// const pageHtml = `<!DOCTYPE html>
+	// 					<html lang="en">
+	// 						<head>
+	// 							<meta charset="utf-8">
+	// 							<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+	// 							<meta name="theme-color" content="#000000">
+	// 							<title>React App</title>
+	// 							<link href="/${staticPath['main.css']}" rel="stylesheet">
+	// 							<meta name='description' content='${seoDescription[req.url]}'>
+	// 						</head>
+	// 						<body>
+	// 							<noscript>You need to enable JavaScript to run this app.</noscript>
+	// 							<div id="root">${markup}</div>
+	// 							<script type="text/javascript" src="/${staticPath['main.js']}"></script>
+	// 						</body>
+	// 					</html>`
+
+	// return res.send(pageHtml)
 })
 app.use('/',express.static(path.resolve('build')))
 
