@@ -8859,17 +8859,29 @@ ReactCSSTransitionGroup组件的transitionLeaveTimeout={300}属性决定了在�
 需要注意的是: 
 You must provide the key attribute for all children of ReactCSSTransitionGroup, even when only rendering a single item. This is how React will determine which children have entered, left, or stayed;
 
-这是由于ReactCSSTransitionGroup组件需要为其下每一个子组件(this.props.children)指定key值来方便检查此次render中哪些组件是属于被新增/删除/原本就存在的, 并且根据此来指定额外的生命周期任务:
-
-其实, ReactTransitionGroup会利用ReactCSSTransitionGroupChild给每个children加一层封装, 如:
+这是由于ReactTransitionGroup会利用ReactCSSTransitionGroupChild给每个children加一层封装, 如:
 
 ￼
 
-之后, 当有列表元素添加或删除的时候，其实是ReactCSSTransitionGroupChild组件通过钩子函数来控制其中组件的样式显示, 这样就不需要ReactCSSTransitionGroup直接去修改传入的子组件的生命周期函数了, 并且由于ReactCSSTransitionGroupChild组件会利用传入子组件的key值来标记自己, 所以每次ReactCSSTransitionGroup组件更新就能很方便地区分哪些组件是属于新增/删除/原本就存在的, 然后就可以在对应ReactCSSTransitionGroupChild组件上设置对应的钩子函数了;
+
+而React来判断一个组件的状态是新增/更新/移除是通过为render方法中每一个出现的子组件设置一个类似react-id的独一无二的标识(处于判断条件之内的, 或者重复出现的子组件都将获得不同的标识, 也就是说react会检查render方法中声明过的所有组件并添加标识)用来在组件下一次更新时对比前后两次render方法输出内容的不同来判断各个子组件的新增/更新/移除状态;
+
+如果子组件是父组件通过this.props.children的形式添加到render方法中的, 那么react仍旧是通过上面的这种对比react-id的形式来进行判断的, 因为在声明父组件的this.props.children时, 如:
+<Father>
+  <Son1></Son1>
+  <Son2></Son2>
+</Father>
+
+其实已经为Son1和Son2添加了独一无二的react-id了, 之后在通过this.props.children传入父组件的render方法时就可以通过上面提到方式对比前后两次render方法输出内容的不同从而判断各个子组件的新增/更新/移除状态;
+
+但是如果在render方法中使用了遍历或者传入了数组, 那么就需要开发者手动为每个子组件添加key值来让react判断前后两次render结果中子组件的新增/更新/移除状态了, 因为此时react是无法确定render方法中具体声明了哪些组件的, 所以也无法为它们添加react-id, 也就是说react推荐的在render中遍历或者传入数组时为每个组件设置独一无二的key属性不仅仅是为了之后的virtual dom对比后对html进行dom操作时增加效率, 并且也可以保证在父组件更新时那些通过遍历或者数组的形式声明在父组件render方法中的子组件能够被react识别正确的新增/更新/移除状态;
+
+而在ReactCSSTransitionGroup组件中, 由于它需要通过遍历的形式对this.props.children中的每个子组件封装一层ReactCSSTransitionGroupChild组件, 所以就需要用户提供key属性, 以便将key属性对应添加到ReactCSSTransitionGroupChild组件上方便react之后的对比;
+之后, 当有子元素添加或删除的时候，其实是通过ReactCSSTransitionGroupChild组件钩子函数来控制其中子组件的样式显示, 这样就不需要ReactCSSTransitionGroup直接去修改传入的子组件的生命周期函数了, 并且由于ReactCSSTransitionGroupChild组件会利用传入子组件的key值来标记自己, 所以每次ReactCSSTransitionGroup组件更新时React就能很方便地区分哪些组件是属于新增/删除/原本就存在的;
 
 ￼
 
-从上面ReactCSSTransitionGroupChild组件可以看出, 它自定义了三种钩子函数, 会分别在其componentDidMount, componentWillUnmount中被调用; 其中的transition方法属于dom操作, 它将按需求添加/删除对应元素的className;
+从上面ReactCSSTransitionGroupChild组件可以看出, 它自定义了三种钩子函数, 会分别在ReactCSSTransitionGroup组件新建和更新时在它的componentDidMount, componentWillUnmount中被调用; 其中的transition方法属于dom操作, 它将按需求添加/删除对应元素的className;
 
 ￼
 
@@ -8885,9 +8897,9 @@ ReactDOM.findDOMNode(this)
 所以只要能够获取子组件在html中对应的元素, 那么就可以控制它的样式和显示动画效果了;
 
 
-不过很显然上面的例子只是针对子组件enter时, 也就是新增子组件时在钩子函数中设置的方法, 而当组件被移除时的方法完全不同:
+不过很显然上面的例子只是针对子组件enter时, 也就是新增子组件时在componentDidMount钩子函数中设置的方法, 而当组件被移除时的方法完全不同:
 
-<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其ReactCSSTransitionGroupChild组件的componentDidUpdate函数中为元素再添加动画效果相关的class: example-enter, 然后又在下一个tick添加另一个class: example-enter-active, 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除动画效果相关css类; 
+<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其ReactCSSTransitionGroupChild组件的componentDidUpdate函数中为元素添加动画效果相关的class: example-enter, 然后在下一个tick添加另一个class: example-enter-active, 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除元素中动画效果相关className; 
 <2>对于待移除组件而言, ReactCSSTransitionGroupChild组件会在其componentWillUnmount函数中为元素先添加example-leave属性, 然后再添加动画效果相关的后续css类(example-leave-active), 接着设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作从而能让组件能够将动画效果显示完成后再被真正移除; 不过需要注意的是, 这样设置会出现所有待移除组件的动画效果逐个展示而非一同展示的情况;
 
 具体的实现方法可以参考:
@@ -8933,7 +8945,7 @@ $('.banner-bottom').addClass('esna-enter-active');
 
 上例中, 虽然第二条语句就可以取到页面中.banner-bottom元素的class name, 说明addClass方法确实是实时地将页面中元素的class元素更新了, 但是由于两次addClass操作之间没有页面的重绘和回流(也就是页面不会去根据更新的class name去匹配css中的对应内容重新渲染元素从而改变元素的样式状态), 这就会造成当页面根据元素class属性进行重新渲染时相当于直接跳过了元素的: class= ‘banner-bottom esna-enter’这个状态, 而是直接取读取了元素的: class= ‘banner-bottom esna-enter esna-enter-active’这个状态, 那么当然会让浏览器认为这个元素上并没有opacity的变化(假设这个元素原型的opacity就是1), 所以也不会触发transition属性指定的动画效果;
 
-解决方法可以是在下一个tick中再为元素添加第二个类, 如:
+解决方法可以是在下一个tick中再为元素添加第二个样式类, 如:
 
 $('.banner-bottom').addClass('esna-enter');
 setTimeout(
@@ -8943,7 +8955,7 @@ setTimeout(
 ,0)
 
 
-使用ReactCSSTransitionGroup来对msg页面中新增的消息列表添加淡入的动画效果;
+使用ReactCSSTransitionGroup来对msg页面中消息列表添加淡入的动画效果;
 
 安装react-addons-css-transition-group依赖库;
 
@@ -8990,7 +9002,7 @@ return  (
     )
 ……
 
-上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性(其实由于会用了ReactCSSTransitionGroup组件, 无论这里存在多少个子元素都需要指定key属性), 但是之前使用了{lastItem._id}来指定这个key值, 问题是每次同一个<List>组件更新时这个key值都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次需要被更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个被认为是此次新增<List>组件, 然后移除之前存在的这个<List>组件, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
+上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性(其实由于使用了ReactCSSTransitionGroup组件, 无论这里存在多少个子元素都需要指定key属性), 但是之前使用了{lastItem._id}来指定这个key值, 问题是每次同一个<List>组件更新时这个key值都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次需要被更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个被认为是此次新增<List>组件, 然后移除之前存在的这个<List>组件, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
 
 
 修改index.css;
@@ -9085,12 +9097,12 @@ import QueueAnim from 'rc-queue-anim'
 
 QueueAnim组件在首次加载时存在一个特别的机制, 这点与ReactCSSTransitionGroup组件不同, 当QueueAnim组件本身被加载时它不会在其render方法中render被传入的子组件, 而是将加载新增的子组件这一个步骤放在它被加入了html之后, 也就是componentDidMount中, 并且设置为在下一个tick中执行(父组件componentDidMount了之后的下一个tick, 子组件开始执行render一系列的生命周期函数), 这样设计的原因可能是考虑到了首次加载QueueAnim组件时其子组件内的信息很可能还没有获取到(redux处于初始状态), 而由于应用对全局数据的获取大部分是设置在各个组件的componentDidMount中的, 所以这里将加载新增子组件放在QueueAnim组件加载完成后(也代表了应用中组件的一轮装载完成)的下一个tick执行可以一定程度地保证当子组件在被渲染到html页面并添加了动画样式的这段时间内是有数据的;
 
-对于需要’入场’效果的子组件而言, 多个子元素会按所在位置的顺序根据type样式’先后入场’, 其实QueueAnim会先为每一个待’入场’的子元素先添加一个初始的css类(一般这个css类中指定了组件的opacity为一个近乎透明的值), 然后在这些子元素的componentDidMount函数中为子组件添加一个延迟时间根据子组件所处顺序来递增的setTimeout函数(第一个子组件无须设置setTimeout函数, 除非QueueAnim函数中指定了deplay属性), setTimeout返回函数中将为这个组件指定与type属性效果相关的css样式(使用类似transition这样的css功能), 所以当子元素的componentDidMount方法依次执行后就会在页面上有’先后入场’的效果; 
+对于需要’入场’效果的子组件而言, 多个子元素会按所在位置的顺序根据type样式’先后入场’, 其实QueueAnim会先为每一个’入场’的子元素的componentDidMount函数中为子组件先添加一个初始的css类(一般这个css类中指定了组件的opacity为一个近乎透明的值), 然后再为子组件添加一个延迟时间根据子组件所处顺序来递增的setTimeout函数, 第一个子组件无须设置setTimeout函数, 除非QueueAnim函数中指定了deplay属性, 保存延迟时间的变量可以声明在父组件的constructor中, 每次有子元素执行了componentDidMount就累加一次单位延迟时间, 这样下一个执行componentDidMount方法的新增组件就能获取到相应的延迟, 每次父组件更新就将这个变量置为0, setTimeout返回函数中将为这个组件指定与type属性效果相关的css样式(使用类似transition这样的css功能), 所以当子元素的componentDidMount方法依次执行后就会在页面上有’先后入场’的效果; 
 
-而对于需要’出场’效果的子组件, 实现机制与之前介绍的ReactCSSTransitionGroup组件在处理将要被移除的子组件的componentWillUnmount函数的方法类似, 不同的是由于这里需要依次’出场’的效果, 所以需要为每个子组件的componentWillUnmount中在添加了指定css类(实现一个与type属性相关的出场效果)后使用阻塞相同时间的sleep方法使得每一个子组件在展示完自己的出场效果后再真正被从HTML页面中移除;
+而对于需要’出场’效果的子组件, 实现机制与之前介绍的ReactCSSTransitionGroup组件在处理将要被移除的子组件的componentWillUnmount函数的方法类似, 这里需要依次’出场’的效果, 所以在componentWillUnmount中为每个子组件添加了指定className(实现一个与type属性相关的出场效果)后使用阻塞相同时间的sleep方法使得每一个子组件在展示完自己的出场效果后再真正被从HTML页面中移除;
 
 delay指定了所有子元素出入场延迟的时间, 其实就是在每个入场子组件的componentDidMount方法中(包括第一个’进场’的子组件)在原有setTimeout设置的延迟时间上统一都加上这个delay的值; 
-对于出场延迟来说, 其实就是在第一个需要出场的子组件的componentWillUnmount方法中在添加出场css效果之前先使用sleep()阻塞方法延迟delay数值的时间;
+对于出场延迟来说, 其实就是在第一个需要出场的子组件(判断组件是否为第一个出场的标识变量可以使用类似上面提到的保存延迟时间的变量的指定方法声明在父组件的constructor中, 每次父组件更新要置回0)的componentWillUnmount方法中在添加出场css效果之前先使用sleep()阻塞方法延迟delay数值的时间;
 
 与ReactCSSTransitionGroup类似, 上面所描述的’进出场’效果只有在QueueAnim组件首次被加载或者被update时才会为其子组件添加, 当其自身被移除时不会为子组件添加任何动态效果; 并且QueueAnim组件中的每个子标签也都必须指定key属性, 如果未设置 key 将不执行动画;
 
@@ -9443,7 +9455,7 @@ windows cmd中使用: sudo apt-get install tree
 可以发现, 打包后的文件名中都带有hash值, 这是为了让上线的项目不会与之前项目的缓存冲突, 能够让用户第一时间获得更新后的内容;
 
 
-目前项目使用了webpack-dev-server提供的3000端口的服务器来容纳开发环境的项目, 那么项目打包后我们这里就将它移至之前专门用来管理API接口的端口为9093的自建express服务器, 这样也就不需要代理了, 因为不会出现跨域问题了;
+目前项目使用了webpack-dev-server提供的3000端口的服务器来放置开发环境的项目, 那么项目打包后我们这里将它移至之前专门用来管理API接口的端口为9093的自建express服务器中, 这样也就不需要代理了, 因为不会出现跨域问题了;
 
 
 (8)设置静态资源地址, 和服务器端地址过滤;
@@ -9456,7 +9468,7 @@ app.use(cookieParser())
 app.use(bodyParser.json())
 app.use('/user',userRouter)
 app.use(function(req,res,next){
-  if(req.url.startWith('/user/') || req.url.startWith('/static/')){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
     return next()
   }
   return res.sendFile(path.resolve('build/index.html'))
@@ -9472,7 +9484,7 @@ server.listen(9093,function(){
 上例中, 当进入项目的server目录执行node server后, 终端打印的path.resolve('build’)值为: 
 /Users/jiusong/mygit/Employment-Social-Networking-App/esna/server/build
 
-也就是说, path.resolve是以当前node启动线程所在路径做为参考来返回一个绝对路径的, 那么由于目前build目处于项目的根目录下, 所以需要在项目根目录下启动server.js;
+也就是说, path.resolve是以当前node启动线程所在路径做为参考来返回一个绝对路径的(并不会去查找路径, 仅仅是简单的拼接字符串), 那么由于目前build目处于项目的根目录下, 所以需要在项目根目录下启动server.js;
 
 修改package.json;
 ……
@@ -9489,7 +9501,7 @@ $ npm run server
 
 ￼
 
-上例中server.js中获取到了build文件夹的正确绝对路径;
+上例中server.js中获取到了build文件夹的绝对路径;
 
 
 然后就可以通过9093端口来访问生产环境的项目了;
@@ -9499,9 +9511,9 @@ $ npm run server
 (9)项目上线;
 
 <1>购买域名;
-<2>DNS解析到服务器IP
-<3>安装nginx, 配置反向代理等
-<4>使用pm2来管理node进程
+<2>DNS解析到服务器IP;
+<3>安装配置Nginx (更多关于Nginx的内容可以参考: ‘Page Dev helper’ 笔记中: ’94.Apache/Nginx/Tomcat;’ 的相关内容);
+<4>使用pm2来管理node进程;
 
 (或者使用免费云服务器(heroku)来装载项目)
 
@@ -9509,7 +9521,602 @@ $ npm run server
 
 15.首屏服务器渲染;
 
+(1)在node环境中使用babel-node来支持jsx;
+
+$ npm install babel-cli --save
 
 
+修改package.json;
+……
+  "scripts": {
+    "start": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "NODE_ENV=test nodemon --exec babel-node server/server.js",
+    "server_bak": "nodemon server/server.js"
+  },
+……
+
+需要注意的是, NODE_ENV不要忘记指定, 如果没有指定会报错:
+Using `babel-preset-react-app` requires that you specify `NODE_ENV` or `BABEL_ENV` environment variables. Valid values are "development", "test", and "production".
+
+重新执行npm run server, 此时在server/server.js中使用之前无法编译的ES6代码, 比如:
+
+import express from ‘express’
+
+就能正常运行了;
+
+
+但是此时在server/server.js中仍旧不能执行jsx相关的代码, 解决方法是:
+
+复制package.json中babel的配置:
+
+  "babel": {
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "import",
+        {
+          "libraryName": "antd-mobile",
+          "style": "css"
+        }
+      ],
+      [
+        "transform-decorators-legacy"
+      ]
+    ]
+  },
+
+
+在项目根目录下创建.babelrc文件:
+
+{
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "import",
+        {
+          "libraryName": "antd-mobile",
+          "style": "css"
+        }
+      ],
+      [
+        "transform-decorators-legacy"
+      ]
+    ]
+  }
+
+显然babel-node是依靠.babelrc文件来读取babel配置的, 而webpack可以读取package.json中的babel参数;
+
+
+(2)使用renderToString方法做服务器端渲染;
+
+修改server.js;
+……
+import React from 'react'
+import {renderToString, renderToStaticMarkup} from 'react-dom/server'
+……
+function App(){
+  return <h2>test</h2>
+}
+console.log(renderToString(<App/>))
+
+上例中在控制台显示:
+<h2 data-reactroot="">test</h2>
+
+
+可以参考前文中介绍的: ‘服务器端渲染SSR(Server Side Render)’;
+https://reactjs.org/docs/react-dom-server.html (官网)
+
+
+在container/app文件夹中新建app.js;
+
+用来抽离index.js中ReactDom.render方法里<BrowserRouter>内的公共内容(而BrowserRouter组件在后端将被StaticRouter组件取代), 这些内容同时会被前/后端渲染用到;
+
+app.js;
+
+import React from 'react'
+import AuthRoute from '../../component/authroute/authroute'
+import {
+  Route, 
+  Switch
+} from 'react-router-dom'
+import Login from '../login/login'
+import Register from '../register/register'
+import BossInfo from '../bossinfo/bossinfo'
+import GeniusInfo from '../geniusinfo/geniusinfo'
+import Dashboard from '../../component/dashboard/dashboard' 
+import Chat from '../../component/chat/chat' 
+
+class App extends React.Component{
+
+  render(){
+    return (
+      <div>
+        <AuthRoute></AuthRoute>
+        <Switch>
+          <Route path='/bossinfo' component={BossInfo}></Route>
+          <Route path='/geniusinfo' component={GeniusInfo}></Route>
+          <Route path='/login' component={Login}></Route>
+          <Route path='/register' component={Register}></Route>
+          <Route path='/chat/:user' component={Chat}></Route>
+          <Route component={Dashboard}></Route>
+        </Switch>
+      </div>
+    )
+  }
+}
+
+export default App
+
+
+修改index.js;
+
+import React from 'react'
+import ReactDom from 'react-dom'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {BrowserRouter} from 'react-router-dom'
+
+import App from './container/app/app'
+import reducers from './reducer'
+import './config'
+import './index.css'
+
+const store = createStore(reducers, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <App></App>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+
+修改server.js;
+
+import express from 'express'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import model from './model'
+const Chat = model.getModel('chat')
+const User = model.getModel('user')
+import path from 'path'
+import React from 'react'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {StaticRouter} from 'react-router-dom'
+import App from '../src/container/app/app'
+import {renderToString, renderToStaticMarkup} from 'react-dom/server'
+import reducers from '../src/reducer'
+
+const app = express();
+//work with express
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+
+io.on('connection', function(socket){
+  socket.on('sendmsg', function(data){
+    const {from, to, msg} = data
+    const chatid = [from, to].sort().join('_')
+    Chat.create({chatid, from, to, content:msg, create_time:new Date().getTime()}, function(err, doc){
+      // console.log(doc)
+      // console.log('///////////////')
+      // console.log(Object.assign({},doc))
+      // console.log('///////////////')
+      // console.log(Object.assign({},doc._doc))
+      
+      if(!err){
+        User.find({}, function(e,userdoc){
+          let users = {}
+          if(!e){
+            userdoc.forEach(v=>{
+              users[v._id] = {name:v.user, avatar:v.avatar}
+            })
+            delete doc._doc.__v
+            let data = {doc:doc._doc, users}
+            io.emit('recvmsg', Object.assign({},data))
+          }
+        })
+      }
+    })
+  })
+})
+
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}
+  const markup = renderToString(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  return res.send(markup)
+})
+app.use('/',express.static(path.resolve('build')))
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+上例中将原本直接返回的index.html改为通过SSR渲染后的首屏页面字符串, 所以这里基本复制了index.js中的所有内容;
+
+
+(3)添加css-modules-require-hook和asset-require-hook辅助库来让后端也能将css文件和图片作为模块引入;
+
+上例在执行后会在后端控制台报错:
+￼
+
+这是由于node环境中使用babel-node并不会像之前webpack那样处理以模块的形式直接引入css文件(当然引入图片模块也存在这样的问题, 之后会提到);
+需要安装一个辅助库:
+
+$ npm install css-modules-require-hook
+
+根据官方文档的指示:
+
+￼
+
+在server.js中引入csshook:
+
+import csshook from 'css-modules-require-hook/preset'
+
+需要注意的是, 这里引入的是一个钩子模块, 所以需要放在import App模块之前, 确保在对App相关依赖模块做编译之前csshook已经生效了;
+
+并且新建一个cmrh.conf.js文件;
+
+module.exports = {
+  // Same scope name as in webpack build
+  generateScopedName: '[name]__[local]___[hash:base64:5]',
+}
+
+参考:
+https://github.com/css-modules/css-modules-require-hook (官方git)
+
+
+上例在执行后仍旧会在后端控制台报错:
+￼
+
+这就是因为在node环境中使用babel-node并不会像之前webpack那样可以处理对图片的直接import;
+
+解决方法同样是需要依赖一个辅助库:
+
+$ npm install asset-require-hook —save
+
+根据官方文档的指示:
+
+￼
+
+在server.js中引入assethook:
+
+import assethook from 'asset-require-hook'
+assethook(
+  {extensions:['png']}
+)
+
+
+需要特别注意的是, 这里引入的assethook是对使用require方法添加的hook, 所以需要修改项目中使用import方法引入的图片, 如:
+
+logo.js;
+……
+import logoImg from './job.png'
+import './logo.css'
+
+class Logo extends React.Component{
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+……
+
+修改为:
+……
+class Logo extends React.Component{
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={require('./job.png')} alt=""/>
+      </div>
+    )
+  }
+}
+……
+
+但是这里存在一个问题, 如果首屏渲染了login/register页面, 那么logo图片无法显示, 原因是其img的src为类似: 886c2c0ad64c17d8682384f7d1cb902c.png 这样的字符串, 这个问题之后会解决;
+
+参考:
+https://github.com/aribouius/asset-require-hook (官方git)
+
+
+(4)完善首屏渲染的返回内容;
+
+上面由后端渲染后生成的页面字符串内容被放在了markup变量中, 但是其实我们是需要将它放在index.html中的root节点内的, 所以这里拷贝build/index.html中的内容到server.js中;
+
+修改server.js;
+……
+import staticPath from '../build/asset-manifest.json'
+……
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}
+  const markup = renderToString(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  const pageHtml = `<!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+                <meta name="theme-color" content="#000000">
+                <title>React App</title>
+                <link href="/${staticPath['main.css']}" rel="stylesheet">
+              </head>
+              <body>
+                <noscript>You need to enable JavaScript to run this app.</noscript>
+                <div id="root">${markup}</div>
+                <script type="text/javascript" src="/${staticPath['main.js']}"></script>
+              </body>
+            </html>`
+
+  return res.send(pageHtml)
+})
+……
+
+上例中, 通过直接引入asset-manifest.json文件中的内容来指定html页面中js/css文件的加载路径;
+需要注意的是, 由于pageHtml这个变量中保存的字符串之间有换行的情况, 所以只能使用``来包裹, 如果使用一般的引号’,”就会报错;
+
+
+(5)这里还可以利用首屏渲染在SEO方面的优势动态添加meta信息, 如:
+
+修改server.js;
+……
+  const seoDescription = {
+    '/msg':'esna聊天消息列表',
+    '/boss':'esna查看牛人列表页面',
+    '/genius':'esna查看genius列表页面',
+    '/me':'esna查看个人信息页面',
+    '/login':'esna登录页面',
+    '/register':'esna注册页面'
+  }
+……
+<meta name='description' content='${seoDescription[req.url]}'>
+……
+
+
+
+16.React16新特性;
+
+
+(1)新的virtual dom核心算法Fiber, 渲染速度更快; 
+
+(2)render方法可以直接返回数组和字符串而不需要在最外层包裹一个<div>;
+
+(3)Portals组件, 让React可以渲染在其root dom之外的元素, 比如弹窗有一个全局的透明遮盖层, 这个设置遮盖层的元素最好是直接放在body下最外层的位置, 那么此时就可以使用Portals组件来实现;
+
+(4)MIT协议, 变为完全开源了;
+
+(5)错误处理机制, 为组件新增了一个生命周期函数: componentDidCatch, 如果组件在渲染时发生错误, 那么可以通过这个函数捕获错误;
+
+目前如果直接访问项目的根目录或者其它不存在的路径, 如: localhost:9093 会报错:
+Cannot read property 'title' of undefined
+
+这是因为在dashboard.js中声明了: page = navList.find(v=>v.path == pathname), 而navList中显然没有保存’/‘或其他不存在的路径, 所以page为undefined...
+
+先通过错误处理机制制定统一的错误页面:
+
+在app文件夹中添加一张error.png图片;
+
+修改app.js;
+……
+class App extends React.Component{
+  constructor(props){
+    super(props)
+    this.state={
+      hasError:false
+    }
+  }
+  componentDidCatch(err,info){
+    this.setState({
+      hasError: true
+    })
+  }
+  render(){
+    return this.state.hasError?<img className='error-container' src={require('./error.png')} alt='error'/>
+    :(
+      <div>
+        <AuthRoute></AuthRoute>
+        <Switch>
+          <Route path='/bossinfo' component={BossInfo}></Route>
+          <Route path='/geniusinfo' component={GeniusInfo}></Route>
+          <Route path='/login' component={Login}></Route>
+          <Route path='/register' component={Register}></Route>
+          <Route path='/chat/:user' component={Chat}></Route>
+          <Route component={Dashboard}></Route>
+        </Switch>
+      </div>
+    )
+  }
+}
+
+上例中在app.js这个应用的主入口中做了统一的错误处理;
+
+
+修改index.css;
+……
+/*for error img*/
+.error-container{
+  display:block;
+  margin:50px auto;
+}
+
+￼
+
+
+然后来修复这个问题:
+
+修改dashboard.js;
+……
+    const page = navList.find(v=>v.path == pathname)
+
+    return page?(
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{page.title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+            <Route key={page.path} path={page.path} component={page.component}/>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    ):<Redirect to='/me'></Redirect>
+……
+
+修改后在用户访问一个应用不存在的路径时会被跳转到’/me’页面;
+
+
+(6)服务器端渲染的新API(renderToNodeStream)能够直接渲染返回Node节点流, 提升3倍左右的效率; 
+对于服务器端渲染的react项目, 还提供了一个hydrate方法来代替render;
+
+这里使用renderToNodeStream代替renderToString来完成SSR;
+
+修改server.js;
+……
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}  
+  const seoDescription = {
+    '/msg':'esna聊天消息列表',
+    '/boss':'esna查看牛人列表页面',
+    '/genius':'esna查看genius列表页面',
+    '/me':'esna查看个人信息页面',
+    '/login':'esna登录页面',
+    '/register':'esna注册页面'
+  }
+
+  res.write(`<!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+                <meta name="theme-color" content="#000000">
+                <title>React App</title>
+                <link href="/${staticPath['main.css']}" rel="stylesheet">
+                <meta name='description' content='${seoDescription[req.url]}'>
+              </head>
+              <body>
+                <noscript>You need to enable JavaScript to run this app.</noscript>
+                <div id="root">`)
+
+  const markupStream = renderToNodeStream(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  markupStream.pipe(res,{end:false})
+  markupStream.on('end', ()=>{
+    res.write(`</div>
+                <script type="text/javascript" src="/${staticPath['main.js']}"></script>
+              </body>
+            </html>`
+    )
+    res.end()
+  })
+})
+……
+
+上例中使用了renderToNodeStream来将jsx元素解析为可读的字节流对象, 通过res.write()方法先将nodestream之前的静态html内容写入res, 然后使用res.pipe方法开始向res写入字节流(其第二个参数{end:false}告诉pipe方法当字节流写入完毕后不要关闭通道, 因为后面还有内容需要写入), 最后将nodestream之后的静态html内容写入res, 接着结束写入完成响应; 
+
+
+修改index.js;
+……
+ReactDom.hydrate(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <App></App>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+……
+
+上例中将ReactDom.render方法改为了react16提供的ReactDom.hydrate, 对于使用SSR首屏渲染的应用来说, ReactDom.hydrate的效率更高;
+
+hydrate()
+Same as render(), but is used to hydrate a container whose HTML contents were rendered by ReactDOMServer. React will attempt to attach event listeners to the existing markup
+
+参考:
+https://reactjs.org/docs/react-dom.html#hydrate
+
+
+
+项目后续工作:
+1.SSR首屏渲染, login/register页面logo无法显示问题;
+2.页面中列表中内容过多而覆盖了底部导航栏的问题;
+3.SSR设置redux是否只能接受init State, 是否会触发redux的更新, 更新后的redux如何传递到前端;
+是否首屏渲染主要功能还是为了优化SEO, 而首屏的完成度较低, 还是需要通过首页加载了react.js后根据路由重新渲染一遍页面才能正常使用(包括react动画的显示);
+hygrate方法与render的最主要区别;
+4.项目放到heroku上线;
+5.readme.md更新到git;
+6.在github上更新项目启动的tips;
 
 
