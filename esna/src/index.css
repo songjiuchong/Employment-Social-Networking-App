@@ -4,16 +4,16 @@
 	padding-left: 10px;
 }
 
-.am-tab-bar{
-	position: fixed;
-	bottom:0;
-	width:100%;
-	z-index:-1;
-}
-
 .fixed-header.am-navbar{
 	position: fixed;
 	top:0;
+	width:100%;
+	z-index: 1;
+}
+
+.fixed-bottom{
+	position: fixed;
+	bottom:0;
 	width:100%;
 }
 
@@ -25,8 +25,15 @@
 	flex-basis:auto;
 }
 #chat-page .chat-me .am-list-content{
-	padding-right: 15px;
-	text-align: right;
+	margin: 10px 3% 10px 20%;
+    padding: 7px 30px 7px 16px;
+    background: mintcream;
+	/*text-align: right;*/
+}
+#chat-page .chat-who .am-list-content{
+	padding: 7px 30px 7px 20px;
+	margin: 10px 20% 10px 1%;
+	background: aliceblue;
 }
 #chat-page .am-grid-icon{
 	display:none;
@@ -36,7 +43,7 @@
 }
 .stick-footer{
 	z-index: 10;
-	position: absolute;
+	position: fixed;
 	bottom: 0;
 	width: 100%;
 }

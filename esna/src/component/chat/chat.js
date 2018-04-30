@@ -71,6 +71,7 @@ class Chat extends React.Component{
 			<div id='chat-page'>
 				{redirect&&redirect.indexOf('info')!=-1?<Redirect to={redirect}/>:null}
 				<NavBar 
+					className='fixed-header'
 					mode='dark'
 					icon={<Icon type='left'/>}
 					onLeftClick={()=>{
@@ -79,13 +80,16 @@ class Chat extends React.Component{
 				>
 					{users[userid].name}
 				</NavBar>
-				<QueueAnim type='scale' delay={100}>
+				<QueueAnim style={{marginTop:45, marginBottom:45}} type='scale' delay={100}>
 					{chatmsgs.map(v=>{
 						const avatar = require(`../img/${users[v.from].avatar}.png`)
 						return v.from == userid?(
 							<List key={v._id}>
 								<Item
 									thumb={avatar}
+									className='chat-who'
+									wrap
+									style={{wordWrap:'break-word'}}
 								>{v.content}</Item>
 							</List>
 						):(
@@ -93,6 +97,8 @@ class Chat extends React.Component{
 								<Item 
 									extra={<img src={avatar} alt=''/>}
 									className='chat-me'
+									wrap
+									style={{wordWrap:'break-word'}}
 								>{v.content}</Item>
 							</List>
 						)

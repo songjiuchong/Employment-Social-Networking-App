@@ -17,7 +17,7 @@ class NavLinkBar extends React.Component{
 		const navList = this.props.data.filter(v=>!v.hide)
 		const {pathname} = this.props.location
 		return (
-			<div>
+			<div className='fixed-bottom'>
 			<TabBar>
 				{navList.map(v=>(
 					<TabBar.Item 
