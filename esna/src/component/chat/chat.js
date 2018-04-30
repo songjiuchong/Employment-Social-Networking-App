@@ -36,7 +36,18 @@ class Chat extends React.Component{
 		const chatDraft = this.state.text
 		this.props.saveDraftMsg(to, chatDraft)
 	}
-
+	componentDidUpdate(){
+		setTimeout(()=>{
+			document.documentElement.scrollTop = 10000 //for chrome
+			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		},200)
+	}
+	whenFocusOnInput(){
+		setTimeout(()=>{
+			document.documentElement.scrollTop = 10000 //for chrome
+			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		},0)
+	}
 	//修正antd-mobile的Grid组件Carousel的问题
 	fixCarousel(){
 		setTimeout(function(){
@@ -111,6 +122,10 @@ class Chat extends React.Component{
 							value={this.state.text}
 							onChange={v=>{
 								this.setState({text:v})
+							}}
+							onFocus = {
+								v=>{
+								this.whenFocusOnInput()
 							}}
 							extra={[<span 
 										key='1'
