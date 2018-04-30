@@ -10109,9 +10109,245 @@ https://reactjs.org/docs/react-dom.html#hydrate
 
 
 
+后续bug修复;
+
+(1)目前在chat页面当消息过多时会出现:
+
+￼
+
+￼
+
+上面有两个问题:
+<1>消息输入栏没有固定在底部;
+<2>顶部导航栏没有固定在顶部;
+
+解决办法:
+
+修改chat.js;
+……
+<NavBar 
+          className='fixed-header'
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+……
+
+修改index.js;
+……
+.fixed-header.am-navbar{
+  position: fixed;
+  top:0;
+  width:100%;
+  z-index: 1;
+}
+……
+
+￼
+
+
+(2)在dashboard相关页面(genius/boss/msg)有如下问题:
+
+￼
+
+上面的问题是底部的NavLinkBar组件被覆盖了(因为当前设置了底部导航栏的z-index为-1);
+
+解决方法:
+
+修改navlinkbar.js;
+……
+    return (
+      <div className='fixed-bottom'>
+      <TabBar>
+……
+
+
+修改index.css.js;
+……
+.fixed-bottom{
+  position: fixed;
+  bottom:0;
+  width:100%;
+}
+……
+
+￼
+
+修改后发现还有一个列表信息显示不全的问题, 解决方法:
+
+修改dashboard.js;
+……
+<div style={{marginTop:45, marginBottom: 50}}>
+……
+
+￼
+
+
+同样的, 在chat页面中消息列表也存在会被覆盖第一条和最后一条消息的情况(如果消息列表够长), 解决方法:
+
+修改chat.js;
+……
+</NavBar>
+        <QueueAnim style={{marginTop:45, marginBottom:45}} type='scale' delay={100}>
+……
+
+
+目前还存在一个问题待修复, 在聊天页面如果休息过长会被省略, 根据antd-mobile的文档, List.Item的wrap属性可以解决这个问题:
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  wrap
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+￼
+
+
+但是由于不加空格的连续字符会被认定为一个字符串, 在这里默认情况下不会换行, 所以会出现下面的情况(其实是由于使用了antd-mobile的List.Item组件默认使用了word-break:normal这样的样式);
+
+￼
+
+解决办法:
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+￼
+
+上例中添加的样式不仅能够让连续的长字符串自动换行, 并且不会打断英文单词换行:
+
+￼
+
+
+不过很显然还存在在一个问题, 那就是无论是用户接收到的消息还是主动发送的消息, 都希望文字左对齐, 解决方法:
+
+修改index.css;
+……
+#chat-page .chat-me .am-list-content{
+  padding-right: 15px;
+  /*text-align: right;*/
+}
+……
+
+￼
+
+关于word-break:break-all和word-wrap:break-word;可以参考’Page Dev helper’笔记中: ‘182.word-break:break-all和word-wrap:break-word;’相关内容;
+
+
+(3)聊天页面对话记录框样式优化;
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  className='chat-who'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+
+修改index.css;
+……
+#chat-page .chat-me .am-list-content{
+  margin: 10px 3% 10px 20%;
+    padding: 7px 30px 7px 16px;
+    background: mintcream;
+  /*text-align: right;*/
+}
+#chat-page .chat-who .am-list-content{
+  padding: 7px 30px 7px 20px;
+  margin: 10px 20% 10px 1%;
+  background: aliceblue;
+}
+……
+
+￼
+
+
+(4)当用户在聊天页面收到新消息时应该将页面滚动条拉到最下方一遍查看最新的消息, 当用户光标focus在输入框时也应该有这样的操作;
+
+修改chat.js;
+……
+  componentDidUpdate(){
+    setTimeout(()=>{
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+    },200)
+  }
+  whenFocusOnInput(){
+    setTimeout(()=>{
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+    },0)
+  }
+……
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              onFocus = {
+                v=>{
+                this.whenFocusOnInput()
+              }}
+……
+
+
+
 项目后续工作:
 1.SSR首屏渲染, login/register页面logo无法显示问题;
-2.页面中列表中内容过多而覆盖了底部导航栏的问题;
+2.页面中列表中内容过多而覆盖了底部导航栏的问题; done;
 3.SSR设置redux是否只能接受init State, 是否会触发redux的更新, 更新后的redux如何传递到前端;
 是否首屏渲染主要功能还是为了优化SEO, 而首屏的完成度较低, 还是需要通过首页加载了react.js后根据路由重新渲染一遍页面才能正常使用(包括react动画的显示);
 hygrate方法与render的最主要区别;
@@ -10119,4 +10355,7 @@ hygrate方法与render的最主要区别;
 5.readme.md更新到git;
 6.在github上更新项目启动的tips;
 
+
+//TODO;
+1.聊天页面输入框的键盘模式(包括换行功能)
 
