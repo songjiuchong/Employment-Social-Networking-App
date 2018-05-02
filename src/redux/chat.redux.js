@@ -1,6 +1,6 @@
 import axios from 'axios'
 import io from 'socket.io-client'
-let socket
+let socket = io()
 
 //聊天列表
 const MSG_LIST = 'MSG_LIST'
@@ -100,9 +100,6 @@ export function saveDraftMsg(to, chatDraft){
 
 export function recvMsg(){
 	return (dispatch,getState)=>{
-		if(!socket){
-			socket = io()
-		}
 		socket.on('recvmsg', function(data){
 			const userid = getState().user._id
 			if(data.doc.from==userid || data.doc.to==userid)
@@ -113,9 +110,6 @@ export function recvMsg(){
 
 export function sendMsg({from, to, msg}){
 	return dispatch=>{
-		if(!socket){
-			socket = io()
-		}
 		socket.emit('sendmsg', {from, to, msg})
 	}
 }
