@@ -3,12 +3,12 @@ import Logo from '../../component/logo/logo'
 import {List, InputItem, WingBlank, WhiteSpace, Button} from 'antd-mobile'
 import {Redirect} from 'react-router-dom'
 import {connect} from 'react-redux'
-import {login} from '../../redux/user.redux'
+import {login, cleanMsg} from '../../redux/user.redux'
 import hocForm from '../../component/hoc-form/hoc-form'
 
 @connect(
 	state=>state.user,
-	{login}
+	{login, cleanMsg}
 )
 @hocForm
 class Login extends React.Component{
@@ -20,6 +20,7 @@ class Login extends React.Component{
 
 	register(){
 		this.props.history.push('/register')
+		this.props.cleanMsg()
 	}
 	handleLogin(){
 		this.props.login(this.props.state)
