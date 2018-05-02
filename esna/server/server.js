@@ -149,6 +149,12 @@ app.use(function(req,res,next){
 })
 app.use('/',express.static(path.resolve('build')))
 
-server.listen(9093,function(){
-	console.log('Node app start at port 9093')
-})
+// server.listen(9093,function(){
+// 	console.log('Node app start at port 9093')
+// })
+
+  // 监听端口，启动程序
+  const port = process.env.PORT
+  app.listen(port, function () {
+    console.log(`${pkg.name} listening on port ${port}`)
+  })

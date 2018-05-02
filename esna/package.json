@@ -67,11 +67,13 @@
     "whatwg-fetch": "2.0.3"
   },
   "scripts": {
-    "start": "node scripts/start.js",
+    "start_bak": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
     "server": "NODE_ENV=test nodemon --exec babel-node server/server.js",
-    "server_bak": "nodemon server/server.js"
+    "server_bak": "nodemon server/server.js",
+    "start": "NODE_ENV=production pm2 start server/server.js --name 'esna'",
+    "heroku": "NODE_ENV=production node --exec babel-node server/server.js"
   },
   "jest": {
     "collectCoverageFrom": [
