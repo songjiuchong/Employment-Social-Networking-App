@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 //连接mongo, 并且使用esna这个数据库(如果不存在会新建);
-const DB_URL = 'mongodb://127.0.0.1:27017/esna'
+const DB_URL = 'mongodb://jiusong:Therapists22391425!@ds111430.mlab.com:11430/songjiuchongesna'
 mongoose.connect(DB_URL)
 
 const models = {
