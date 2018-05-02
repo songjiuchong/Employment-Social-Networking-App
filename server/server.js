@@ -156,5 +156,5 @@ app.use('/',express.static(path.resolve('build')))
   // 监听端口，启动程序
   const port = process.env.PORT
   app.listen(port, function () {
-    console.log(`${pkg.name} listening on port ${port}`)
+    console.log(`Node app listening on port ${port}`)
   })
