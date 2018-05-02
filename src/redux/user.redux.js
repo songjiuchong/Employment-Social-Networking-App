@@ -6,6 +6,7 @@ const AUTH_SUCCESS = 'AUTH_SUCCESS'
 const ERROR_MSG = 'ERROR_MSG'
 const UPDATE_DATA = 'UPDATE_DATA'
 const LOGOUT = 'LOGOUT'
+const CLEAN_MSG = 'CLEAN_MSG'
 
 const initState={
 	redirectTo:'',
@@ -25,6 +26,8 @@ export function user(state=initState,action){
 			return {...state, msg:action.msg}
 		case LOGOUT:
 			return {...initState, redirectTo:'/login'}
+		case CLEAN_MSG:
+			return {...state, msg:''}
 		default:
 			return state
 	}
@@ -41,6 +44,10 @@ export function errorMsg(msg){
 
 export function logoutSubmit(){
 	return {type:LOGOUT}
+}
+
+export function cleanMsg(){
+	return {type:CLEAN_MSG}
 }
 
 export function updateUserInfo(updatedInfo){
