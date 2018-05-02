@@ -26,8 +26,16 @@ import staticPath from '../build/asset-manifest.json'
 
 const app = express();
 //work with express
-const server = require('http').Server(app)
-const io = require('socket.io')(server)
+// const server = require('http').Server(app)
+// const io = require('socket.io')(server)
+
+// 监听端口，启动程序
+const port = process.env.PORT
+const server = app.listen(port, function () {
+    console.log(`Node app listening on port ${port}`)
+})
+
+const io = require('socket.io').listen(server)
 
 io.on('connection', function(socket){
 	socket.on('sendmsg', function(data){
@@ -153,8 +161,4 @@ app.use('/',express.static(path.resolve('build')))
 // 	console.log('Node app start at port 9093')
 // })
 
-  // 监听端口，启动程序
-  const port = process.env.PORT
-  app.listen(port, function () {
-    console.log(`Node app listening on port ${port}`)
-  })
+
