@@ -39,6 +39,31 @@ The purpose of using Employment-Social-Networking-App:
 Users of this App can sign in as a Boss or a Genius. You can simply consider 'Boss' as a recruiter or empolyer of a certain company who want to hire someone meets the requirements via this App, and of cause the type of 'Genius' makes you the applicant or candidate who are looking for a job and ready to share your resume with all the 'Bosses' for any potential openings.
 User who is a 'Boss' can only chat with other 'Genius' users, and will be able to read profiles of all the registered 'Genius' and vice versa.
 
-
-
 ![](./README_img/1.png)
+
+![](./README_img/2.png)
+
+![](./README_img/3.png)
+
+![](./README_img/4.png)
+
+![](./README_img/5.png)
+
+![](./README_img/6.png)
+
+![](./README_img/7.png)
+
+![](./README_img/8.png)
+
+![](./README_img/9.png)
+
+![](./README_img/10.png)
+
+![](./README_img/11.png)
+
+![](./README_img/12.png)
+
+![](./README_img/13.png)
+
+
+
