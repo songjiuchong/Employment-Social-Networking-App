@@ -7564,3 +7564,3097 @@ class Chat extends React.Component{
 ![](./dev_memo_img/140.png)
 
 
+
+
+
+
+Redux+React Router+Node.js全栈开发笔记 (三);
+
+
+……
+
+
+13.React进阶;
+
+(1)直接写在js中的jsx代码会被Babel通过React.createElement转换为一个ReactElement;
+
+![](./dev_memo_img/141.png)
+
+![](./dev_memo_img/142.png)
+
+也就是说每一个jsx元素都存在一个ReactElement对象来描述它;
+
+
+(2)react的setState()方法存在队列的机制, 也就是说setState()方法对状态的更新是异步的, 在同一线程中对某个组件state的多次更新最终会被react合并成一次对这个组件生命周期的update:
+当组件的this.setState()执行后将一个检查这个组件state变化的异步任务放入事件队列(在此次主线程中多次对这个组件执行setState()方法只会添加一次异步任务), 之后主线程结束, 任务队列中检查这个组件state变化的执行函数被放入主线程执行, 它会去依次执行组件的: shouldComponentUpdate, componentWillUpdate等方法, 需要注意的是, 当componentWillUpdate开始执行时this.state还未被更新, 新的state将作为其第二个参数传入, 当componentWillUpdate方法执行完成后才会将this.state更新, 然后执行render方法…;
+
+相比之下, dispatch(action)对redux的store中内容的更新是同步的, 并且会同步将所有在store上subscribe的组件的处理事件依次执行; 
+假设某个组件在store上使用subscribe注册了自己的forceUpdate方法, 当redux的store被更新后, 在store上subscribe的组件处理函数立刻会被遍历出来依次执行, 其中就包括对这个组件的forceUpdate操作,也就是说当这个组件的处理函数被遍历到并执行后, 它会被强制更新, 走它组件更新的生命周期函数, 并最后更新html页面, 这一系列操作(从dispatch(action)被执行到最后html页面更新)都是同步的; 
+假设在上面说的这种情况下当这个组件被forceUpdate方法强制更新, 在重新执行render方法时加载并实例化了一个新的子组件, 那么此时会同步执行这个子组件的一系列生命周期方法(如: render方法), 然后继续完成父组件的render方法之后的内容, 直到最后html页面被更新, 如果子组件存在componentDidMount钩子函数, 那么在html页面更新过程中一旦这个子组件被添加到了页面中后就会立刻同步执行componentDidMount钩子函数的内容, 然后继续更新html页面中剩下的部分, 更新完成后这一轮主线程任务才算告一段落, 也就是说, 上述的所有操作也都是同步的;
+
+但是需要特别注意的是, react-redux虽然是完全建立在redux机制上的, 但是它对那些由它管理的, 在store上subscribe的组件有自己的处理方式; 之前提到当store中state值被更新后, redux会同步将所有在store上subscribe的组件的处理事件依次执行, 这点是redux的处理机制, 无法改变, 但是react-redux为其封装组件在store上通过subscribe方法绑定执行函数时会先判断是否需要更新这个组件(主要是判断此组建是否存在同样被redux-react管理的父组件, 如果有就跳过对这个组件的forceUpdate, 这样就可以只对最外层的受管理组件执行forceUpdate, 避免了在一次store的state更新中重复update相同组件的情况), 如果需要更新就会将组件的forceUpdate放在任务队列中, 以异步的形式更新组件; 这种设计思路类似上面提到的react的setState()方法的队列机制, 不同的是dispatch方法对store的state值的更新是实时同步的, 并非异步的; 
+react-redux这样设计的好处是, 避免了组件在还未被mount到html之前, 用户在constructor中更新了redux的state而造成的报错: Can only update a mounted or mounting component. This usually means you called setState, replaceState, or forceUpdate on an unmounted component. This is a no-op.
+并且能够让用户在componentWillMount中更新redux的state并且在组件被添加到html页面后对所有相关组件进行一次更新; 
+
+
+关于react的mounted和mounting的概念;
+
+在react中mounted的组件就是那些已经被放入html中, 也就是已经通过了componentDidMount钩子函数的组件;
+而mounting这个状态指组件处于componentWillMount和componentDidMount函数之间的状态, 其实就是说明了componentWillMount是属于mounting这个状态的, 在其中可以调用组件的setState, replaceState, or forceUpdate方法;
+
+其实, react允许用户在组件的除了constructor之外的所有其它钩子函数中使用forceUpdate()方法或者setState()方法来更新组件(这里的允许只是不报错, 而用户还需要自己避免在组件更新相关的钩子函数/render方法中使用forceUpdate/setState而造成的死循环, 当然用户可以在这类函数中先判断新/旧state状态再决定是否需要使用forceUpdate/setState); 
+而如果用户在constructor中使用forceUpdate/setState就会报错:
+Can only update a mounted or mounting component. This usually means you called setState, replaceState, or forceUpdate on an unmounted component. This is a no-op.
+
+而对于componentWillMount这个钩子函数react做了特殊的处理: 如果在这个函数中用户使用了setState/replaceState/forceUpdate方法, 组件不会被同步/异步更新, 并且在componentWillMount函数执行完后(注意不是在setState/replaceState/forceUpdate方法执行完后)就将当前组件的state更新为replaceState/setState中的传入的state(一般情况下是在componentWillUpdate执行完后更新的);
+
+例子1:
+
+class Logo extends React.Component{
+  constructor(){
+    super()
+    this.state = {test:1}
+  }
+  componentWillMount(){
+    this.setState({test:2})
+    console.log(this.state.test) //1
+    console.log('will mount')
+  }
+  componentDidMount(){
+    console.log('did mount')
+  }
+  componentWillUpdate(){
+    console.log('will update!')
+  }
+  componentDidUpdate(){
+    console.log('did update!')
+  }
+  render(){
+    console.log(this.state.test) //2
+    return null
+  }
+}
+
+上例中组件加载后在控制台的输出为:
+
+1
+will mount
+2
+did mount
+
+
+例子2:
+使用react-redux在组件的constructor和componentWillMount方法中更新redux的state;
+
+@connect(
+  state=>state,
+  {test}
+)
+class Logo extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {test:1}
+    this.props.test()  //这里是一个引入的redux的mapDispatchToProps方法, 它会异步对组件执行forceUpdate; 所以不会报错;
+  }
+  componentWillMount(){
+    console.log(this.state.test)  //1
+    //this.props.test()  如果将redux的mapDispatchToProps方法在这里执行, 最后控制台输出相同;
+    console.log('will mount')
+  }
+  componentDidMount(){
+    console.log('did mount')
+  }
+  componentWillUpdate(){
+    console.log('will update!')
+  }
+  componentDidUpdate(){
+    console.log('did update!')
+  }
+  render(){
+    console.log(this.state.test)  //1
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+
+上例中组件加载后在控制台的输出为:
+
+1
+will mount
+1
+did mount
+will update!
+1
+did update!
+
+所以react-redux的异步更新组件机制能够很好的与react配合使用, 还能避免报错;
+
+
+补充
+1.setState和replaceState区别;
+
+参考:
+https://blog.csdn.net/u013510838/article/details/59486772
+
+
+(3)对redux的createStore函数的简单实现;
+
+export function createStore(reducer, iniState){
+
+  let currentState = iniState?iniState:{}
+  let currentListeners = []
+
+  function getState(){
+    return currentState
+  }
+
+  function subscribe(listener){
+    currentListeners.push(listener)
+  }
+
+  function dispatch(action){
+    currentState = reducer(currentState, action)
+    currentListeners.forEach(v=>v())
+    return action
+  }
+
+  if(!iniState)
+    dispatch({type:'@@redux/INIT'})
+
+  return {getState, subscribe, dispatch}
+}
+
+关于createStore方法的第二个和第三个参数的作用, 可以参考Redux笔记中: 
+'11.Store 的实现；' 和 ’16.中间件的用法;’ 相关内容;
+
+
+(4)对react-redux的Provider组件的简单实现;
+
+import PropTypes from 'prop-types'
+
+export class Provider extends React.Component{
+  static childContextTypes = {
+    store: PropTypes.object
+  }
+  getChildContext(){
+    return {store:this.store}
+  }
+  constructor(props, context){
+    super(props, context)
+    this.store = props.store
+  }
+  render(){
+    return this.props.children
+  }
+}
+
+
+(5)对react-redux的connect方法的简单实现;
+
+import PropTypes from 'prop-types'
+
+function bindActionCreator1(creator, dispatch){
+  return (...args)=> dispatch(creator(...args)) 
+}
+
+function bindActionCreator2(creator, dispatch, getState){
+  return (...args)=> creator(...args)(dispatch, getState) 
+}
+
+function bindActionCreators(creators, dispatch, getState){
+  //let bound = {}
+  //Object.keys(creators).forEach(v=>{
+  //   let creator = creators[v]
+     //根据connect方法的机制, creator可以是一个返回对象的函数, 也可以是一个返回函数的函数, 这里需要分情况
+  //   if(typeof creator() == 'function'){
+  //    bound[v] = bindActionCreator2(creator, dispatch, getState)
+  //   }else{
+  //    bound[v] = bindActionCreator1(creator, dispatch)
+  //   }
+  //})
+  //return bound
+
+  //上面的代码可以使用下面的reduce方法来改造替换
+  return Object.keys(creators).reduce((bound, creatorName)=>{
+     //根据connect方法的机制, creator可以是一个返回对象的函数, 也可以是一个返回函数的函数, 这里需要分情况
+     let creator = creators[creatorName]
+     if(typeof creator() == 'function'){
+      bound[creatorName] = bindActionCreator2(creator, dispatch, getState)
+     }else{
+      bound[creatorName] = bindActionCreator1(creator, dispatch)
+     }
+     return bound
+  },{})
+  
+}
+
+export const connect = (mapStateToProps=state=>state, mapDispatchToProps={})=>(wrapComponent)=>{
+  return class ConnectComponent extends React.Component{
+
+    static contextTypes = {
+      store:PropTypes.object
+    }
+
+    constructor(props, context){
+      super(props, context)
+      this.unsubscribe = null
+    }
+
+    componentDidMount(){
+      this.unsubscribe = store.subscribe(()=>this.forceUpdate())
+    }
+
+    componentWillUnmount(){
+      this.unsubscribe()
+    }
+
+    render(){
+      const {store} = this.context
+      const stateProps = mapStateToProps(store.getState())
+      const dispatchPops = bindActionCreators(mapDispatchToProps, store.dispatch, store.getState)
+
+      return <wrapComponent {...this.props} {...stateProps} {...dispatchPops}></wrapComponent>
+    }
+  }
+}
+
+
+(6)redux的applyMiddleware方法的简单实现;
+
+由于applyMiddleware方法需要做为参数传入createStore方法中, 这里需要改造createStore方法;
+
+export function createStore(reducer, iniState, enhancer){
+  
+  if(typeof iniState == 'function'){
+    enhancer = iniState
+    iniState = undefined
+  }
+
+  if(enhancer){
+    return enhancer(createStore)(reducer,iniState)
+  }
+
+  let currentState = iniState?iniState:{}
+  let currentListeners = []
+
+  function getState(){
+    return currentState
+  }
+
+  function subscribe(listener){
+    currentListeners.push(listener)
+    return function(){
+      currentListeners.splice(currentListeners.indexOf(listener),1)
+    }
+  }
+
+  function dispatch(action){
+    currentState = reducer(currentState, action)
+    currentListeners.forEach(v=>v())
+    return action
+  }
+
+  if(!iniState)
+    dispatch({type:'@@redux/INIT'})
+
+  return {getState, subscribe, dispatch}
+}
+
+上例中, 一开始对参数iniState的判断是为了确保当用户只传入两个参数, 但是第二个参数其实是传入了一个enhancer(相当于跳过了iniState参数的传入)的情况下能够正确执行函数;
+需要注意的是, 如果在严格模式下无法更改函数传入的参数变量, 那么可以在一开始为每个参数创建一个临时变量来保存变更后的参数值, 之后对函数参数的使用都改为使用对应的临时参数变量;
+
+
+applyMiddleware方法的简单实现:
+
+export applyMiddleware(middlewares)=>(createStore)=>{
+  return (...args)=>{
+    const store = createStore(...args)
+    let dispatch = store.dispatch
+
+    let chain = []
+    const midApi = {
+       getState:store.getState,
+       dispatch:(...args)=>dispatch(...args)
+    }
+
+    chain = middlewares.map(middleware => middleware(midApi))
+    dispatch = compose(...chain)(store.dispatch)
+
+    return {
+      ...store,
+      dispatch
+    }
+  }
+}
+
+关于Redux的原生方法applyMiddleware的源码的简写形式, 还可以参考Redux笔记中: ’17. applyMiddleware();’ 相关内容;
+
+
+(7)thunk中间件的简单实现;
+
+const thunk = ({dispatch,getState})=>next=>action=>{
+  //action是函数的情况, 将dispatch和getState做为参数传入这个函数
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  //如果action不是函数, 则将action传入下一个中间件生成的dispatch方法
+  return next(action)
+}
+
+
+(8)多个中间件的合并机制;
+
+为了更好理解当applyMiddleware方法合并了多个中间件后, 它们是如何链式地处理传入的action对象的, 这里将compose方法执行的效果拆分来观察:
+
+首先, store.dispatch将被传入chain数组中的最后一个函数, 也就是相当于执行了: middleware1(midApi)(store.dispatch), 执行后返回的其实是以下这个函数:
+action=>{
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  return store.dispatch(action)
+}
+
+这里需要特别注意的是, 在applyMiddleware中之所以使用: dispatch:(...args)=>dispatch(...args) 这样的方式来将dispatch方法传入每个middleware中保存, 是因为由于在当前applyMiddleware方法中设置了 let dispatch = store.dispatch, 如果使用dispatch: dispatch来赋值, 那就相当于直接把store.dispatch这个原生的dispatch方法保存在了每个middleware中(因为dispatch变量保存的只是一个指向store.dispatch的地址); 而使用dispatch:(...args)=>dispatch(...args) 这样的方式相当于将一个新的匿名函数保存在每个middleware中, 而这个新的函数在每次被执行时会去所在作用域(也就是applyMiddleware函数中)找一个名为dispatch的函数变量并执行, 也就是说匿名函数中的dispatch指向的是其所在作用域中的变量dispatch, 至于这个dispatch变量的值是什么由获取它时决定, 所以上例中: return action(dispatch, getState) 这条语句拿到的dispatch是已经被所有中间件改造过的最新的dispatch方法: dispatch = compose(...chain)(store.dispatch); 
+
+而next是函数middleware1(midApi)()执行时传入的参数, 当然就这里而言传入的是store.dispatch, 是一个初始的未经过变更的dispatch方法(也正因为如此, 它会被做为compose方法返回函数的入口参数, 因为一个不满足所有中间件改造条件的action对象最终应该被原生的dispatch方法来处理)
+
+然后上面的这个返回函数将被做为chain中倒数第二个middleware的next参数传入:
+
+middleware2(midApi)(
+  action=>{
+    if(typeof action=='function'){
+      return action(dispatch, getState)
+    }
+    return next(action)
+  }
+)
+
+上面返回的仍旧是一个类似:
+action=>{
+  if(action......){
+    return ......(如果有需要的话, 这里可以随时使用之前存储的dispatch和getState方法)
+  }
+  return next(action)
+}
+
+这样的dispatch方法, 但是这里的next指代的方法已经不是store.dispatch了, 而是之前middleware1返回的改造后的dispatch方法:
+action=>{
+  if(typeof action=='function'){
+    return action(dispatch, getState)
+  }
+  return store.dispatch(action)
+}
+
+也就是说, 当一个action传入经过这两个middleware改造后的dispatch方法时首先将会检查是否满足middleware2改造的dispatch方法中的条件, 如果满足就执行相应操作派发这个action, 如果不满足指定条件就去将action传入middleware1改造后的dispatch方法进行判断, 如果满足条件就执行相应操作, 不满足就直接使用初始的store.dispatch来派发这个action;
+
+需要特别注意的是, 上例中如果传入的acton对象满足了中间件的判断条件, 那么会执行action(dispatch, getState), 而这里的dispatch其实将会调用经过所有中间件改造的最新的dispatch方法, 也就是说之后被传入此dispatch方法的action对象将会重新走一遍经过各个中间件判断的流程, 只有当所有中间件的判断条件都不满足时才能够被原生的dispatch方法派发出去;
+
+进一步说, 通过compose方法最终返回的dispatch方法的机制是:
+假设chain中按顺序存放了[middleware1(midApi),middleware2(midApi),middleware3(midApi)...], 那么经过compose(...chain)(store.dispatch)处理后返回一个最终的dispatch方法, 这个方法接收一个action时会先检查它是否满足middleware1返回的改造后的dispatch方法中的指定条件, 如果满足就执行相应内容并将action重新传入改造后的最新dispatch方法进行一轮中间件的过滤(有点类似递归对action进行操作, 因为一个action很可能在被某个middleware处理之后, 又满足了其它middleware的处理条件, 如: 类型为数组的action被某个middleware处理后其中每个元素都被当成新的action来dispatch, 而这些新的action又同时是函数而不是对象, 所以需要thunk中间的处理, 这种情况下就需要将经过处理后的action重新放入经过中间件改造的dispatch方法中再次被每个middleware过滤处理直到它被传递到thunk中间件的dispatch方法后才能被正确处理, 这也同时说明了applyMiddleware方法中的多个middleware参数的传入顺序并不重要), 如果不满足就将action对象传递给middleware2返回的改造后的dispatch方法, 如果还是不满足这个dispatch方法中的指定条件, 就将action继续传递给middleware3返回的改造后的dispatch方法......
+
+其实简单来说中间件改造后的dispatch方法相比原生方法只是多了一层判断条件, 根据传入action的不同情况来做一些定制的处理, 在同时存在多个中间件时如果当前中间件不适用于处理此次传入的action对象, 就会将它传递给下一个中间件改造的dispatch方法, 最终如果所有中间件都去不处理传入的action对象时就会使用最初始的原生dispatch方法来派发action;
+
+这也就说明了next参数存在的重要性, 因为这些中间件需要会链式地保存下一个中间件改造的dispatch方法以便在自身无法处理传入的action时将其交给下一个中间件处理;
+
+<step 1> action 
+—> 
+<step 2> action=>{ middleware1依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 3>}  
+—> 
+<step 3> 前一个中间件中的next函数 : action=>{ middleware2依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 4>}
+—> 
+<step 4> 前一个中间件中的next函数 : action=>{ middleware3依靠之前存储的dispatch和getState函数处理并将处理后的action重新传入改造后的dispatch方法进行<step 1> / 如果无法处理就执行 next(action) 进行<step 5>}
+—> 
+<step 5> …
+—> 
+<step final> 最后一个中间件中的next函数 : store.dispatch(action)
+
+上面所介绍的这种中间件的处理方式其实结合了: 闭包, 柯里化(currying), compose函数这些特性, 其中比较关键的是在中间件生成改造后的dispatch方法这一过程中采用的柯里化特性; 
+在一个middleware函数最终返回改造后的dispatch方法之前先要通过柯里化和闭包特性来获取并保存足够多的有用信息, 所以先要求传入{dispatch,getState}对象以保存中间件改造后的最新dispatch, 原生getState方法(提前返回), 再要求传入next函数保存, 以便之后链式传递action对象, 最后才返回一个接受action对象的dispatch方法(延迟计算), 也就是说, currying的提前返回和延迟计算这两个特性都在此处实现了一定效果;
+
+
+补充:
+1.其实不难发现, 之前在研究react-redux的connect方法原理的时候提到了它所接受的mapDispatchToProps参数可以有两种形式, 一种最终返回一个action对象, 另一种最终返回一个接收dispatch和getState为参数的函数, 这其实就与thunk中间件处理action对象的方式相同, 也就是说, react-redux的connect方法是自带thunk中间件处理机制的, 可以根据mapDispatchToProps参数的不同情况来选择如何派发action对象; 
+
+2.柯里化（Currying）,又称部分求值(Partial Evaluation), 是把接受多个参数的函数变换成接受一个单一参数(最初函数的第一个参数)的函数，并且返回接受余下的参数的新函数的技术; 
+
+柯里化的作用:
+
+<1>参数复用;
+
+例子:
+function plus(num) {
+        var _args = [];
+        var _adder = function(num) {
+            _args.push(num)
+            return _adder;
+        };
+
+        _adder.toString = function () {
+            return _args.reduce(function (a, b) {
+                return a + b;
+            });
+        }
+
+        return _adder(num);
+}
+
+plus(1)(2)(3).toString() //6;
+
+
+<2>提前返回;
+
+例子:
+var addEvent = (function(){
+    if (window.addEventListener) {
+        return function(el, sType, fn, capture) {
+            el.addEventListener(sType, function(e) {
+                fn.call(el, e);
+            }, (capture));
+        };
+    } else if (window.attachEvent) {
+        return function(el, sType, fn, capture) {
+            el.attachEvent("on" + sType, function(e) {
+                fn.call(el, e);
+            });
+        };
+    }
+})();
+
+上例中, 初始addEvent的执行其实值实现了部分的应用（只有一次的if...else if...判定），而剩余的参数应用都是其返回函数实现的，典型的柯里化; 
+
+
+<3>延迟计算;
+
+ES5中的bind方法, 用来改变Function执行时候的上下文(函数主体本身不执行, 与call/apply直接执行并改变不同), 本质上就是延迟执行;
+
+参考:
+http://www.zhangxinxu.com/wordpress/2013/02/js-currying/
+
+
+(9)定制一个中间件: arrThunk;
+
+const arrayThunk = ({dispatch,getState})=>next=>action=>{
+  if(Array.isArray(action)){
+    return action.forEach(v=>dispatch(v))
+  }
+  reutrn next(action)
+}
+
+export default arrayThunk
+
+需要注意的是, 上例中满足中间件判断条件时的处理语句不能写成: return action.forEach(v=>next(v)), 因为如果传入next方法的action是一个以函数为元素的数组, 而处理函数action的thunk中间件又在arrThunk之前传入了applyMiddleware方法, 那么就会出现最终使用原生的store.dispatch方法处理函数类型的action的情况, 显然会发生问题;
+
+
+
+13.React性能优化;
+
+(1)单组件的性能优化;
+
+class Test extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      num:0,
+      title:’react’,
+      age:28
+    }
+    //this.handleClick = this.handleClick.bind(this)
+  }
+  handleClick(){
+    this.setState({num:this.state.num+1})
+  }
+  render(){
+    return (
+      <div>
+        <h2>App, state has changed {this.state.num}</h2>
+        <button onClick={this.handleClick}>btn1</button>
+        <button onClick={this.handleClick.bind(this)}>btn2</button>
+        <button onClick={()=>this.handleClick()}>btn3</button>
+        <p style={{color:'red'}} name={{one:song}}></p>
+        <Demo title={…this.state}></Demo>
+        <Demo title={this.state.title} age={this.state.age}></Demo>
+      </div>
+    )
+  }
+}
+
+上例中, <button onClick={this.handleClick.bind(this)}>btn2</button>这种绑定点击事件处理函数的方法会造成每次组件render都会重新执行一次bind(this)方法, 从而每次都生成一个新的函数;
+<button onClick={()=>this.handleClick()}>btn3</button>这种方式会造成每次组件render都会生成一个新的匿名函数, 不仅影响性能, 并且还有内存泄漏的问题;
+所以最好的方式是在组件的constructor中使用: this.handleClick = this.handleClick.bind(this) 这样的方式将this对象绑定在点击事件处理函数上, 之后在render方法中直接使用: <button onClick={this.handleClick}>btn1</button> 绑定方法即可;
+
+其次, 上例中的: <p style={{color:'red'}} name={{one:song}}></p> 这样传递参数的方式显然也存在性能问题, 因为同样会在每次render时创建新的对象{color:'red'} 和 {one:song}, 改进方法同样可以是将这两个对象定义在constructor中, 如:
+this.color = {color:’red’}
+this.name = {one:song}
+……
+<p style={this.color} name={this.name}></p>
+
+上例中: <Demo title={…this.state}></Demo> 这样传递多余属性的形式也是不推荐的, 并且Test组件的state很可能会在之后被扩展, 无效属性的传递可能会不可预计; 所以改为按需传递: <Demo title={this.state.title} age={this.state.age}></Demo> 会更好;
+
+
+(2)使用shouldComponentUpdate钩子函数优化组件;
+
+安装react-addons-perf模块并相应配置后, 报错: 
+Uncaught Error: Cannot find module "react-dom/lib/ReactPerf"
+
+![](./dev_memo_img/143.png)
+
+
+错误原因是:
+
+![](./dev_memo_img/144.png)
+
+
+参考:
+https://stackoverflow.com/questions/46578145/module-not-found-cant-resolve-react-dom-lib-reactperf-in-node-modules-reac
+
+也就是说, React 16开始就不支持 react-addons-perf这个插件了;
+
+
+所以需要改用Chrome浏览器自带的performance监测工具:
+
+![](./dev_memo_img/145.png)
+
+
+实际操作后发现, 目前在Chrome浏览器Developer tools的performance选项已经支持对react 16的监测了, 也就是说不添加?react_perf参数也能达到同样的效果;
+
+![](./dev_memo_img/146.png)
+
+补充:
+1.查看模块的当前版本号;
+使用 npm view 模块名 version 命令来查看该模块在远程仓库的版本号;
+使用 npm list 模块名 version 命令来查看模块在当前库中安装的版本号;
+
+![](./dev_memo_img/147.png)
+
+
+Debugging React performance with React 16 and Chrome Devtools, 可以参考:
+https://building.calibreapp.com/debugging-react-performance-with-react-16-and-chrome-devtools-c90698a522ad
+
+
+例子:
+class Test extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      num:0,
+      title:''
+    }
+    this.handleNum = this.handleNum.bind(this)
+    this.handleTitle = this.handleTitle.bind(this)
+  }
+  handleNum(){
+    this.setState({num:this.state.num+1})
+  }
+  handleTitle(){
+    this.setState({title:this.state.title+'!'})
+  }
+  render(){
+
+    return (
+      <div>
+        <h2>App, state has changed {this.state.num}</h2>
+        <button onClick={this.handleNum}>btn1</button>
+        <button onClick={this.handleTitle}>btn2</button>
+        <Demo title={this.state.title}></Demo>
+      </div>
+    )
+  }
+}
+
+class Demo extends React.Component{
+  shouldComponentUpdate(nextProps, nextState){
+    if(nextProps.title == this.props.title){
+      return false
+    }
+    return true
+  }
+  render(){
+    return (
+      <h2>{this.props.title}</h2>
+    )
+  }
+}
+
+上例中, 当点击btn1按钮时, 由于只改变了Test组件的state, 而没有影响到Demo组件需要render的内容, 所以Demo组件设置的shouldComponentUpdate函数阻止了它将要进行的更新行为; 如果点击btn2按钮, 那么由于传入Demo组件的props.title会发生改变从而影响它render的内容, 所以shouldComponentUpdate函数返回true, 就是让其继续执行更新相关的一系列生命周期方法;
+
+之后会介绍react 16提供的PureComponent组件, 它将会默认重写组件的shouldComponentUpdate方法来判断当前组件是否需要被更新(浅对比当前state/props和待更新的state/props);
+
+
+(3)immutable.js;
+
+
+js中对象深度比较的方法:
+
+function compare(origin, target) {
+    if (typeof target === 'object')    {
+        if (typeof origin !== 'object') return false
+        for (let key of Object.keys(target))
+            if (!compare(origin[key], target[key])) return false
+        return true
+    } else return origin === target
+}
+
+其实上面这个方法是存在错误的, 因为当target对象的属性个数少于origin对象的属性个数, target对象拥有的所有属性都同时被origin对象拥有, 并且这两个对象中的这些属性都相等, 那么这个方法会返回true, 其实这两个对象属性个数本身就是不同的, 如:
+let a = {x:1, y:2}
+let b = {x:1, y:2, z:3}
+compare(b,a) //true
+
+
+对上面的方法进行改造:
+
+function compare(origin, target) {
+    if (typeof target === 'object' && typeof origin === 'object')    {
+  if(Object.keys(target).length !== Object.keys(origin).length) 
+    return false
+        for (let key of Object.keys(target))
+            if (!compare(origin[key], target[key])) return false
+        return true
+    }else{
+  return origin === target
+    }
+}
+
+但是像上面这种深层递归对比的复杂度较高, 就性能上来说react是不能接受的, 也就是说, 如果不做任何对比直接去更新组件所消耗的性能可能与这种深层递归对比后再判断是否需要更新组件差不多, react考虑到这个原因所以建议使用者在react内部只做浅层比较; 
+PureComponent组件创建了默认的shouldComponentUpdate行为, 这个默认的shouldComponentUpdate行为会一一比较props和state中所有的属性, 只有当其中任意一项发生改变时才会进行重绘;
+
+PureComponent的作用及一些使用陷阱, 可以参考:
+https://www.jianshu.com/p/33cda0dc316a
+
+
+安装immutable.js;
+
+npm install immutable —save
+
+
+引入并使用immutable.js;
+
+例子:
+  import {Map,is} from 'immutable'
+
+    let obj = Map({
+      name:'song',
+      course:Map({name:'song'})
+    })
+
+    let obj1 = obj.set('name', 'song1')
+    console.log(obj.name) //undefined
+    console.log(obj.course) //undefined
+    console.log(obj.get('course')) //Map{...}
+    console.log(obj.get('course') == obj1.get('course')) //true
+    console.log(is(obj.get('course'),obj1.get('course'))) //true
+    console.log(obj==obj1) //false
+
+    obj.name = 'song'
+    console.log(obj.name) //song
+    console.log(obj1.name) //undefined
+    console.log(obj1.get('name')) //song1
+    console.log(obj1.get('name') == obj.get('name')) //false
+    console.log(obj.name == obj.get('name')) //true
+    console.log(is(obj.name,obj.get('name'))) //true
+
+    obj1.name2 = 'song3'
+    console.log(obj1.get('name2')) //undefined
+    let obj2 = obj.set('name','song1')
+    console.log(is(obj1,obj2)) //true
+
+    let obj3 = Map({
+      name:'song',
+      course:Map({name:'song'})
+    })
+    console.log(is(obj,obj3)) //true
+    console.log(is({a:1},{a:1})) //false
+    console.log(is(Map({}),Map({}))) //true
+
+    //setIn,updateIn,getIn,clear
+    console.log(obj.getIn(['course','name'])) //song
+    console.log(obj.get('course').get('name')) //song
+    let objx1 = obj.get('course').set('name','songsong')
+    let objx2 = obj.getIn(['course']).set('name','songsong')
+    let objy = obj.setIn(['course','name'],'songsong')
+    let objz = obj.updateIn(['course','name'],v=>'songsong')
+    console.log(is(objx1,objx2)) //true
+    console.log(is(objx1,objy)) //false
+    console.log(is(objy,objz)) //true
+    let objx3 = objx1.clear()
+    console.log(is(objx1,objx3)) //false
+    let objx4 = Map()
+    console.log(is(objx4,objx3)) //true
+
+
+上例中可以发现immutable.js的机制:
+
+对于赋值操作(set), 只有在immutable对象(被immutable.js封装的对象)上使用immutable.js的相关API才能存储一个被immutable.js认可属性值(当然由于immutable机制, 这个赋值操作返回一个新的immutable对象, 赋值其实是在这个新对象上完成的, 已经被创建的immutable对象是无法被改变的), 直接使用obj.xxx=xxx 这样的方式虽然会在这个immutable对象上设置一个名为xxx的属性(这个属性与使用immutablejs的set等赋值方法设置的同名属性是分离的, 各自存在的, 不会互相影响), 但是这个属性不会参与任何与immutable.js API有关的操作;
+
+对于取值操作(get), 只有在被immutable.js封装的对象上使用immutable.js的相关API才能在immutable对象中取到一个被immutable.js认可的属性值, 而直接在一个immutable对象上使用类似: obj.xxx=xxx这种方式设置的属性无法被immutable.js的相关API获取, 会返回undefined; 同样使用obj.xxx这样的方式也无法取到一个被immutable.js认可的属性值, 返回undefined;
+
+对于对比操作(is), 由于immutable.js采用了对比immutable对象数据结构的hashcode来比较两个immutable对象的方式, 所以效率非常高, 并且只要是属性结构与属性值相同的immutable对象, 无论声明多少个, 它们使用is方法对比的结果一定是相等的, 而使用’==’对比的结果一定是不相等的; 
+使用obj.xxx=xxx这种方式在immutable对象上设置的属性会被is方法直接忽略;
+
+如果使用is方法比较两个非immutable.js封装的对象(或者一个是immutable对象, 另一个不是), 那么就相当于使用’===’来对比它们;
+
+
+关于setIn,updateIn,getIn方法, 需要注意的是:
+
+obj.get('course').set('name','songsong')
+obj.getIn(['course']).set('name','songsong')
+
+这两个操作返回的是一个新的immutable对象, 它们的结构对应的是obj中的course对象而不是obj对象, 如果想要对一个immutable对象的深层对象属性进行更新同时想要返回这个immutable对象本身结构的一个新immutable对象就需要使用setIn或者updateIn方法;
+
+
+immutable.js优点:
+
+<1>减少内存使用; 
+因为immutable.js只为此次变更相关的所有属性开辟新的内存空间, 在对新生成的immutable对象中的这些新创建属性的访问会去这块内存中取值, 其它无关属性将仍旧复用之前immutable对象中对应的值, 所以并不会深拷贝这些属性到新的immutable对象, 而是直接指向之前已经保存的属性;
+
+Immutable 使用了 Structural Sharing（结构共享）, 即如果对象树中一个节点发生变化, 只修改这个节点和受它影响的所有祖先节点, 其它节点则进行共享:
+
+![](./dev_memo_img/148.png)
+
+
+上例的整个节点树可以视为一个immutable对象, 其中根节点是immutable对象本身, 子节点代表其下的属性, 而属性本身可以是引用类型的(也可以是普通类型的值), 所以可以通过指定自己的属性延伸出其它分支:
+
+immutable1: 
+{
+  x1:{
+    y1:1, y2:2, y3:3
+  },
+  x2:{
+    y1:{
+      z1:1
+    }
+  }
+}
+
+如果更新上例中的immutable1.x2.y1属性:
+
+immutable1.setIn([‘x2’,’y1’],Map({z1:1}))
+
+那么immutable1到immutable2对象的变更详情为下图所示:
+
+![](./dev_memo_img/149.png)
+
+可以发现, 其实只有immutable2的x2分支中的y1节点发生了变更(为其重新赋值了一个Map({z1:1})对象), 但是连带需要改变的是它所有的父节点(这里的改变指的是内存空间地址发生了改变, 因为需要为这些节点新创建内存空间); 
+也就是说, 变更后的immutable2对象:
+
+Map({x1:指向immutable1对象对应结构中的内容, x2:Map{(
+    y1:Map({z1:1})
+  )}
+})
+
+其中immutable2.x1属性中的所有内容都复用了immutable1中的相应内容, 无须创建新的内存空间, 获取时将直接访问immutable1中保存的x1属性相关内容;
+
+
+<2>并发安全, 无须担心某个被操作数据同时也在被其他用户修改(多个用户其实各自都在修改对原始数据深拷贝获得的自己独有的数据), 但是由于JS目前还是单线程的, 所以暂时没有享受到这个特性带来的优势
+<3>降低项目复杂度, 因为避免了对mutable对象的误操作而带来的连锁反应, 并且无须自行在每次更新一个对象时先深拷贝这个对象
+<4>便于比较复杂数据, 定制shouldComponentUpdate更方便, immutable使用数据结构的hash值来进行对比, 所以复杂度很低; 
+<5>时间旅行功能
+<6>函数式编程, 由于其不可变性, 对纯函数的支持较好(函数式编程要求不能更改传入参数本身, 只能读取这个参数, 并且返回相应的固定输出)
+
+
+react配合immutable.js使用;
+
+React建议把this.state设置为immutable的(防止发生误操作直接在this.state上修改), 因此修改前需要做一个deepCopy, 比较麻烦:
+
+import '_' from 'lodash';
+
+const Component = React.createClass({
+  getInitialState() {
+    return {
+      data: { times: 0 }
+    }
+  },
+  handleAdd() {
+    let data = _.cloneDeep(this.state.data);
+    data.times = data.times + 1;
+    this.setState({ data: data });
+    // 如果上面不做 cloneDeep，而将let data赋值为this.state.data, 那么下面打印的结果会是已经加 1 后的值;
+    console.log(this.state.data.times); 
+  }
+}
+
+
+使用 Immutable 后: 
+
+  getInitialState() {
+    return {
+      data: Map({ times: 0 })
+    }
+  },
+  handleAdd() {
+    this.setState({ data: this.state.data.update('times', v => v + 1) });
+    // 这时的 times 并不会改变
+    console.log(this.state.data.get('times'));
+  }
+
+对于react而言(其setState方法的执行一定会在之后触发一系列组件更新相关的生命周期函数, 这里经过测试发现react并不会去比较通过setState方法变更后组件的state与之前组件的state有何不同), 由于在生命周期函数: shouldComponentUpdate等方法中需要传入组件的state即将被更新为的值(nextState), 所以相当于react需要同时保存新/旧两份state值, 只有在componentWillUpdate执行完毕后更新后的state值才会被赋值到当前的state上(当然此时最新的props属性也会被更新到当前的this.props中), 这也就说明了为什么react需要使用setState方法来更新组件的state, 而不是直接在state上修改, 当然更多的原因还和其异步更新state的机制有关;  
+那么immutable.js配合react来使用首先是为了防止用户在setState阶段发生误操作直接对this.state进行修改, 其次在shouldComponentUpdate方法中可以使用immutable.js特有的高性能深层对比方法来比较新/旧两个state对象(不过先要保证这两个state对象是被immutablejs封装过得);
+
+不过现在存在的react配合immutable.js使用的问题是: 
+根据之前对immutable.js使用机制的研究, 如果将react的state都设置为immutable对象, 那么首先要保证应用中所有对this.state的取值都要使用相关的immutable.js的API, 其次, 由于react的setState方法本身存在这样一个机制: 如果使用setState方法传递的对象中仅仅包含当前组件state中某个或某些属性的更新, 甚至是当前组件state中还没有指定的属性, 那么react就会选择性的只更新setState方法中传递的对象中的那些属性而保留所有当前已经存在的其它属性, 相当于使用了类似: Object.assign({},this.state,newState) 这样的方式来构造组件的新state, 那么问题就是如果react组件的state对象现在都改为了immutable对象, 那么这一操作它如何来实现呢?
+
+
+redux配合immutable.js使用;
+
+redux中沿用了flux的设计(但是它简化了Flux中多个Store的概念, 只存在一个 Store), 需要为每一次state状态的改变保存一份历史记录(这样的设计思路可以很好的实现历史数据变更的记录和检查, 时间旅行等功能, 并且也是实现在chrome浏览器控制台中使用支持redux的插件来监控每一次state变化的基础), 所以需要用户遵循immutable的方式来完成state的更新: 每一次更新state不会去更改当前的state本身, 而是生成一个包含了变更后属性的新state对象, 也就是说每一次dispatch(action)将action传入reducer方法后都将返回一个新的state对象做为当前redux的state, 而不能直接在当前的state对象上做修改, 因为每次传入reducer方法的第一个参数是当前的state对象(或者是state对象中的某个指定分支属性, 它同样也是一个对象), 为了保持每次的state改变而生成的历史记录都是唯一的, 并且新state的产生不会影响旧的state的内容, 那就不能对当前传入的这个state对象进行操作, 而又因为state中存储的属性很可能是引用类型的, 如果用户不小心修改了引用类型属性中的值, 那么将造成连锁反应, 也就是之前所有保存的state历史记录中相关属性中的值都同时变更了, 所以在reducer方法(纯函数)中需要做的是不对传入当前state做任何修改, 只读取其中需要的值来创建一个新state的快照并返回, 很显然在这种情况下为了不让用户发生误操作改变当前state对象, 可以配合immutablejs使用: 将reducer中返回的新state对象设置为immutable对象, 这样的话, 传入reducer方法中的当前state对象也是immutable对象, 就不会发生之前提到的误操作了; 
+
+由于redux本身不会在reducer方法执行并返回新state对象后来对比新/旧state对象, 也就是说, 只要是subscribe在store对象上的执行函数一定会立刻执行, 一般情况下这些执行函数都是用来update组件的, 而又因为无论是在组件的shouldComponentUpdate还是componentWillUpdate方法中都无法取得redux的state对象变更前的历史记录(只能获取当前最新的redux的state, 因为reducer方法执行后redux的state就立刻被更新了), 所以就需要在这个传入store.subscribe方法的执行函数中来判断组件是否需要被更新(相当于起到了shouldComponentUpdate的作用), 最好的做法(有可能也是react-redux所采用的做法, 有待核实)就是当组件在store上绑定subscribe方法时使用类似:
+
+componentDidMount(){
+  let lastState = this.context.store.getState()
+  this.unsubscribe = this.context.store.subscribe(
+    ()=>{
+      const currentState = this.context.store.getState()
+      const result = … //此处深度比较lastState和currentState;
+      if(!result){
+        lastState = currentState
+         this.forceUpdate()
+      }
+    }
+  )
+}
+
+这样的方式来实现某个监听redux中state变化的组件在深层对比了新/旧state(当然可以只对比state中某个与当前组件render相关的属性)的变化后决定是否需要update这个组件;
+很显然, 如果使用了immutablejs配合redux使用, 那么这里在componentDidMount方法中获取到的redux的state都应该是immutable对象, 于是使用immutable.js的is方法就能更高效的完成深度比较了; 
+
+
+参考:
+
+immutable.js解析(重要):
+https://github.com/camsong/blog/issues/3
+
+immutable.js常用API简介:
+https://segmentfault.com/a/1190000010676878
+
+关于immutable.js的官方资料可以参考:
+http://facebook.github.io/immutable-js/docs/#/Map (官方API)
+https://github.com/facebook/immutable-js/ (官方Github)
+
+另外, 由于immutable.js本身比较庞大, 如果想要使用只包含核心功能的轻量级库(seamless-immutable), 参考:
+https://github.com/rtfeldman/seamless-immutable (官方Github)
+
+
+(4)使用reselect优化redux选择器;
+
+selector是一个简单的Redux库;
+selector提供一个函数createSelector(接受一个input-selectors和一个计算函数作为参数)来创建一个记忆selectors; 如果传入selectors的state发生改变造成input-selector的值发生改变, selectors会依据input-selector返回值做参数调用计算函数, 计算函数返回一个计算结果并在缓存中记录; 如果input-selector返回的结果和之前记录过的相同,那么就会直接返回记录中的对应数据, 省去了对计算函数的调用; 
+
+
+安装reselect;
+
+$npm install reselect --save
+
+
+使用reselect;
+
+例子1:
+
+import { createSelector } from 'reselect'
+
+const numSelector = createSelector(
+  state=>state.test.num,
+   //第一个函数的返回值是第二个函数的参数
+  num=>({num:num*2})
+)
+
+@connect(
+  state=>numSelector(state),
+  {……}
+)
+
+上例中使用createSelector方法生成了一个新的selectors函数, 使用这个函数将当前react-redux的mapStateToProps函数返回的state进行封装后就能返回经过一系列自定义复杂计算后的最终希望组件通过this.props属性获取的值, 并且这个计算结果会被加入缓存, 也就是说如果下次这个selectors函数发现接收到的state.test.num已经被记录过, 就会立刻返回缓存的结果, 不再使用计算函数;
+
+
+例子2:
+
+import { createSelector } from 'reselect'
+
+const getVisibilityFilter = (state) => state.visibilityFilter
+const getTodos = (state) => state.todos
+
+export const getVisibleTodos = createSelector( 
+  [ getVisibilityFilter, getTodos ], 
+  (visibilityFilter, todos) => { 
+    switch (visibilityFilter) { 
+      case 'SHOW_ALL': 
+        return todos 
+      case 'SHOW_COMPLETED': 
+        return todos.filter(t => t.completed) 
+      case 'SHOW_ACTIVE': 
+        return todos.filter(t => !t.completed)
+ } } )
+
+上例中, createSelector函数的第一个参数传入了数组, 那么它的第二个参数函数将会接收若干个数组函数元素的返回结果作为它的参数, 如果state.todos或state.visibilityFilter发生变化就会重新通过计算函数返回最终的值, 如果是发生在state其他部分的变化就不会重新计算而直接获取之前缓存的值; 
+
+所以总的来说, reselect主要就是用来缓存: 从redux获得的最新state中的指定属性通过复杂计算获得的组件渲染页面需要用到的最终数据这一过程中产生的所有不同输入/输出结果的, 对于那些需要使用来回反复变化的state中数据的组件来说能够减少性能消耗, 提升响应速度;
+不过需要注意的是, reselect到底是如何判断输入的内容(input-selector中返回的内容)是否已经在缓存中了呢, 它是用深层对比的方式来进行查找吗? 那如果redux使用了immutable.js的支持, 那么输入的内容很可能是一个immutable对象, 那它又如何来对比呢? 这点有待核实; 
+
+参考:
+https://github.com/reactjs/reselect (官方github)
+https://www.jianshu.com/p/6e38c66366cd (重要)
+
+
+(5)React中对元素设置key属性时的注意点;
+
+例子:
+……
+this.state={
+  users:[‘hello’,’world’,’!!!’]
+}
+……
+<ul>
+  {this.state.users.map((v,i)=><li key={i}>{v}</li>)}
+</ul>
+
+上例中这种将数组索引值设置为生成元素的key值其实作用仅仅是消除了控制台的警告, 并没有提高react virtual dom对比和更新的效率, 原因是:
+如果在一次setState方法中state的users属性被更新为了: users:[‘test’,‘hello’,’world’,’!!!’], 那么虚拟树对比这些<li>元素时就会出现这样的情况:
+
+之前的virtual dom:
+
+<li key=0>hello</li>
+<li key=1>world</li>
+<li key=2>!!!</li>
+
+
+更新后的virtual dom:
+
+<li key=0>test</li>
+<li key=1>hello</li>
+<li key=2>world</li>
+<li key=3>!!!</li>
+
+react会默认将key相等的元素进行对比(如果没有key或没有相等的key属性就只能逐个按对应顺序对比: 第一个和第一个对比, 第二个和第二个对比…), 检查出的相同元素越多, 最终对dom元素的操作就越少(其实react对比virtual dom的算法还是比较复杂的, 但是只要能够让最终在html页面上的dom操作降低, 复杂对比计算还是值得的, 因为在html上操作dom非常耗费资源), 上例中这种情况由于每次对比相同key的元素结果都不同(通过key属性比较virtual dom主要是为了减少在同级中插入,删除或移动元素这种变化带来的dom操作, 如果没有这类变化, 那么效率就相当于是横向逐一对比), 所以最终会重新将所有<li>元素更新一遍, 而如果上例改为:
+ ……
+<ul>
+  {this.state.users.map((v,i)=><li key={v}>{v}</li>)}
+</ul>
+
+由于state.users数组中每个元素的内容都不相同, 所以用它作为<li>元素的key属性能使每个<li>元素具有唯一性, 这种情况下虚拟树对比这些<li>元素就会是这种情况:
+
+之前的virtual dom:
+
+<li key=‘hello’>hello</li>
+<li key=‘world’>world</li>
+<li key=‘!!!’>!!!</li>
+
+
+更新后的virtual dom:
+
+<li key=‘test’>test</li>
+<li key=‘hello’>hello</li>
+<li key=‘world’>world</li>
+<li key=‘!!!’>!!!</li>
+
+当react对比key相同的<li>元素后发现它们都是相同的, 而只有key为’test’的元素是新增插入的, 所以最终对元素的操作就只有一项: 在key为’hello’的<li>元素前插入一个: <li key=‘test’>test</li> 元素, 这样在react更新html页面时的效率就提高了;
+
+
+对react virtual dom对比算法的推测:
+
+使用key属性的最大优势是可以定位指定元素改变前后处于这个层级元素中的具体位置(以这个位置作为参照就能很方便地新增/删除/移动元素了), 并且可以根据key属性来对应更新元素;
+
+假设在同一层级中存在100个元素, 这里分别来推测react根据key属性处理新增/删除/移动元素的对比算法, 以此也能比较其与不使用key属性的算法最终在html页面上对dom的操作有多大差异;
+
+
+<1>存在新增元素的情况;
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=0>0</li>
+<li key=1>1</li>
+……
+<li key=100>100!!!</li>
+
+这种情况下react会将旧virtual dom中与新virtual dom中key属性相同的元素进行对比, 对比后记录所有需要被更新的元素, 比如: <li key=100>这个元素的内容需要从100变为100!!!, 这个更新操作将在dom元素的排序操作后(如果有排序操作的话, 这里的排序操作就是指对dom的新增, 删除和移动)根据key属性定位更新;
+然后检查新virtual dom中还未被对比过的元素, 上例中是<li key=0>0</li>, 然这些后根据它与之前已经对比过key属性的元素的相对位置, 以这些元素为参照制定html中对dom元素的操作: 上例中是新建一个<li key=0>0</li>元素, 并将其插入<li key=1>1</li>元素之前, 最后修改<li key=100>100</li>元素的内容100->100!!!; 
+
+那如果这个virtual dom的更新过程中没有key属性的协助, 那么react将会按照顺序逐个对比新/旧virtual dom中每一个元素:
+<li>1</li>  —>  <li>0</li>
+<li>2</li>  —>  <li>1</li>
+……
+<li>100</li>  —>  <li>99</li>
+                      —>  <li>100!!!</li>
+
+那么最后在html上的dom操作有101个步骤; 显然要比使用了key属性的对比算法最终制定的dom操作要冗余太多;
+
+
+<2>存在删除元素的情况;
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=2>2</li>
+……
+<li key=100>100!!!</li>
+
+这种情况下react还是先根据key属性来比较元素, 然后会发现新virtual dom中不存在key=1的元素, 于是就会标记<li key=1>1</li>为需要被删除的元素, 然后继续对比其它的元素… 那么最后通过对比算法react制定的dom操作将会是: 删除<li key=1>1</li>元素, 然后修改<li key=100>100</li>元素的内容100->100!!!;
+
+那如果这个virtual dom的更新过程中没有key属性的协助, 那么react将会按照顺序逐个对比新/旧virtual dom中每一个元素:
+<li>1</li>  —>  <li>2</li>
+……
+<li>99</li>  —>  <li>100!!!</li>
+<li>100</li>  —> 
+
+那么最后在html上的dom操作有100个步骤; 显然要比使用了key属性的对比算法最终制定的dom操作要冗余太多;
+
+
+<3>这里补充: 如果存在相同key属性元素时的对比算法;
+如果在同一层级元素中存在key属性相同的元素(虽然这种设计方式本身就是错误的, 但是react肯定不会因为这个问题而影响最终的元素更新结果), react是如何来处理对比算法和最终更新dom元素的呢?
+
+react在第一次在新/旧virtual dom上找到对应的key属性元素后其实会做一个标记, 表示这个元素已经被对比过了, 之后如果又遇到查找相同key属性元素的情况, 就会跳过被标记的元素去找下一个满足key属性值的元素来进行对比, 并做另一个标记......, 如:
+
+旧virtual dom:
+
+<li key=1>1</li>
+<li key=1>2</li>
+<li key=1>3</li>
+……
+
+
+新virtual dom:
+
+<li key=1>2</li>
+<li key=0>0</li>
+<li key=1>1</li>
+……
+
+上例中, 当react查找到新virtual dom中第一个key=1属性对应的元素时会同时标记新/旧virtual dom中这个元素的key属性为, 如: key=‘1-1’, 之后再去查找key=1属性的元素时就会跳过这个key=‘1-1’的元素来查找下一个key=1的元素并标记为key=‘1-2’, 如果在新virtual dom中查找不到其它key=1的元素就标记这个旧virtual dom中的元素为待删除......, 那么最后对比算法得出的dom操作将会是:
+在key=‘1-1’和key=‘1-2’的元素之间新增一个<li key=0>0</li>元素, 然后删除<li key=1>3</li>元素, 最后修改key=‘1-1’和key=‘1-2’元素中的内容; 不过需要注意的是, 最终在html上操作dom时不会将原本的key值改变为标记的值, 如: key=1不会更新为key=‘1-1’; 
+
+
+<4>存在元素移动的情况(原有元素变化了自己在这个层级中的位置);
+
+旧virtual dom:
+
+<li key=1>1</li>
+……
+<li key=100>100</li>
+
+
+新virtual dom:
+
+<li key=100>100!!!</li>
+……
+<li key=1>1</li>
+
+这种情况下react会先通过对比来记录是否有key属性相同的元素需要在最后更新(这里就是key=100的元素), 然后根据新/旧所有元素key属性的排列顺序进行对比计算(这种情况下的算法非常复杂, 这里就不像上面推测单纯的新增/删除元素的算法一样来做深究了), 如:
+
+1
+…
+100
+
+变为:
+
+100
+…
+1
+
+这种情况下react在计算后将会采用某一种算法来制定最终在html上的dom操作(之所以算法复杂是因为它能保证最终的dom操作步骤是最少的);
+
+
+也可能是相邻元素顺序的变化, 如:
+
+……
+19
+20
+……
+
+变为:
+
+……
+20
+19
+……
+
+这种情况下react在计算后显然会采用比上一种情况更精简的步骤来在html上操作dom元素(因为只需移动其中一个元素即可);
+
+
+当然还包括了结合之前所提到的多种情况(新增/删除)下的复杂情况下的对比算法, 如:
+
+1
+2
+3
+4
+5
+
+变为:
+
+5
+3
+2
+1
+0
+
+上例中不但有相邻和非相邻元素位置的变换, 还存在新增和删除元素的情况, 那么react当然也会利用它的复杂算法来计算出最终在html上需要执行的dom操作, 不过需要注意的是, 无论最终的dom操作如何复杂, 理论上其步骤不会超过没有key属性支持情况下需要的步骤(逐一更新dom元素), 但是在对比计算的过程中(制定dom元素操作步骤的计算)其复杂度很可能高于没有key属性支持的情况的, 不过由于通过JS操作dom是最占资源的行为, 所以只要能够令dom操作最简化, 之前的对比计算的消耗可以忽略不计;
+
+
+(6)服务器端渲染SSR(Server Side Render);
+
+传统的服务器渲染技术有: JAVA使用的JSP, PHP使用的Smarty, 包括之前在Nodejs+Express项目中使用的EJS这个JS模板引擎;  
+
+Server Side Render的最直接的优势就是: 减少首屏加载的时间, 对SEO友好;
+
+关于ReactDOMServer对象提供的在服务端渲染组件的方法:
+* renderToString()
+* renderToStaticMarkup()
+* renderToNodeStream()
+* renderToStaticNodeStream()
+
+上面的方法都属于React同构API, 其中前两个是React16之前提供的方法, 后两个是React16提供的新方法, 其性能更好; 
+
+关于ReactDOMServer对象提供的API可以参考:
+http://www.css88.com/react/docs/react-dom-server.html 
+
+
+对于SSR可以这么理解, 当客户端收到SSR后的HTML页面会直接显示在浏览器中(前端首屏加载时HTML页面中id=‘root’的元素是空的), 然后同样会加载build后的js和css文件, 而为了之后能够让react继续支持其单页面应用的所有操作, 这里需要满足两个重要的条件:
+<1>服务器端必须同时传递给前端当前页面对应的virtual dom并保存在内存中;
+<2>如果使用redux的话, 那么需要在createStore中传入一个对应当前应用状态的初始state值;
+
+因为当前端渲染了直接从server端拿到的html页面后仍旧会根据当前路由去执行一遍react代码(和前端首屏加载时的流程一致), 那么在这个加载过程中就会需要对比当前已存在的virtual dom(如果当前不存在virtual dom则会按照所有组件都是新建的流程最后重新在html中添加一遍应用组件, 这显然是不行的), 当对比之后发现没有需要更改的内容, 则不会再去重新操作html页面中的dom元素, 不过要做到对比结果相同那就要满足redux的store初始值与当前页面的状态一致, 所以需要满足上述这两点要求;
+不过还需要注意的是, 由于这种SSR加载方式不会执行原本绑定在组件componentDidMount函数中的内容(这点有待核实, 因为如果后端不执行componentDidMount函数, 那么就无法拿到最新的redux中的数据), 也不会去绑定react管理的onClick等需要页面DOMContentLoaded事件触发后才能绑定的用户交互事件执行函数, 所以需要在客户端使用ReactDOM.hydrate()方法来’注水’, 手动在组件上添加这些执行函数, 这就需要在这些使用了react管理的onClick等事件绑定函数和componentDidMount函数的组件对应的html元素中指定类似: data-reactid这样的属性, 使得前端能够直接获取到需要’注水’的元素; 而在上面介绍的四个ReactDOMServer对象提供的API中, 带有’Static’字段的方法都不会自动为react元素指定data-reactid这样的属性, 虽然这样可以节省额外字节, 但是也让react应用失去了交互性, 所以只在把React作为一个简单的静态页面生成器时才会使用; 
+
+还有两个与上面提到的SSR这种加载方式是否会在后端执行componentDidMount函数中的内容相关的问题:
+<1>由于前/后端渲染时所创建的socket对象不同, 那么在SSR后前端需要重新绑定发送消息时对前端socket对象的操作:socket.emit('sendmsg', {from, to, msg}), 包括在Dashboard和Chat模块的componentDidMount函数中的socket.on('recvmsg', function(data){……})也需要重新绑定, 但是如果SSR中执行了组件的componentDidMount函数, 那么也就是说redux的state.chat.listenerset已经被置true了, 那么在前端再次执行Dashboard和Chat模块的componentDidMount函数时就不会去绑定socket.on('recvmsg', function(data){……})了;
+<2>如果SSR会执行组件的componentDidMount函数, 那么也就会传递最新的redux的state给前端, 对于前端来说虽然拿到了最新的state, 但是如果想继续监听来自redux的state的改变就必须重新执行一遍所有componentDidMount函数, 因为react-redux是在componentDidMount函数中使用store.subscribe()来绑定redux的state变化时的处理函数的, 而又由于前端的store对象与SSR的store对象不同, 所以必须重新绑定一遍;
+
+
+14.react项目相关的内容;
+
+(1)eslint代码规范;
+
+当在localhost:3000上运行webpack-dev-server装载的项目时, 可以发现在nodejs控制台中会打印许多warning信息(这些信息也会在前端浏览器加载应用后显示在console中), 如:
+
+![](./dev_memo_img/150.png)
+
+这是因为在项目的package.json中设置了:
+……
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+……
+
+而config/webpack.config.dev.js中指定了eslint-loader相关配置:
+……
+      {
+        test: /\.(js|jsx|mjs)$/,
+        enforce: 'pre',
+        use: [
+          {
+            options: {
+              formatter: eslintFormatter,
+              eslintPath: require.resolve('eslint'),
+              
+            },
+            loader: require.resolve('eslint-loader'),
+          },
+        ],
+        include: paths.appSrc,
+      },
+……
+
+所以会去取读取package.json中的eslintConfig配置;
+
+
+那么, 如果我不需要eslint提醒我关于将’==‘改为’===‘和将’!=’改为’!==’的warning, 我希望在应用中可以有非严格的比较, 那么就需要在package.json中进行额外配置:
+……
+  "eslintConfig": {
+    "extends": "react-app",
+    "rules":{
+      "eqeqeq":["off"]
+    }
+  },
+……
+
+上例中, 对eslintConfig做了额外配置, 在react-app这个类型下关闭了对’eqeqeq’这类规则的检查, 其中”off”代表关闭, 也可以设置为”warning”(默认)或者”error”;
+修改后重启webpack-dev-server, 发现控制台已经不会在打印’eqeqeq’相关warning了;
+
+
+如果这里想要对JS中’;’的使用创建新的ESLint规则, 如:
+……
+  "eslintConfig": {
+    "extends": "react-app",
+    "rules":{
+      "eqeqeq":["off"],
+      "semi":["warn","never"]
+    }
+  },
+……
+
+上例中, 设置了对分号使用的规则, 要求任何情况下都不能出现(‘never’, 相对于’always’), 一旦出现就会打印warning;
+
+于是就会检查出应用中所有设置了分号的地方:
+
+![](./dev_memo_img/151.png)
+
+ESLint官网规则参考:
+http://eslint.cn/docs/4.0.0/rules/
+
+
+补充:
+上例中存在一个eslint的warning信息: Emojis should be wrapped in <span>, have role="img", and have an accessible description with aria-label or aria-labelledby
+
+aria-label, aria-labelledby 和 role属性, 都是HTML5针对html tag增加的属性，一般是为不方便的人士提供的功能，比如屏幕阅读器;
+
+role的作用是描述一个非标准的tag的实际作用; 比如用div做button，那么设置div 的 role="button"，辅助工具就可以认出这实际上是个button;
+这里提到的aria-*是一种特殊的属性, aria的意思是Accessible Rich Internet Application，aria-*的作用就是描述这个它所在标签在可视化的情境中的具体信息; 
+
+需要注意的是, aria-*只有加在可被tab到的元素上，读屏才会读出其中的内容, 如:
+<span tabindex="0″ aria-label="标签提示内容">可被tab的span标签</span>  
+
+
+当想要的aria-label文本在其他元素中做为内容存在时, 可以将该元素的id做为aria-labelledby属性的值, 在标签被tab时就直接去读取对应id元素中的内容, 如:
+……
+<div role="form" aria-labelledby="form-title">  
+<span id="form-title">使用手机号码注册</span>  
+<form>……</form>  
+</div>  
+……
+
+上例中, 当来到该区域时, 浏览器不仅会读出"表单区”, 也会读出"使用手机号码注册”;
+
+需要注意的是, 如果一个元素同时存在aria-labelledby和aria-label这两个属性，读屏软件会优先读出aria-labelledby的内容; 
+
+关于HTML5中的aria-*与role属性的使用, 可以参考:
+https://blog.csdn.net/dearcode/article/details/52218689 (重要)
+
+
+关于tabindex属性;
+
+一些元素默认就是focusable, 并且能被键盘focus; 所谓focusable指的是元素可以被鼠标或者JS focus，在Chrome浏览器下表现为会有outline发光效果，IE浏览器下是虚框，同时能够响应focus事件, 如: input, button等元素, 可以将它们的tabindex默认视为0;
+当一个元素设置tabindex属性值为-1的时候, 元素会变得focusable，但是却不能被键盘focus;
+tabindex="0"和tabindex="-1"的唯一区别就是键盘也能focus，索引的顺序没有任何的变化;  
+
+tabindex属性的键盘索引顺序其实是从数值1开始的，不是0; 1索引顺序是最靠前的; 也就是说哪怕你在页面的最底部、文档流的最后一个元素设置了tabindex="1"，当按下Tab键的时候，首先focus就是这最后一个元素;
+
+tabindex属性值的最大值不能超过32767, 索引顺序由1开始从小到大排列, 顺序为0的排在最后, 如果索引值相同, 那么会根据DOM元素在文档中的位置决定的，越靠前越外层的元素索引顺序更高;
+
+关于HTML tabindex属性与键盘无障碍访问web网页, 可以参考:
+http://www.zhangxinxu.com/wordpress/2017/05/html-tabindex/ (重要)
+
+
+(2)使用async函数优化异步代码;
+
+使用ES7的async+await可以以更优雅的, 同步的方式编写异步代码, 这里将chat.redux.js中的readMsg方法中原先使用Promise的部分用async函数来改写:
+……
+export function readMsg(from){
+  return dispatch=>{
+    axios.post('/user/readmsg',{from})
+      .then(res=>{
+        if(res.status==200 && res.data.code==0){
+          dispatch(msgRead({from,num:res.data.num}))
+        }
+      })
+  }
+}
+……
+
+改为
+
+……
+export function readMsg(from){
+  return async dispatch=>{
+    const res = await axios.post('/user/readmsg',{from})
+    if(res.status==200 && res.data.code==0){
+      dispatch(msgRead({from,num:res.data.num}))
+    }
+  }
+}
+……
+
+
+(3)ReactCSSTransitionGroup组件的使用; 
+
+传统的页面动画解决方案分为:
+使用CSS3 提供的新API 来实现;
+使用JS操作DOM来实现;
+
+React提供了一个ReactCSSTransitionGroup组件来封装需要被动画效果渲染的子组件, 实现在子组件被mount/unmount时为其添加相关css, 并且可以指定组件mount到HTLM页面后的一段时间后自动删除相关CSS样式, 甚至可以推迟组件被移除HTML页面的时间来保证为其添加的CSS效果显示完毕; 
+react-addons-css-transition-group这个库是受到了angularjs的ng-animate库的启发而创建的;
+
+
+ReactCSSTransitionGroup组件使用的例子:
+
+js;
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'; // ES6
+var ReactCSSTransitionGroup = require('react-addons-css-transition-group'); // ES5 with npm
+……
+return (
+      <div>
+        <button onClick={this.handleAdd}>Add Item</button>
+        <ReactCSSTransitionGroup
+          transitionName="example"
+          transitionEnterTimeout={500}
+          transitionLeaveTimeout={300}>
+          {items}
+        </ReactCSSTransitionGroup>
+      </div>
+  );
+……
+
+css;
+
+.example-enter {
+  opacity: 0.01;
+}
+
+.example-enter.example-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.example-leave {
+  opacity: 1;
+}
+
+.example-leave.example-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}
+
+上例中, ReactCSSTransitionGroup组件的transitionName="example”属性决定了为其子组件添加CSS class的名称, 当然用户要保证在css文件中也要遵循这个规则来设计样式; 
+ReactCSSTransitionGroup组件的transitionEnterTimeout={500}属性指定了当其子组件被正常mount到html页面的多少时间后删除指定在这个子组件上的相关css class;
+ReactCSSTransitionGroup组件的transitionLeaveTimeout={300}属性决定了在子组件被从HTML页面中移除前需要等待的时间(也就是延迟多长时间再执行unmount操作), 这样就能让此次添加到这个子组件上的css效果生效后再移除组件;
+
+需要注意的是: 
+You must provide the key attribute for all children of ReactCSSTransitionGroup, even when only rendering a single item. This is how React will determine which children have entered, left, or stayed;
+
+这是由于ReactTransitionGroup会利用ReactCSSTransitionGroupChild给每个children加一层封装, 如:
+
+![](./dev_memo_img/152.png)
+
+
+而React来判断一个组件的状态是新增/更新/移除是通过为render方法中每一个出现的子组件设置一个类似react-id的独一无二的标识(处于判断条件之内的, 或者重复出现的子组件都将获得不同的标识, 也就是说react会检查render方法中声明过的所有组件并添加标识)用来在组件下一次更新时对比前后两次render方法输出内容的不同来判断各个子组件的新增/更新/移除状态;
+
+如果子组件是父组件通过this.props.children的形式添加到render方法中的, 那么react仍旧是通过上面的这种对比react-id的形式来进行判断的, 因为在声明父组件的this.props.children时, 如:
+<Father>
+  <Son1></Son1>
+  <Son2></Son2>
+</Father>
+
+其实已经为Son1和Son2添加了独一无二的react-id了, 之后在通过this.props.children传入父组件的render方法时就可以通过上面提到方式对比前后两次render方法输出内容的不同从而判断各个子组件的新增/更新/移除状态;
+
+但是如果在render方法中使用了遍历或者传入了数组, 那么就需要开发者手动为每个子组件添加key值来让react判断前后两次render结果中子组件的新增/更新/移除状态了, 因为此时react是无法确定render方法中具体声明了哪些组件的, 所以也无法为它们添加react-id, 也就是说react推荐的在render中遍历或者传入数组时为每个组件设置独一无二的key属性不仅仅是为了之后的virtual dom对比后对html进行dom操作时增加效率, 并且也可以保证在父组件更新时那些通过遍历或者数组的形式声明在父组件render方法中的子组件能够被react识别正确的新增/更新/移除状态;
+
+而在ReactCSSTransitionGroup组件中, 由于它需要通过遍历的形式对this.props.children中的每个子组件封装一层ReactCSSTransitionGroupChild组件, 所以就需要用户提供key属性, 以便将key属性对应添加到ReactCSSTransitionGroupChild组件上方便react之后的对比;
+之后, 当有子元素添加或删除的时候，其实是通过ReactCSSTransitionGroupChild组件钩子函数来控制其中子组件的样式显示, 这样就不需要ReactCSSTransitionGroup直接去修改传入的子组件的生命周期函数了, 并且由于ReactCSSTransitionGroupChild组件会利用传入子组件的key值来标记自己, 所以每次ReactCSSTransitionGroup组件更新时React就能很方便地区分哪些组件是属于新增/删除/原本就存在的;
+
+![](./dev_memo_img/153.png)
+
+
+从上面ReactCSSTransitionGroupChild组件可以看出, 它自定义了三种钩子函数, 会分别在ReactCSSTransitionGroup组件新建和更新时在它的componentDidMount, componentWillUnmount中被调用; 其中的transition方法属于dom操作, 它将按需求添加/删除对应元素的className;
+
+![](./dev_memo_img/154.png)
+
+从上面的transition方法中可以看出, 它的作用主要就是对指定dom元素进行className的添加/删除, 其中:
+
+ReactAddonsDOMDependencies.getReactDOM().findDOMNode(this);
+
+这条语句的目的是为了获取这个react jsx对象在html中对应的元素, 真实项目中的使用方法如下:
+
+import ReactDOM from 'react-dom'
+ReactDOM.findDOMNode(this)
+
+所以只要能够获取子组件在html中对应的元素, 那么就可以控制它的样式和显示动画效果了;
+
+
+不过很显然上面的例子只是针对子组件enter时, 也就是新增子组件时在componentDidMount钩子函数中设置的方法, 而当组件被移除时的方法完全不同:
+
+<1>对于新增子组件而言, ReactCSSTransitionGroup组件会在其ReactCSSTransitionGroupChild组件的componentDidUpdate函数中为元素添加动画效果相关的class: example-enter, 然后在下一个tick添加另一个class: example-enter-active, 接着使用setTimeout函数(延迟时间由transitionEnterTimeout决定)延迟删除元素中动画效果相关className; 
+<2>对于待移除组件而言, ReactCSSTransitionGroupChild组件会在其componentWillUnmount函数中为元素先添加example-leave属性, 然后再添加动画效果相关的后续css类(example-leave-active), 接着设置阻塞主线程执行的sleep方法让其停留指定时间(transitionLeaveTimeout指定的值)再继续执行删除DOM的操作从而能让组件能够将动画效果显示完成后再被真正移除; 不过需要注意的是, 这样设置会出现所有待移除组件的动画效果逐个展示而非一同展示的情况;
+
+具体的实现方法可以参考:
+https://ivweb.io/topic/586099050e2a26d26bb1c029(ReactTransitionGroup 动画原理, 重要)
+https://reactjs.org/docs/animation.html(官方)
+
+
+补充:
+1.JS中实现阻塞线程的sleep方法;
+
+function sleep(numberMillis) { 
+  var now = new Date(); 
+  var exitTime = now.getTime() + numberMillis; 
+  while (true) { 
+    now = new Date(); 
+    if (now.getTime() > exitTime) 
+      return; 
+  } 
+}
+
+参考:
+http://www.jb51.net/article/52105.htm
+
+2.关于使用JS给元素添加样式类的问题;
+
+如果使用JS直接给元素添加class name, 如:
+
+css;
+
+.esna-enter {
+  opacity:0;
+}
+.esna-enter.esna-enter-active {
+  opacity:1;
+  transition: opacity 0.5s ease
+}
+
+js;
+
+$('.banner-bottom').addClass('esna-enter');
+$('.banner-bottom’).attr(‘class’);  //banner-bottom esna-enter
+$('.banner-bottom').addClass('esna-enter-active');
+
+上例中, 虽然第二条语句就可以取到页面中.banner-bottom元素的class name, 说明addClass方法确实是实时地将页面中元素的class元素更新了, 但是由于两次addClass操作之间没有页面的重绘和回流(也就是页面不会去根据更新的class name去匹配css中的对应内容重新渲染元素从而改变元素的样式状态), 这就会造成当页面根据元素class属性进行重新渲染时相当于直接跳过了元素的: class= ‘banner-bottom esna-enter’这个状态, 而是直接取读取了元素的: class= ‘banner-bottom esna-enter esna-enter-active’这个状态, 那么当然会让浏览器认为这个元素上并没有opacity的变化(假设这个元素原型的opacity就是1), 所以也不会触发transition属性指定的动画效果;
+
+解决方法可以是在下一个tick中再为元素添加第二个样式类, 如:
+
+$('.banner-bottom').addClass('esna-enter');
+setTimeout(
+  function(){
+    $('.banner-bottom').addClass('esna-enter-active');
+  }
+,0)
+
+
+使用ReactCSSTransitionGroup来对msg页面中消息列表添加淡入的动画效果;
+
+安装react-addons-css-transition-group依赖库;
+
+$ npm install react-addons-css-transition-group —save
+
+
+修改msg.js;
+……
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
+……
+return  (
+      <ReactCSSTransitionGroup
+        transitionName="esna"
+                transitionEnterTimeout={500}
+                transitionLeaveTimeout={300}
+      >
+          {
+            chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              const unreadNum = v.filter(v=>
+                !v.read&&v.to==userid
+              ).length
+
+              return (
+                <List key={lastItem.chatid}>
+                  <Item
+                    extra={<Badge text={unreadNum}></Badge>}
+                    thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                    arrow='horizontal'
+                    onClick={()=>{
+                      this.props.history.push(`/chat/${targetId}`)
+                    }}
+                  > 
+                    {lastItem.content}
+                    <Brief>{this.props.chat.users[targetId].name}</Brief>
+                    <Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+                  </Item>
+                </List>
+              )
+            })
+          }
+      </ReactCSSTransitionGroup>
+    )
+……
+
+上例中需要注意的是, 由于这里通过遍历的形式来生成一系列的<List>组件, 所以需要为其添加key属性(其实由于使用了ReactCSSTransitionGroup组件, 无论这里存在多少个子元素都需要指定key属性), 但是之前使用了{lastItem._id}来指定这个key值, 问题是每次同一个<List>组件更新时这个key值都是不同的, 因为每条消息的_id都是独一无二的, 这就会导致react在使用对比算法处理这一系列<List>组件时会将此次需要被更新的<List>组件认为是一个新增的组件, 所以最终对html的dom操作将会是: 先添加一个被认为是此次新增<List>组件, 然后移除之前存在的这个<List>组件, 这也会导致在页面中短时间内会同时出现新/旧两个<List>组件元素的情况(因为动画效果设置了延时删除), 所以这里将遍历<List>组件的key属性改为: {lastItem.chatid}, 因为对于同一个聊天会话来说所有聊天记录的chatid属性都是相同的, 并且列表中所有聊天会话对应的chatid是不会重复的; 
+
+
+修改index.css;
+……
+/*for ReactCSSTransitionGroup*/
+.esna-enter {
+  opacity: 0.01;
+}
+
+.esna-enter.esna-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.esna-leave {
+  opacity: 1;
+}
+
+.esna-leave.esna-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}
+
+
+不过需要注意的是, 默认情况下ReactCSSTransitionGroup组件只会在自身update的时候才会对子组件执行生命周期的设置操作(在ReactCSSTransitionGroup组件自身将要被移除的情况下是无法为其子组件设置任何动画效果的), 当首次加载时并不会去做设置, 所以上例中当应用已经加载的情况下, 用户在navlinkbar中来回点击的msg和其他图标来在msg页面与其它页面之间切换时, msg页面的消息列表并不会显示淡入的css效果, 解决办法就是通过设置:
+transitionAppear={true}
+transitionAppearTimeout={500}
+
+这两个属性来让ReactCSSTransitionGroup组件在首次加载时也对其子元素的生命周期函数进行设置; 其实transitionAppearTimeout就相当于transitionEnterTimeout属性;
+当然, 同样需要添加对应的css样式设置;
+
+修改msg.js;
+……
+      <ReactCSSTransitionGroup
+        transitionName="esna"
+        transitionAppear={true}
+            transitionAppearTimeout={500}
+              transitionEnterTimeout={500}
+              transitionLeaveTimeout={300}
+      >
+……
+
+
+修改index.css;
+……
+
+.esna-appear {
+  opacity: 0.01;
+}
+
+.esna-appear.esna-appear-active {
+  opacity: 1;
+  transition: opacity .5s ease-in;
+}
+
+
+(4)react动画解决方案: Ant motion;
+
+安装QueueAnim进出场动画组件库:
+
+$ npm install rc-queue-anim --save
+
+
+修改chat.js;
+……
+import QueueAnim from 'rc-queue-anim'
+……
+        <QueueAnim type='scale' delay={100}>
+          {chatmsgs.map(v=>{
+            const avatar = require(`../img/${users[v.from].avatar}.png`)
+            return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                >{v.content}</Item>
+              </List>
+            )
+          })}
+        </QueueAnim>
+……
+
+上例中, QueueAnim组件的type属性指定了每个直接子元素出入场的动画样式; 
+
+需要注意的是, 这里以及下面将要提到的子元素特指类似上面在介绍ReactCSSTransitionGroup组件时提到的ReactCSSTransitionGroupChild封装组件(原理类似);
+
+QueueAnim组件在首次加载时存在一个特别的机制, 这点与ReactCSSTransitionGroup组件不同, 当QueueAnim组件本身被加载时它不会在其render方法中render被传入的子组件, 而是将加载新增的子组件这一个步骤放在它被加入了html之后, 也就是componentDidMount中, 并且设置为在下一个tick中执行(父组件componentDidMount了之后的下一个tick, 子组件开始执行render一系列的生命周期函数), 这样设计的原因可能是考虑到了首次加载QueueAnim组件时其子组件内的信息很可能还没有获取到(redux处于初始状态), 而由于应用对全局数据的获取大部分是设置在各个组件的componentDidMount中的, 所以这里将加载新增子组件放在QueueAnim组件加载完成后(也代表了应用中组件的一轮装载完成)的下一个tick执行可以一定程度地保证当子组件在被渲染到html页面并添加了动画样式的这段时间内是有数据的;
+
+对于需要’入场’效果的子组件而言, 多个子元素会按所在位置的顺序根据type样式’先后入场’, 其实QueueAnim会先为每一个’入场’的子元素的componentDidMount函数中为子组件先添加一个初始的css类(一般这个css类中指定了组件的opacity为一个近乎透明的值), 然后再为子组件添加一个延迟时间根据子组件所处顺序来递增的setTimeout函数, 第一个子组件无须设置setTimeout函数, 除非QueueAnim函数中指定了deplay属性, 保存延迟时间的变量可以声明在父组件的constructor中, 每次有子元素执行了componentDidMount就累加一次单位延迟时间, 这样下一个执行componentDidMount方法的新增组件就能获取到相应的延迟, 每次父组件更新就将这个变量置为0, setTimeout返回函数中将为这个组件指定与type属性效果相关的css样式(使用类似transition这样的css功能), 所以当子元素的componentDidMount方法依次执行后就会在页面上有’先后入场’的效果; 
+
+而对于需要’出场’效果的子组件, 实现机制与之前介绍的ReactCSSTransitionGroup组件在处理将要被移除的子组件的componentWillUnmount函数的方法类似, 这里需要依次’出场’的效果, 所以在componentWillUnmount中为每个子组件添加了指定className(实现一个与type属性相关的出场效果)后使用阻塞相同时间的sleep方法使得每一个子组件在展示完自己的出场效果后再真正被从HTML页面中移除;
+
+delay指定了所有子元素出入场延迟的时间, 其实就是在每个入场子组件的componentDidMount方法中(包括第一个’进场’的子组件)在原有setTimeout设置的延迟时间上统一都加上这个delay的值; 
+对于出场延迟来说, 其实就是在第一个需要出场的子组件(判断组件是否为第一个出场的标识变量可以使用类似上面提到的保存延迟时间的变量的指定方法声明在父组件的constructor中, 每次父组件更新要置回0)的componentWillUnmount方法中在添加出场css效果之前先使用sleep()阻塞方法延迟delay数值的时间;
+
+与ReactCSSTransitionGroup类似, 上面所描述的’进出场’效果只有在QueueAnim组件首次被加载或者被update时才会为其子组件添加, 当其自身被移除时不会为子组件添加任何动态效果; 并且QueueAnim组件中的每个子标签也都必须指定key属性, 如果未设置 key 将不执行动画;
+
+
+那么如果这里需要在每次用户点击navlinkbar中的图标后跳转到不同的页面时为页面添加一个转场(进出场)切换的效果, 最简单地设计思路是:
+
+修改dashboard.js;
+……
+import QueueAnim from 'rc-queue-anim'
+……
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+          <Switch key='1'>
+            {navList.map(v=>(
+              <Route key={v.path} path={v.path} component={v.component}/>
+            ))}
+          </Switch>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+……
+
+但是上面这种对QueueAnim组件的使用方法无法正确生成动画效果, 原因是QueueAnim组件是通过改造其直接子元素的新增/移除生命周期函数来实现动画效果的, 但是上面这种设计的问题是, QueueAnim的直接子组件是Switch组件, 它除了页面第一次加载时是属于新增的组件, 其它情况下会一直属于被update的组件, 那么显然不满足我们需要的页面跳转时的动画效果, 解决方法是改造dashboard.js中的render函数:
+
+修改dashboard.js;
+……
+    const page = navList.find(v=>v.path == pathname)
+
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+            <Route key={page.path} path={page.path} component={page.component}/>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+……
+
+
+参考:
+https://motion.ant.design/ (官网)
+https://motion.ant.design/api/queue-anim (进出场动画相关API)
+https://motion.ant.design/edit/#t%3Dnav_0_0%2Ccontent_0_0%2Ccontent_2_0%2Ccontent_3_0%2Ccontent_4_0%2Cfooter_0_0 (动效模板, 支持自定义选择多个带有动效的模板组件然后自动整合生成一个完整的页面应用的功能)
+
+
+(5)在msg页面添加删除聊天会话记录的功能;
+
+使用antd-mobile的SwipeAction组件实现在msg页面消息列表中的某条聊天会话记录上向左滑动后(只支持Touch事件)出现删除/取消选项, 当用户点击删除后就会将这条聊天会话记录从列表中删除(同时将会话中所有收到的消息置为已读), 之后用户再来到msg页面时只要被删除会话中没有新的消息产生(无论是用户发送的还是用户收到的), 这条会话记录就不会出现在列表中; 
+实现这个功能的关键就是为被删除会话记录中的最后一条消息添加一个removed标记, 这样在msg页面渲染会话列表时就可以通过某条会话记录的最后一条消息来判断是否应该显示这一条会话记录了; 也就是说一旦被删除的聊天会话中收到了新的消息或者用户发送了新消息那么msg页面的聊天会话列表中又会重新显示这一条会话记录了;
+不过目前在项目中暂时没有将删除会话记录而生成的removed标记更新到数据库中, 也就是说目前删除的会话只会在本地被标记, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除会话记录就会重新显示在msg页面列表中;
+
+修改chat.redux.js;
+……
+//删除msg页面中的某条聊天会话记录
+const MSG_REMOVE = 'MSG_REMOVE'
+……
+    case MSG_REMOVE:
+      return {...state, chatmsg:[...state.chatmsg.map(v=>{
+                if(v._id == action.payload.lastMsgId){
+                  v.removed = true
+                }
+                return v
+              })
+            ]
+          } 
+……
+//这里暂时不将删除聊天会话记录的标记更新到数据库中, 也就是说目前删除的会话只会记录在本地, 下一次更新redux中state.chat.chatmsg或者重启应用时被删除记录就会被覆盖
+export function removeMsg(lastMsgId){
+  return {type:MSG_REMOVE, payload:{lastMsgId}}
+}
+……
+
+需要注意的是, 上例中reducer函数在action.type为MSG_REMOVE时返回的最新的state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进;
+
+
+修改msg.js;
+……
+import {List, Badge, SwipeAction} from 'antd-mobile'
+import {removeMsg, readMsg} from '../../redux/chat.redux'
+
+@connect(
+  state=>state,
+  {removeMsg, readMsg}
+)
+class Msg extends React.Component{
+  getLast(arr){
+    return arr[arr.length-1]
+  }
+  //给被删除聊天会话的最后一条消息添加一个标志, 之后渲染msg页面时如果某个会话的最后一条消息的标志为已删除就不显示这个会话;
+  //并且在用户删除某项聊天会话时将其中所有对方发来的消息置为已读
+  handleDeleteMsg(from, lastMsgId){
+    this.props.removeMsg(lastMsgId)
+    this.props.readMsg(from)
+  }
+……
+chatList.map(v=>{
+              const lastItem = this.getLast(v)
+              const targetId = lastItem.from==userid?lastItem.to:lastItem.from
+              const unreadNum = v.filter(v=>
+                !v.read&&v.to==userid
+              ).length
+
+              return lastItem.removed?null:
+                (
+                <List key={lastItem.chatid}>
+                  <SwipeAction
+                    style={{ backgroundColor: 'gray' }}
+                    autoClose
+                    right={[
+                          {
+                            text: '取消',
+                            style: { backgroundColor: '#ddd', color: 'white' },
+                          },
+                          {
+                            text: '删除',
+                            onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id)},
+                            style: { backgroundColor: '#F4333C', color: 'white' },
+                          },
+                      ]}
+                  >
+                    <Item
+                      extra={<Badge text={unreadNum}></Badge>}
+                      thumb={require(`../img/${this.props.chat.users[targetId].avatar}.png`)}
+                      arrow='horizontal'
+                      onClick={()=>{
+                        this.props.history.push(`/chat/${targetId}`)
+                      }}
+                    > 
+                      {lastItem.content}
+                      <Brief>{this.props.chat.users[targetId].name}</Brief>
+                      <Brief><span role='img' aria-label='emoji'>🕘</span>{this.formatDateTime(new Date(lastItem.create_time))}</Brief>
+                    </Item>
+                  </SwipeAction>
+                </List>
+              )
+            })
+……
+
+
+SwipeAction组件的默认规则:
+<1>结合手势操作, 从屏幕一侧唤出操作, 一次只可滑动一行列表
+<2>点击任意按钮之外处或往回滑动该列表可隐藏操作
+
+更多关于antd-mobile中SwipeAction(滑动操作组件)相关内容, 可以参考:
+https://mobile.ant.design/components/swipe-action-cn/
+
+
+![](./dev_memo_img/155.png)
+
+![](./dev_memo_img/156.png)
+
+![](./dev_memo_img/157.png)
+
+![](./dev_memo_img/158.png)
+
+![](./dev_memo_img/159.png)
+
+
+
+将应用的聊天会话删除功能实现持久化, 以删除者_id做为删除标识的值保存在数据库中;
+
+将一条消息置为removed:true并更新到数据库中存在一个新的问题, 那就是这条消息对于聊天双方此时都是属于被删除状态, 也就是说, 当此次会话没有被更新的情况下, 在双方的聊天会话列表中都不会显示与对方的这条会话记录了, 这显然是不合理的, 只有主动删除的用户才需要在msg页面的会话记录列表中过滤掉这条记录;
+
+
+修改server/user.js;
+……
+Router.post('/removemsg', function(req,res){
+  const {lastMsgId, removedBy} = req.body
+  Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+    if(!err){
+      return res.json({code:0})
+    }
+  })
+})
+……
+
+修改server/model.js;
+……
+  chat:{
+    'chatid': {'type':String, 'require':true},
+    'from':{'type':String, 'require': true},
+    'to':{'type':String, 'require': true},
+    'read':{'type':Boolean, 'default':false},
+    'content':{'type':String, 'require':true, 'default':''},
+    'create_time': {'type':Number, 'default': new Date().getTime()},
+    'removed': {'type':String, 'default':''}
+  }
+……
+
+修改chat.redux.js;
+……
+    case MSG_REMOVE:
+      //需要注意的是这里返回redux的更新state对象时并没有使用immutable对象的形式来处理chatmsg数组中的对象元素(导致所有对比新/旧redux的state的地方都会出现不准确的问题), 所以需要使用immutable.js来改进
+      return {...state, chatmsg:[...state.chatmsg.map(v=>{
+                if(v._id == action.payload.lastMsgId){
+                  v.removed = action.payload.removedBy
+                }
+                return v
+              })
+            ]
+          } 
+……
+function msgRemoved(lastMsgId, removedBy){
+  return {type:MSG_REMOVE, payload:{lastMsgId, removedBy}}
+}
+……
+export function removeMsg(lastMsgId, removedBy){
+  return async dispatch=>{
+    const res = await axios.post('/user/removemsg',{lastMsgId, removedBy})
+    if(res.status=200 && res.data.code==0){
+      dispatch(msgRemoved(lastMsgId, removedBy))
+    }
+  }
+}
+……
+
+
+msg.js;
+……
+return lastItem.removed == userid?null:
+……
+onPress: ()=>{this.handleDeleteMsg(targetId,lastItem._id,userid)},
+……
+
+上例中将原本的removed标识默认的boolean类型改为了字符串类型, 用来标识执行这次删除操作的用户_id, 如果消息没有被删除就是空字符串, 之后在生成msg页面的聊天会话列表时会判断如果某个会话中最后一条消息的removed标识为当前登录用户, 那么就不显示这条会话记录;
+
+
+不过目前还存在一个问题:
+如果两个用户同时删除了某条会话记录, 并且此条会话中又没有任何更新的话, 先删除会话的用户仍旧会在msg页面的会话记录列表中显示这条记录, 因为最后一条消息的removed属性被替换为了后删除对应会话用户的_id了, 解决办法就是为removed属性新增一个’both’状态, 来代表某条会话记录被双方同时删除了;
+
+
+修改server/user.js;
+……
+Router.post('/removemsg', function(req,res){
+  const {lastMsgId, removedBy} = req.body
+
+  Chat.findOne({'_id':lastMsgId},function(err,doc){
+    if(err) return res.json({code:1})
+    if(!doc.removed){
+      Chat.findByIdAndUpdate(lastMsgId, {'removed':removedBy}, function(err, doc){
+        if(!err){
+          return res.json({code:0,removed:removedBy})
+        }
+      })
+    }else{
+      Chat.findByIdAndUpdate(lastMsgId, {'removed':'both'}, function(err, doc){
+        if(!err){
+          return res.json({code:0,removed:'both'})
+        }
+      })
+    }
+  })
+})
+……
+
+
+修改msg.js;
+……
+return (lastItem.removed == userid || lastItem.removed == 'both')?null:
+……
+
+上例中, 当用户删除了某条会话记录后, 服务器端会将对应消息的removed标识更新为删除这条会话的用户_id, 如果发现removed标识已经存在内容而不是默认值空字符串, 则将其统一更新为’both’字符串, 代表消息对应的会话记录被聊天双方同时删除了, 之后在msg页面渲染会话列表时会进行判断, 如果会话最后一条消息的removed属性为’both’, 则也需要过滤掉这条会话记录;
+
+
+(6)修改应用的3个bug;
+
+<1>来到用户的个人中心页面’/me’后, 点击’退出登录’按钮后会跳转到’/geniusinfo’页面, 而应该跳转到’/login’页面, 这是因为之前在设计当用户从完善信息页面提交信息后需要跳转到’/me’页面, 也就是说会将state.user.redirectTo更新为’/me’, 所以之后从个人中心页面点击’修改个人信息’按钮或者点击NavLinkBar导航图标离开当前页时需要将state.user.redirectTo重新更改为之前AUTH_SUCCESS后的状态以免被跳转回’/me’页面, 那么之前的做法是在user.js中用户点击’修改个人信息’按钮并跳转到相应个人完善信息页面之前, 和用户离开’/me’页面时, 也就是User模块的componentWillUnmount方法中利用authSuccess方法来更新当前state.user.redirectTo的值; 
+
+这样的设计的问题是: 当用户点击’退出登录’按钮后会直接将state.user.redirectTo更新为’/login’, 这会让应用跳转到’/login’页面没有问题, 但是由于之前还在User组件的componentWillUnmount中再次使用authSuccess方法将state.user.redirectTo更新, 所以又立刻会跳转到’/geniusinfo’页面; 
+
+解决方法就是删除上述提到的两处使用authSuccess方法的地方, 直接在User组件中设置componentDidMount:
+
+修改component/user/user.js;
+……
+  componentDidMount(){
+    this.props.authSuccess({type:this.props.type, avatar:this.props.avatar})
+  }
+……
+
+<2>当用户通过注销回到login页面后点击注册按钮后无法跳转到register页面, 仍旧停留在login页面;
+
+原因是: 通过注销回到login页面时应用的state.user.redirectTo为’/login’, 所以需要对Register模块的路由判断条件做修改;
+
+修改register.js;
+……
+{this.props.redirectTo&&this.props.redirectTo!='/login'?<Redirect to={this.props.redirectTo} />:null}
+……
+
+<3>在’/me’页面直接刷新页面会报以下错误:
+
+
+![](./dev_memo_img/160.png)
+
+但是同样的’/msg’,’/boss’,’/genius’页面就不会有问题, 在没有找到问题之前, 只能做了如下修改, 使得’/me’页面不会被rc-queue-anim组件封装改造;
+
+修改dashboard.js;
+……
+    return (
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{navList.find(v=>v.path==pathname).title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+          {
+            page.path == '/me'? <Route path={page.path} component={page.component}/>: <Route key={page.path} path={page.path} component={page.component}/>
+          }
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    )
+
+……
+
+上例中, 当QueueAnim的子组件为User时就不给它添加key属性, 这样QueueAnim组件就不会去封装改造这个子组件了;
+
+
+后来发现了问题的原因:
+不能在QueueAnim组件中返回null, 由于之前在user.js的render方法最后存在: this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:null 这样的语句, 而由于User组件第一次被加载时不存在this.props.user和this.props.redirectTo属性, 所以最后会返回null, 于是就会报上面的错误, 解决方法:
+
+修改user.js;
+……
+this.props.redirectTo&&this.props.redirectTo=='/login'?<Redirect to={this.props.redirectTo} />:<div/>
+……
+
+
+(7)项目打包编译;
+
+$ npm run build
+
+![](./dev_memo_img/161.png)
+
+
+webpack会将开发代码进行编译, 打包, 压缩, 最后生成一个build文件夹, 其中包括了所有项目打包后的文件(包括图片等静态文件), 可以直接deploy到生产环境;
+
+查看在项目根目录下新生成的build文件夹结构;
+
+![](./dev_memo_img/162.png)
+
+补充:
+1.在MAC终端上使用tree命令显示文件夹结构;
+
+安装tree;
+$ brew install tree
+
+windows cmd中使用: sudo apt-get install tree
+
+![](./dev_memo_img/163.png)
+
+
+可以发现, 打包后的文件名中都带有hash值, 这是为了让上线的项目不会与之前项目的缓存冲突, 能够让用户第一时间获得更新后的内容;
+
+
+目前项目使用了webpack-dev-server提供的3000端口的服务器来放置开发环境的项目, 那么项目打包后我们这里将它移至之前专门用来管理API接口的端口为9093的自建express服务器中, 这样也就不需要代理了, 因为不会出现跨域问题了;
+
+
+(8)设置静态资源地址, 和服务器端地址过滤;
+
+修改server/server.js;
+……
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  return res.sendFile(path.resolve('build/index.html'))
+})
+console.log(path.resolve('build'))
+app.use('/',express.static(path.resolve('build')))
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+……
+
+上例中, 当进入项目的server目录执行node server后, 终端打印的path.resolve('build’)值为: 
+/Users/jiusong/mygit/Employment-Social-Networking-App/esna/server/build
+
+也就是说, path.resolve是以当前node启动线程所在路径做为参考来返回一个绝对路径的(并不会去查找路径, 仅仅是简单的拼接字符串), 那么由于目前build目处于项目的根目录下, 所以需要在项目根目录下启动server.js;
+
+修改package.json;
+……
+  "scripts": {
+    "start": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "nodemon server/server.js"
+  },
+……
+
+在项目根目录下执行:
+$ npm run server
+
+![](./dev_memo_img/164.png)
+
+
+上例中server.js中获取到了build文件夹的绝对路径;
+
+
+然后就可以通过9093端口来访问生产环境的项目了;
+
+![](./dev_memo_img/165.png)
+
+
+(9)项目上线;
+
+<1>购买域名;
+<2>DNS解析到服务器IP;
+<3>安装配置Nginx (更多关于Nginx的内容可以参考: ‘Page Dev helper’ 笔记中: ’94.Apache/Nginx/Tomcat;’ 的相关内容);
+<4>使用pm2来管理node进程;
+
+(或者使用免费云服务器(heroku)来装载项目)
+
+
+
+15.首屏服务器渲染;
+
+(1)在node环境中使用babel-node来支持jsx;
+
+$ npm install babel-cli --save
+
+
+修改package.json;
+……
+  "scripts": {
+    "start": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "NODE_ENV=test nodemon --exec babel-node server/server.js",
+    "server_bak": "nodemon server/server.js"
+  },
+……
+
+需要注意的是, NODE_ENV不要忘记指定, 如果没有指定会报错:
+Using `babel-preset-react-app` requires that you specify `NODE_ENV` or `BABEL_ENV` environment variables. Valid values are "development", "test", and "production".
+
+重新执行npm run server, 此时在server/server.js中使用之前无法编译的ES6代码, 比如:
+
+import express from ‘express’
+
+就能正常运行了;
+
+
+但是此时在server/server.js中仍旧不能执行jsx相关的代码, 解决方法是:
+
+复制package.json中babel的配置:
+
+  "babel": {
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "import",
+        {
+          "libraryName": "antd-mobile",
+          "style": "css"
+        }
+      ],
+      [
+        "transform-decorators-legacy"
+      ]
+    ]
+  },
+
+
+在项目根目录下创建.babelrc文件:
+
+{
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "import",
+        {
+          "libraryName": "antd-mobile",
+          "style": "css"
+        }
+      ],
+      [
+        "transform-decorators-legacy"
+      ]
+    ]
+  }
+
+显然babel-node是依靠.babelrc文件来读取babel配置的, 而webpack可以读取package.json中的babel参数;
+
+
+(2)使用renderToString方法做服务器端渲染;
+
+修改server.js;
+……
+import React from 'react'
+import {renderToString, renderToStaticMarkup} from 'react-dom/server'
+……
+function App(){
+  return <h2>test</h2>
+}
+console.log(renderToString(<App/>))
+
+上例中在控制台显示:
+<h2 data-reactroot="">test</h2>
+
+
+可以参考前文中介绍的: ‘服务器端渲染SSR(Server Side Render)’;
+https://reactjs.org/docs/react-dom-server.html (官网)
+
+
+在container/app文件夹中新建app.js;
+
+用来抽离index.js中ReactDom.render方法里<BrowserRouter>内的公共内容(而BrowserRouter组件在后端将被StaticRouter组件取代), 这些内容同时会被前/后端渲染用到;
+
+app.js;
+
+import React from 'react'
+import AuthRoute from '../../component/authroute/authroute'
+import {
+  Route, 
+  Switch
+} from 'react-router-dom'
+import Login from '../login/login'
+import Register from '../register/register'
+import BossInfo from '../bossinfo/bossinfo'
+import GeniusInfo from '../geniusinfo/geniusinfo'
+import Dashboard from '../../component/dashboard/dashboard' 
+import Chat from '../../component/chat/chat' 
+
+class App extends React.Component{
+
+  render(){
+    return (
+      <div>
+        <AuthRoute></AuthRoute>
+        <Switch>
+          <Route path='/bossinfo' component={BossInfo}></Route>
+          <Route path='/geniusinfo' component={GeniusInfo}></Route>
+          <Route path='/login' component={Login}></Route>
+          <Route path='/register' component={Register}></Route>
+          <Route path='/chat/:user' component={Chat}></Route>
+          <Route component={Dashboard}></Route>
+        </Switch>
+      </div>
+    )
+  }
+}
+
+export default App
+
+
+修改index.js;
+
+import React from 'react'
+import ReactDom from 'react-dom'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {BrowserRouter} from 'react-router-dom'
+
+import App from './container/app/app'
+import reducers from './reducer'
+import './config'
+import './index.css'
+
+const store = createStore(reducers, compose(
+  applyMiddleware(thunk),
+  window.devToolsExtension?window.devToolsExtension():f=>f
+))
+
+ReactDom.render(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <App></App>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+
+
+修改server.js;
+
+import express from 'express'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import model from './model'
+const Chat = model.getModel('chat')
+const User = model.getModel('user')
+import path from 'path'
+import React from 'react'
+import {createStore, applyMiddleware, compose} from 'redux'
+import thunk from 'redux-thunk'
+import {Provider} from 'react-redux'
+import {StaticRouter} from 'react-router-dom'
+import App from '../src/container/app/app'
+import {renderToString, renderToStaticMarkup} from 'react-dom/server'
+import reducers from '../src/reducer'
+
+const app = express();
+//work with express
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+
+io.on('connection', function(socket){
+  socket.on('sendmsg', function(data){
+    const {from, to, msg} = data
+    const chatid = [from, to].sort().join('_')
+    Chat.create({chatid, from, to, content:msg, create_time:new Date().getTime()}, function(err, doc){
+      // console.log(doc)
+      // console.log('///////////////')
+      // console.log(Object.assign({},doc))
+      // console.log('///////////////')
+      // console.log(Object.assign({},doc._doc))
+      
+      if(!err){
+        User.find({}, function(e,userdoc){
+          let users = {}
+          if(!e){
+            userdoc.forEach(v=>{
+              users[v._id] = {name:v.user, avatar:v.avatar}
+            })
+            delete doc._doc.__v
+            let data = {doc:doc._doc, users}
+            io.emit('recvmsg', Object.assign({},data))
+          }
+        })
+      }
+    })
+  })
+})
+
+const userRouter = require('./user')
+
+app.use(cookieParser())
+app.use(bodyParser.json())
+app.use('/user',userRouter)
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}
+  const markup = renderToString(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  return res.send(markup)
+})
+app.use('/',express.static(path.resolve('build')))
+
+server.listen(9093,function(){
+  console.log('Node app start at port 9093')
+})
+
+上例中将原本直接返回的index.html改为通过SSR渲染后的首屏页面字符串, 所以这里基本复制了index.js中的所有内容;
+
+
+(3)添加css-modules-require-hook和asset-require-hook辅助库来让后端也能将css文件和图片作为模块引入;
+
+上例在执行后会在后端控制台报错:
+
+![](./dev_memo_img/166.png)
+
+这是由于node环境中使用babel-node并不会像之前webpack那样处理以模块的形式直接引入css文件(当然引入图片模块也存在这样的问题, 之后会提到);
+需要安装一个辅助库:
+
+$ npm install css-modules-require-hook
+
+根据官方文档的指示:
+
+![](./dev_memo_img/167.png)
+
+在server.js中引入csshook:
+
+import csshook from 'css-modules-require-hook/preset'
+
+需要注意的是, 这里引入的是一个钩子模块, 所以需要放在import App模块之前, 确保在对App相关依赖模块做编译之前csshook已经生效了;
+
+并且新建一个cmrh.conf.js文件;
+
+module.exports = {
+  // Same scope name as in webpack build
+  generateScopedName: '[name]__[local]___[hash:base64:5]',
+}
+
+参考:
+https://github.com/css-modules/css-modules-require-hook (官方git)
+
+
+上例在执行后仍旧会在后端控制台报错:
+
+![](./dev_memo_img/168.png)
+
+这就是因为在node环境中使用babel-node并不会像之前webpack那样可以处理对图片的直接import;
+
+解决方法同样是需要依赖一个辅助库:
+
+$ npm install asset-require-hook —save
+
+根据官方文档的指示:
+
+![](./dev_memo_img/169.png)
+
+在server.js中引入assethook:
+
+import assethook from 'asset-require-hook'
+assethook(
+  {extensions:['png']}
+)
+
+
+需要特别注意的是, 这里引入的assethook是对使用require方法添加的hook, 所以需要修改项目中使用import方法引入的图片, 如:
+
+logo.js;
+……
+import logoImg from './job.png'
+import './logo.css'
+
+class Logo extends React.Component{
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={logoImg} alt=""/>
+      </div>
+    )
+  }
+}
+……
+
+修改为:
+……
+class Logo extends React.Component{
+  render(){
+    return (
+      <div className="logo-container">
+        <img src={require('./job.png')} alt=""/>
+      </div>
+    )
+  }
+}
+……
+
+但是这里存在一个问题, 如果首屏渲染了login/register页面, 那么logo图片无法显示, 原因是其img的src为类似: 886c2c0ad64c17d8682384f7d1cb902c.png 这样的字符串, 这个问题之后会解决;
+
+参考:
+https://github.com/aribouius/asset-require-hook (官方git)
+
+
+(4)完善首屏渲染的返回内容;
+
+上面由后端渲染后生成的页面字符串内容被放在了markup变量中, 但是其实我们是需要将它放在index.html中的root节点内的, 所以这里拷贝build/index.html中的内容到server.js中;
+
+修改server.js;
+……
+import staticPath from '../build/asset-manifest.json'
+……
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}
+  const markup = renderToString(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  const pageHtml = `<!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+                <meta name="theme-color" content="#000000">
+                <title>React App</title>
+                <link href="/${staticPath['main.css']}" rel="stylesheet">
+              </head>
+              <body>
+                <noscript>You need to enable JavaScript to run this app.</noscript>
+                <div id="root">${markup}</div>
+                <script type="text/javascript" src="/${staticPath['main.js']}"></script>
+              </body>
+            </html>`
+
+  return res.send(pageHtml)
+})
+……
+
+上例中, 通过直接引入asset-manifest.json文件中的内容来指定html页面中js/css文件的加载路径;
+需要注意的是, 由于pageHtml这个变量中保存的字符串之间有换行的情况, 所以只能使用``来包裹, 如果使用一般的引号’,”就会报错;
+
+
+(5)这里还可以利用首屏渲染在SEO方面的优势动态添加meta信息, 如:
+
+修改server.js;
+……
+  const seoDescription = {
+    '/msg':'esna聊天消息列表',
+    '/boss':'esna查看牛人列表页面',
+    '/genius':'esna查看genius列表页面',
+    '/me':'esna查看个人信息页面',
+    '/login':'esna登录页面',
+    '/register':'esna注册页面'
+  }
+……
+<meta name='description' content='${seoDescription[req.url]}'>
+……
+
+
+
+16.React16新特性;
+
+
+(1)新的virtual dom核心算法Fiber, 渲染速度更快; 
+
+(2)render方法可以直接返回数组和字符串而不需要在最外层包裹一个<div>;
+
+(3)Portals组件, 让React可以渲染在其root dom之外的元素, 比如弹窗有一个全局的透明遮盖层, 这个设置遮盖层的元素最好是直接放在body下最外层的位置, 那么此时就可以使用Portals组件来实现;
+
+(4)MIT协议, 变为完全开源了;
+
+(5)错误处理机制, 为组件新增了一个生命周期函数: componentDidCatch, 如果组件在渲染时发生错误, 那么可以通过这个函数捕获错误;
+
+目前如果直接访问项目的根目录或者其它不存在的路径, 如: localhost:9093 会报错:
+Cannot read property 'title' of undefined
+
+这是因为在dashboard.js中声明了: page = navList.find(v=>v.path == pathname), 而navList中显然没有保存’/‘或其他不存在的路径, 所以page为undefined...
+
+先通过错误处理机制制定统一的错误页面:
+
+在app文件夹中添加一张error.png图片;
+
+修改app.js;
+……
+class App extends React.Component{
+  constructor(props){
+    super(props)
+    this.state={
+      hasError:false
+    }
+  }
+  componentDidCatch(err,info){
+    this.setState({
+      hasError: true
+    })
+  }
+  render(){
+    return this.state.hasError?<img className='error-container' src={require('./error.png')} alt='error'/>
+    :(
+      <div>
+        <AuthRoute></AuthRoute>
+        <Switch>
+          <Route path='/bossinfo' component={BossInfo}></Route>
+          <Route path='/geniusinfo' component={GeniusInfo}></Route>
+          <Route path='/login' component={Login}></Route>
+          <Route path='/register' component={Register}></Route>
+          <Route path='/chat/:user' component={Chat}></Route>
+          <Route component={Dashboard}></Route>
+        </Switch>
+      </div>
+    )
+  }
+}
+
+上例中在app.js这个应用的主入口中做了统一的错误处理;
+
+
+修改index.css;
+……
+/*for error img*/
+.error-container{
+  display:block;
+  margin:50px auto;
+}
+
+![](./dev_memo_img/170.png)
+
+
+然后来修复这个问题:
+
+修改dashboard.js;
+……
+    const page = navList.find(v=>v.path == pathname)
+
+    return page?(
+      <div>
+        <NavBar className='fixed-header' mode='dark'>{page.title}</NavBar>
+        <div style={{marginTop:45}}>
+        <QueueAnim type='scaleX'>
+            <Route key={page.path} path={page.path} component={page.component}/>
+        </QueueAnim>
+        </div>
+        <NavLinkBar data={navList}></NavLinkBar>
+      </div>
+    ):<Redirect to='/me'></Redirect>
+……
+
+修改后在用户访问一个应用不存在的路径时会被跳转到’/me’页面;
+
+
+(6)服务器端渲染的新API(renderToNodeStream)能够直接渲染返回Node节点流, 提升3倍左右的效率; 
+对于服务器端渲染的react项目, 还提供了一个hydrate方法来代替render;
+
+这里使用renderToNodeStream代替renderToString来完成SSR;
+
+修改server.js;
+……
+app.use(function(req,res,next){
+  if(req.url.startsWith('/user/') || req.url.startsWith('/static/')){
+    return next()
+  }
+  
+  const store = createStore(reducers, compose(
+    applyMiddleware(thunk)
+  ))
+
+  let context = {}  
+  const seoDescription = {
+    '/msg':'esna聊天消息列表',
+    '/boss':'esna查看牛人列表页面',
+    '/genius':'esna查看genius列表页面',
+    '/me':'esna查看个人信息页面',
+    '/login':'esna登录页面',
+    '/register':'esna注册页面'
+  }
+
+  res.write(`<!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+                <meta name="theme-color" content="#000000">
+                <title>React App</title>
+                <link href="/${staticPath['main.css']}" rel="stylesheet">
+                <meta name='description' content='${seoDescription[req.url]}'>
+              </head>
+              <body>
+                <noscript>You need to enable JavaScript to run this app.</noscript>
+                <div id="root">`)
+
+  const markupStream = renderToNodeStream(
+    (<Provider store={store}>
+      <StaticRouter
+        location={req.url}
+        context={context}
+      >
+        <App></App>
+      </StaticRouter>
+    </Provider>)
+  )
+
+  markupStream.pipe(res,{end:false})
+  markupStream.on('end', ()=>{
+    res.write(`</div>
+                <script type="text/javascript" src="/${staticPath['main.js']}"></script>
+              </body>
+            </html>`
+    )
+    res.end()
+  })
+})
+……
+
+上例中使用了renderToNodeStream来将jsx元素解析为可读的字节流对象, 通过res.write()方法先将nodestream之前的静态html内容写入res, 然后使用res.pipe方法开始向res写入字节流(其第二个参数{end:false}告诉pipe方法当字节流写入完毕后不要关闭通道, 因为后面还有内容需要写入), 最后将nodestream之后的静态html内容写入res, 接着结束写入完成响应; 
+
+
+修改index.js;
+……
+ReactDom.hydrate(
+  (<Provider store={store}>
+    <BrowserRouter>
+      <App></App>
+    </BrowserRouter>
+  </Provider>),
+  document.getElementById('root')
+)
+……
+
+上例中将ReactDom.render方法改为了react16提供的ReactDom.hydrate, 对于使用SSR首屏渲染的应用来说, ReactDom.hydrate的效率更高;
+
+hydrate()
+Same as render(), but is used to hydrate a container whose HTML contents were rendered by ReactDOMServer. React will attempt to attach event listeners to the existing markup
+
+参考:
+https://reactjs.org/docs/react-dom.html#hydrate
+
+
+
+后续bug修复;
+
+(1)目前在chat页面当消息过多时会出现:
+
+![](./dev_memo_img/171.png)
+
+![](./dev_memo_img/172.png)
+
+上面有两个问题:
+<1>消息输入栏没有固定在底部;
+<2>顶部导航栏没有固定在顶部;
+
+解决办法:
+
+修改chat.js;
+……
+<NavBar 
+          className='fixed-header'
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+……
+
+修改index.js;
+……
+.fixed-header.am-navbar{
+  position: fixed;
+  top:0;
+  width:100%;
+  z-index: 1;
+}
+……
+.stick-footer{
+  z-index: 10;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+……
+
+
+![](./dev_memo_img/173.png)
+
+
+
+(2)在dashboard相关页面(genius/boss/msg)有如下问题:
+
+![](./dev_memo_img/174.png)
+
+上面的问题是底部的NavLinkBar组件被覆盖了(因为当前设置了底部导航栏的z-index为-1);
+
+解决方法:
+
+修改navlinkbar.js;
+……
+    return (
+      <div className='fixed-bottom'>
+      <TabBar>
+……
+
+
+修改index.css.js;
+……
+.fixed-bottom{
+  position: fixed;
+  bottom:0;
+  width:100%;
+}
+……
+
+![](./dev_memo_img/175.png)
+
+修改后发现还有一个底部列表信息显示不全的问题, 解决方法:
+
+修改dashboard.js;
+……
+<div style={{marginTop:45, marginBottom: 50}}>
+……
+
+![](./dev_memo_img/176.png)
+
+
+同样的, 在chat页面中消息列表也存在会被覆盖第一条和最后一条消息的情况(如果消息列表够长), 解决方法:
+
+修改chat.js;
+……
+</NavBar>
+        <QueueAnim style={{marginTop:45, marginBottom:45}} type='scale' delay={100}>
+……
+
+
+目前还存在一个问题待修复, 聊天页面中如果一条消息过长会被省略显示, 根据antd-mobile的文档, List.Item的wrap属性可以解决这个问题:
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  wrap
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+![](./dev_memo_img/177.png)
+
+
+但是由于不加空格的连续字符会被认定为一个字符串, 默认情况下不会换行, 所以会出现下面的情况(其实是由于使用了wrap属性的List.Item组件默认使用了word-break:normal/word-wrap:normal 这样的样式);
+
+![](./dev_memo_img/178.png)
+
+解决办法:
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+![](./dev_memo_img/179.png)
+
+上例中添加的样式不仅能够让连续的长字符串自动换行, 并且不会打断英文单词换行:
+
+![](./dev_memo_img/180.png)
+
+
+不过很显然还存在在一个问题, 那就是无论是用户接收到的消息还是主动发送的消息, 都希望文字左对齐, 解决方法:
+
+修改index.css;
+……
+#chat-page .chat-me .am-list-content{
+  padding-right: 15px;
+  /*text-align: right;*/
+}
+……
+
+![](./dev_memo_img/181.png)
+
+
+关于word-break:break-all和word-wrap:break-word;可以参考’Page Dev helper’笔记中: ‘182.word-break:break-all和word-wrap:break-word;’相关内容;
+
+
+(3)聊天页面对话记录框样式优化;
+
+修改chat.js;
+……
+return v.from == userid?(
+              <List key={v._id}>
+                <Item
+                  thumb={avatar}
+                  className='chat-who'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            ):(
+              <List key={v._id}>
+                <Item 
+                  extra={<img src={avatar} alt=''/>}
+                  className='chat-me'
+                  wrap
+                  style={{wordWrap:'break-word'}}
+                >{v.content}</Item>
+              </List>
+            )
+……
+
+
+修改index.css;
+……
+#chat-page .chat-me .am-list-content{
+  margin: 10px 3% 10px 20%;
+    padding: 7px 30px 7px 16px;
+    background: mintcream;
+  /*text-align: right;*/
+}
+#chat-page .chat-who .am-list-content{
+  padding: 7px 30px 7px 20px;
+  margin: 10px 20% 10px 1%;
+  background: aliceblue;
+}
+……
+
+![](./dev_memo_img/182.png)
+
+
+(4)当用户在聊天页面收到新消息时应该将页面滚动条自动拉到最底处以便查看最新的消息, 当用户光标focus在输入框时也应该有这样的动作;
+
+修改chat.js;
+……
+  componentDidUpdate(){
+    setTimeout(()=>{
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+    },200)
+  }
+  whenFocusOnInput(){
+    setTimeout(()=>{
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+    },0)
+  }
+……
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              onFocus = {
+                v=>{
+                this.whenFocusOnInput()
+              }}
+……
+
+
+(5)login页面的错误信息在跳转到register页面后仍旧会保留的问题;
+
+![](./dev_memo_img/183.png)
+
+
+解决方法:
+
+修改user.redux.js;
+……
+const CLEAN_MSG = 'CLEAN_MSG'
+……
+    case CLEAN_MSG:
+      return {...state, msg:''}
+……
+export function cleanMsg(){
+  return {type:CLEAN_MSG}
+}
+……
+
+
+修改login.js;
+……
+  register(){
+    this.props.history.push('/register')
+    this.props.cleanMsg()
+  }
+……
+
+上例中新增了一个用来清除redux的state.user.msg内容的方法;
+
+
+
+将项目部署到heroku云服务器上;
+
+(1)在master上创建一个online branch用来放部署到heroku云服务器的内容;
+
+
+(2)修改server.js;
+……
+  // 监听端口，启动程序
+  const port = process.env.PORT
+  app.listen(port, function () {
+    console.log(`Node app listening on port ${port}`)
+  })
+
+
+(3)修改package.json;
+……
+  "scripts": {
+    "start_bak": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "NODE_ENV=test nodemon --exec babel-node server/server.js",
+    "server_bak": "nodemon server/server.js",
+    "start": "NODE_ENV=production pm2 start server/server.js --name 'esna'",
+    "heroku": "NODE_ENV=production babel-node server/server.js"
+  },
+……
+
+
+(4)在mLab中创建一个新的数据库:songjiuchongesna;
+
+![](./dev_memo_img/184.png)
+
+https://mlab.com/databases/songjiuchongesna
+
+
+在users一栏中创建当前数据库的用户名/密码:
+
+![](./dev_memo_img/185.png)
+
+mongo ds111430.mlab.com:11430/songjiuchongesna -u jiusong -p 123456
+
+
+修改server/model.js;
+……
+const DB_URL = process.env.MONGOLAB_URI || 'mongodb://jiusong:123456@ds111430.mlab.com:11430/songjiuchongesna'
+……
+
+
+设置heroku的MONGOLAB_URI参数:
+$ heroku config:set MONGOLAB_URI=mongodb://jiusong:123456@ds111430.mlab.com:11430/songjiuchongesna
+
+
+(5)更改客户端对socket.io-client的使用方式;
+
+修改chat.redux.js;
+……
+import io from 'socket.io-client'
+let socket
+……
+export function recvMsg(){
+  return (dispatch,getState)=>{
+    if(!socket){
+      socket = io()
+    }
+    socket.on('recvmsg', function(data){
+      const userid = getState().user._id
+      if(data.doc.from==userid || data.doc.to==userid)
+        dispatch(msgRecv(data.doc, data.users, userid))
+    })
+  }
+}
+
+export function sendMsg({from, to, msg}){
+  return dispatch=>{
+    if(!socket){
+      socket = io()
+    }
+    socket.emit('sendmsg', {from, to, msg})
+  }
+}
+……
+
+上例中, 客户端的socket没有传入任何地址参数, 因为默认使用同域地址;
+
+需要注意的是, 上面之所以没有直接在开头使用const socket = io()指定socket对象, 而是在之后需要连接时再指定, 原因是如果直接在模块中指定socket=io()会报错:
+if (null == uri) uri = loc.protocol + '//' + loc.host;
+Cannot read property 'protocol' of undefined
+
+报错的原因可能是在这种react项目中, socket.io-client需要在component mount了之后才能读取到浏览器相关数据然后连接服务器, 也就是说socket.io-client可能是需要页面加载完成(DOMContentLoaded)后或者说需要在任务队列的回调函数中(更接近浏览器的全局作用域)而不是在模块中执行才能正确读取到loc;
+
+参考:
+https://stackoverflow.com/questions/43740883/cannot-use-socketio-without-passing-server-uri-to-io-on-the-client-side
+
+
+(6)更改server端对socket.io的使用方式;
+
+修改server.js;
+……
+const app = express();
+
+// 监听端口，启动程序
+const port = process.env.PORT
+const server = app.listen(port, function () {
+    console.log(`Node app listening on port ${port}`)
+})
+
+const io = require('socket.io').listen(server)
+
+io.on('connection', function(socket){
+……
+
+参考:
+https://stackoverflow.com/questions/41943929/cannot-get-socket-io-eio-3transport-pollingt-ldmmkyz/41945228
+https://stackoverflow.com/questions/27393705/socketio-get-http-localhost3000-socket-io-eio-3transport-pollingt-1418187
+
+
+(7)在根目录下新建 Procfile 文件, 添加如下内容:
+web: npm run heroku
+
+
+(8)创建一个新的heroku库用来放esna项目;
+
+$ heroku apps:create songjiuchongesna
+
+![](./dev_memo_img/186.png)
+
+
+(9)绑定heroku远程库;
+$ git remote add heroku https://git.heroku.com/songjiuchongesna.git
+
+
+(10)将本地分支online push到heroku 的master中:
+$ git push heroku online:master
+
+需要注意的是, 如果在项目根目录中(.git所在的文件夹)不存在package.json会报错:
+Node.js: package.json not found in application root
+
+解决方法是将package.json放在与.git同级的文件夹中;
+
+
+补充:
+1.之前使用的: NODE_ENV=test nodemon --exec babel-node server/server.js 是属于nodemon命令的用法, 直接使用node命令的用法是:
+NODE_ENV=test babel-node server/server.js
+
+2.如果babel-cli不是在global安装的话, 不会为babel-node自动配置环境变量, 所以如果在项目根目录下直接使用:
+NODE_ENV=production babel-node server/server.js
+
+会发生找不到命令的情况, 需要在项目根目录中使用类似:
+NODE_ENV=production ./node_modules/babel-cli/bin/babel-node.js server/server.js
+这样的命令;
+
+但是如果是在package.json的scripts属性中配置了类似:
+"heroku": "NODE_ENV=production babel-node server/server.js"
+这样的命令, 那么就不存在全局环境变量的问题, 因为node会根据当前项目配置的环境变量自动查找babel-node命令对应的脚本内容;
+
+3.heroku支持在package.json的scripts中指定babel-node命令(因为它会先安装package.json中的所有依赖包), 所以这里可以直接指定:
+"heroku": "NODE_ENV=production babel-node server/server.js"
+
+还有一种更好的做法是, 在本地先使用:
+$ babel example.js --out-file compiled.js
+
+将server.js先编译为可以被node命令直接执行的代码, 然后就无需通过babel-node命令来编译执行server.js了;
+
+4.如果在.babelrc中配置:
+"presets": [
+      "react-app"
+    ],
+
+后使用babel-node命令执行server.js文件时还会报类似: 无法执行import语句这样的错误, 那么就需要安装: babel-preset-env
+
+$ npm install babel-preset-env —save
+
+然后修改.babelrc:
+"presets": [
+      "env",
+      "react-app"
+    ],
+……
+
+
+
+//TODO;
+1.聊天页面输入框的键盘模式(包括换行功能)
+
+
+
