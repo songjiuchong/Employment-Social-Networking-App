@@ -1,5 +1,9 @@
 # Employment-Social-Networking-App
 
+
+This branch is created from master branch for the purpose of deploying the project to heroku cloud server(using mLab cloud mongoDB), so the configs set here are only for matching the requirements of deployment.
+
+
 tech-stack for developing Employment-Social-Networking-App(check package.json for details):
 
 
@@ -25,6 +29,15 @@ reselect, immutable...
 
 SSR:
 react-dom/server(renderToNodeStream,hydrate), css-modules-require-hook, asset-require-hook...
+
+
+For locally run of the project:
+npm run server   (for start port:9093 server, this is the server run by server/server.js)
+npm start   (for start port:3000 server, this is a webpack-dev-server)
+npm build   (webpack-dev-server will help build static bundle files for prod env)
+
+you can visit: localhost:3000 (to run project in dev env, in this case, port:9093 server is only for holding APIs and websocket communications)
+you can visit: localhost:9093 (to run project in dev env, in this case, port:3000 is no need anymore as port:9093 is now holding everything)
 
 
 Using mLab and heroku as prod env settings.
