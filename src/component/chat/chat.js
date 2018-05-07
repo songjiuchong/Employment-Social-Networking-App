@@ -28,6 +28,8 @@ class Chat extends React.Component{
 			this.props.recvMsg()
 			this.props.listenerSet()
 		}
+		document.getElementsByClassName('fixed-header')[0].addEventListener('touchmove', function(e){e.preventDefault();}, false);
+		document.getElementsByClassName('stick-footer')[0].addEventListener('touchmove', function(e){e.preventDefault();}, false);
 		setTimeout(()=>{
 			// document.documentElement.scrollTop = 10000 //for chrome
 			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
@@ -46,7 +48,7 @@ class Chat extends React.Component{
 			// document.documentElement.scrollTop = 10000 //for chrome
 			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
-		},200)
+		},100)
 	}
 	whenFocusOnInput(){
 		setTimeout(()=>{
