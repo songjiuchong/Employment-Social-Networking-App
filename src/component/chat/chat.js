@@ -28,6 +28,11 @@ class Chat extends React.Component{
 			this.props.recvMsg()
 			this.props.listenerSet()
 		}
+		setTimeout(()=>{
+			// document.documentElement.scrollTop = 10000 //for chrome
+			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+		},1500)
 	}
 	componentWillUnmount(){
 		const to = this.props.match.params.user
@@ -38,14 +43,16 @@ class Chat extends React.Component{
 	}
 	componentDidUpdate(){
 		setTimeout(()=>{
-			document.documentElement.scrollTop = 10000 //for chrome
-			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			// document.documentElement.scrollTop = 10000 //for chrome
+			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},200)
 	}
 	whenFocusOnInput(){
 		setTimeout(()=>{
-			document.documentElement.scrollTop = 10000 //for chrome
-			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			// document.documentElement.scrollTop = 10000 //for chrome
+			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},0)
 	}
 	//修正antd-mobile的Grid组件Carousel的问题
@@ -91,7 +98,7 @@ class Chat extends React.Component{
 				>
 					{users[userid].name}
 				</NavBar>
-				<QueueAnim style={{marginTop:45, marginBottom:45}} type='scale' delay={100}>
+				<QueueAnim className='chatContent' type='scale' delay={100}>
 					{chatmsgs.map(v=>{
 						const avatar = require(`../img/${users[v.from].avatar}.png`)
 						return v.from == userid?(
