@@ -48,6 +48,19 @@
 	width: 100%;
 }
 
+/*fix IOS fixed header/footer lose efficacy when input elements are used issue in chat page*/
+.chatContent {
+	/*绝对定位，进行内部滚动*/
+	/*margin-top:45; 
+	margin-bottom:45;*/
+	width: 100%;
+	position: absolute;
+	top:45px;
+	bottom:45px;
+	overflow-y: scroll;
+	-webkit-overflow-scrolling: touch;
+} 
+
 /*for ReactCSSTransitionGroup*/
 .esna-enter {
   opacity: 0.01;
