@@ -50,8 +50,10 @@ class Chat extends React.Component{
 		},this.chatmsgsLength*100)
 		//监听由聚焦输入框后移动端软键盘的弹出;
 		setTimeout(()=>{
-			document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
-			document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+			if(document.getElementsByClassName('stick-footer')[0]){
+				document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
+				document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+			}
 		},500)
 	}
 	componentWillUnmount(){
