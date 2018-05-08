@@ -45,8 +45,10 @@ class Chat extends React.Component{
 				document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},this.chatmsgsLength*100)
 		//监听由聚焦输入框后移动端软键盘的弹出;
-		document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
-		document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+		setTimeout(()=>{
+			document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
+			document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+		},100)
 	}
 	componentWillUnmount(){
 		const to = this.props.match.params.user
@@ -55,8 +57,10 @@ class Chat extends React.Component{
 		const chatDraft = this.state.text
 		this.props.saveDraftMsg(to, chatDraft)
 		//移除监听由聚焦输入框后移动端软键盘的弹出;
-		document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
-		document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
+		setTimeout(()=>{
+			document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
+			document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
+		},100)
 	}
 	componentDidUpdate(){
 		//如果是首次带有聊天数据的update(this.chatmsgsLength>0), 那么要等待所有聊天消息显示完成后再调整滚动条, 如果是接收新消息的更新则等待时间固定;
