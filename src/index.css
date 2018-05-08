@@ -28,6 +28,7 @@
 	margin: 10px 3% 10px 20%;
     padding: 7px 30px 7px 16px;
     background: mintcream;
+    min-height: 20px;
 	/*text-align: right;*/
 }
 #chat-page .chat-who .am-list-content{

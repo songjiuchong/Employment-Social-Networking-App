@@ -28,8 +28,12 @@ class Chat extends React.Component{
 			this.state.text = msgDraft
 	}
 	updateDimensions1(){
-		document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
-		document.getElementsByClassName('stick-footer')[0].scrollIntoViewIfNeeded()
+		setTimeout(()=>{
+			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
+			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
+			document.documentElement.scrollTop = 10000 //for chrome
+			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		},300)
 	}
 	updateDimensions2(){
 		document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
@@ -48,7 +52,7 @@ class Chat extends React.Component{
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
 			document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
-		},100)
+		},500)
 	}
 	componentWillUnmount(){
 		const to = this.props.match.params.user
