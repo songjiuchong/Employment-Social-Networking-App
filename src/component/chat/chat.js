@@ -57,10 +57,8 @@ class Chat extends React.Component{
 		const chatDraft = this.state.text
 		this.props.saveDraftMsg(to, chatDraft)
 		//移除监听由聚焦输入框后移动端软键盘的弹出;
-		setTimeout(()=>{
-			document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
-			document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
-		},100)
+		document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
+		document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
 	}
 	componentDidUpdate(){
 		//如果是首次带有聊天数据的update(this.chatmsgsLength>0), 那么要等待所有聊天消息显示完成后再调整滚动条, 如果是接收新消息的更新则等待时间固定;
