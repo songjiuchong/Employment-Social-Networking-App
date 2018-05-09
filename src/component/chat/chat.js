@@ -41,7 +41,7 @@ class Chat extends React.Component{
 		},300)
 	}
 	updateDimensions2(thisComponent){
-		setTimeout(()=>{
+		setTimeout(()=>{ //这里使用setTimout是因为blur事件会先于click事件触发, 在改变了元素位置后就无法触发接下去的相关click事件了, 所以需要让click事件先触发;
 			document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
 			document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
 			document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
