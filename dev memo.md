@@ -10653,8 +10653,523 @@ $ npm install babel-preset-env —save
 
 
 
-//TODO;
-1.聊天页面输入框的键盘模式(包括换行功能)
+后续改进:
+
+1.为了配合online branch中esna项目server.js文件中通过PORT变量来读取当前服务器监听端口的行为, 这里对package.json中的scripts属性进行修改:
+……
+  "scripts": {
+    "start_bak": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom",
+    "server": "PORT=9093 NODE_ENV=test nodemon --exec babel-node server/server.js",
+    "server_bak": "nodemon server/server.js",
+    "start": "PORT=9093 NODE_ENV=production pm2 start server/server.js --name 'esna'",
+    "heroku": "NODE_ENV=production babel-node server/server.js"
+  },
+……
+
+上例中通过在执行server.js文件时传入PORT=9093参数来正确设置服务器监听的端口:
+const port = process.env.PORT
+const server = app.listen(port, function () {
+    console.log(`Node app listening on port ${port}`)
+})
+
+
+修改server/model.js;
+……
+const DB_URL = process.env.PORT==9093?'mongodb://127.0.0.1:27017/esna':(process.env.MONGOLAB_URI || 'mongodb://jiusong:123456@ds111430.mlab.com:11430/songjiuchongesna')
+mongoose.connect(DB_URL)
+……
+
+由于目前本地连接mLab远程云数据库存在问题, 所以这里就将其改为访问本地数据库;
+
+2.在移动设备中使用聊天页面输入框时会自动调出移动端默认的软键盘, 此时软键盘会覆盖页面底部的一些内容(包括fixed输入框), 并且使原本设置为fixed的header/footer位置固定失效; 
+
+移动端业务开发，iOS 下经常会有 fixed 元素和输入框(input 元素)同时存在的情况;  但是 fixed 元素在有软键盘唤起的情况下，会出现许多莫名其妙的问题,
+参考:
+http://efe.baidu.com/blog/mobile-fixed-layout/?utm_source=tuicool&utm_medium=referral
+
+根据上述的改进方法, 修改:
+
+chat.js;
+……
+componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+    document.getElementsByClassName('fixed-header')[0].addEventListener('touchmove', function(e){e.preventDefault();}, false);
+    document.getElementsByClassName('stick-footer')[0].addEventListener('touchmove', function(e){e.preventDefault();}, false);
+    setTimeout(()=>{
+      document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },1500)
+  }
+componentDidUpdate(){
+    setTimeout(()=>{
+      document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },100)
+  }
+whenFocusOnInput(){
+    setTimeout(()=>{
+      document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },0)
+  }
+……
+<QueueAnim className='chatContent' type='scale' delay={100}>
+……
+
+
+index.css;
+……
+/*fix IOS fixed header/footer lose efficacy when input elements are used issue in chat page*/
+.chatContent {
+  /*绝对定位，进行内部滚动*/
+  /*margin-top:45; 
+  margin-bottom:45;*/
+  width: 100%;
+  position: absolute;
+  top:45px;
+  bottom:45px;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+} 
+……
+
+上面的修改会让原本在chat页面整体上出现的纵向滚动条变为只在.chatContent元素中出现, 但是并没有修复移动端软键盘覆盖页面底部内容的问题, 并且虽然滚动条移到了.chatContent元素中, 在软键盘出现的情况下页面做为一个整体还是可以被纵向滚动, 所以fixed header/footer位置仍旧无法一直固定;
+
+很显然在不同的移动设备上, 软键盘弹出(大多数情况下与随之造成的屏幕resize有关)引发的与页面滚动条和fixed样式有关的问题没有一个统一的解决方案, 这里尝试使用iScroll.js来解决这个的问题;
+
+安装iscroll:
+$ npm install iscroll —save 
+$ npm install react-iscroll —save 
+
+参考:
+https://github.com/cubiq/iscroll (iscroll官方github)
+http://wiki.jikexueyuan.com/project/iscroll-5/gettingstart.html (中文API)
+https://davidwalsh.name/iphone-scrollbars (css when use iscroll)
+https://github.com/schovi/react-iscroll (react-iscroll 官方github)
+
+
+由于在项目中使用了SSR, 所以如果直接在项目模块中使用:
+import iScroll from 'iscroll'
+import ReactIScroll from ‘react-iscroll’
+
+会报错:
+/Users/jiusong/mygit/Employment-Social-Networking-App/esna/node_modules/iscroll/build/iscroll.js:2091
+})(window, document, Math);
+ReferenceError: window is not defined
+
+所以需要使用process对象来判断当前是否处于node环境中;
+测试后发现, 无论是iscroll还是react-iscroll, 这两个第三方库都不能在此react项目中实现对.chatContent元素滚动条的单独设置, 但是这里仍旧在代码中保留了对这两个库的使用, 只作为一个参考, 另外对index.css的设置也还原为了不使用iscroll库时的状态;
+
+这里顺便修复了一个功能:
+之前在chat页面加载或者update后会将页面滚动条自动设置为滚动到最底端以便查看最新的消息, 但是由于对当前页面消息数量的不确定和QueueAnim这个动画组件对消息元素的延迟显示动画效果, 对设置滚动条的延迟时间也只能使用一个大致的固定值, 这里将修复这个问题, 会根据页面当前将要渲染的消息元素个数来决定设置滚动条的最终延迟时间;
+
+修改chat.js;
+
+import React from 'react'
+import {List, InputItem, NavBar, Icon, Grid} from 'antd-mobile'
+import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
+import {getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg} from '../../redux/chat.redux'
+import {getChatId} from '../../util'
+import QueueAnim from 'rc-queue-anim'
+
+//SSR中跳过对iScroll的设置, 因为会出现window not defined的错误;
+const ReactIScroll = process?null:require('react-iscroll')
+const iScroll = process?null:require('iscroll')
+
+@connect(
+  state=>state,
+  {getMsgList, sendMsg, recvMsg, listenerSet, readMsg, saveDraftMsg}
+)
+class Chat extends React.Component{
+  constructor(props){
+    super(props)
+    this.state = {
+      text:'',
+      showEmoji:false
+    }
+    this.chatmsgsLength = 0 //此聊天页面中所有需要显示的聊天记录的条数, 用来计算重新调整页面滚动条的等待时间;
+    this.alreadyUpdated = false
+    const msgDraft = this.props.chat.chatdraft[this.props.match.params.user]
+    if(msgDraft)
+      this.state.text = msgDraft
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+    setTimeout(()=>{
+      if(document.getElementsByClassName('chatContent')[0])
+        document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },this.chatmsgsLength*100)
+  }
+  componentWillUnmount(){
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+    //聊天输入框未发送消息草稿保存
+    const chatDraft = this.state.text
+    this.props.saveDraftMsg(to, chatDraft)
+  }
+  componentDidUpdate(){
+    //如果是首次带有聊天数据的update(this.chatmsgsLength>0), 那么要等待所有聊天消息显示完成后再调整滚动条, 如果是接收新消息的更新则等待时间固定;
+    if(this.alreadyUpdated){
+      setTimeout(()=>{
+        if(document.getElementsByClassName('chatContent')[0])
+          document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+      },200)
+    }else if(this.chatmsgsLength>0){
+      setTimeout(()=>{
+        if(document.getElementsByClassName('chatContent')[0])
+          document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+      },this.chatmsgsLength*100)
+      this.alreadyUpdated = true
+    }
+  }
+  whenFocusOnInput(){
+    setTimeout(()=>{
+      // document.documentElement.scrollTop = 10000 //for chrome
+      // document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+      document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },0)
+  }
+  //修正antd-mobile的Grid组件Carousel的问题
+  fixCarousel(){
+    setTimeout(function(){
+      window.dispatchEvent(new Event('resize'))
+    },0)
+  }
+  handleSubmit(){
+    const from = this.props.user._id
+    const to = this.props.match.params.user
+    const msg = this.state.text
+    this.props.sendMsg({from, to, msg})
+    this.setState({text:''})
+  }
+  render(){
+
+    const emoji = '😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 🙂 🤗 🤔 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 🙁 😖 😞 😟 😤 😢 😭'
+      .split(' ').filter(v=>v).map(v=>({text:v}))
+
+    const userid = this.props.match.params.user
+    const Item = List.Item
+    const users = this.props.chat.users
+
+    if(!users[userid]){
+      return null
+    }
+
+    const chatid = getChatId(userid, this.props.user._id)
+    const chatmsgs = this.props.chat.chatmsg.filter(v=>v.chatid == chatid)
+    this.chatmsgsLength = chatmsgs.length
+    const redirect = this.props.user.redirectTo
+    return (
+      
+      <div id='chat-page'>
+        {redirect&&redirect.indexOf('info')!=-1?<Redirect to={redirect}/>:null}
+        <NavBar 
+          className='fixed-header'
+          mode='dark'
+          icon={<Icon type='left'/>}
+          onLeftClick={()=>{
+            this.props.history.goBack()
+          }}
+        >
+          {users[userid].name}
+        </NavBar>
+        {process?
+          <QueueAnim className='chatContent' type='scale' delay={100}>
+              {chatmsgs.map(v=>{
+                const avatar = require(`../img/${users[v.from].avatar}.png`)
+                return v.from == userid?(
+                  <List key={v._id}>
+                    <Item
+                      thumb={avatar}
+                      className='chat-who'
+                      wrap
+                      style={{wordWrap:'break-word'}}
+                    >{v.content}</Item>
+                  </List>
+                ):(
+                  <List key={v._id}>
+                    <Item 
+                      extra={<img src={avatar} alt=''/>}
+                      className='chat-me'
+                      wrap
+                      style={{wordWrap:'break-word'}}
+                    >{v.content}</Item>
+                  </List>
+                )
+              })}
+          </QueueAnim>:
+          <ReactIScroll iScroll={iScroll}>
+            <QueueAnim className='chatContent' type='scale' delay={100}>
+                {chatmsgs.map(v=>{
+                  const avatar = require(`../img/${users[v.from].avatar}.png`)
+                  return v.from == userid?(
+                    <List key={v._id}>
+                      <Item
+                        thumb={avatar}
+                        className='chat-who'
+                        wrap
+                        style={{wordWrap:'break-word'}}
+                      >{v.content}</Item>
+                    </List>
+                  ):(
+                    <List key={v._id}>
+                      <Item 
+                        extra={<img src={avatar} alt=''/>}
+                        className='chat-me'
+                        wrap
+                        style={{wordWrap:'break-word'}}
+                      >{v.content}</Item>
+                    </List>
+                  )
+                })}
+            </QueueAnim>
+          </ReactIScroll>
+        }
+        <div className='stick-footer'>
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              onFocus = {
+                v=>{
+                this.whenFocusOnInput()
+              }}
+              extra={[<span 
+                    key='1'
+                    style={{marginRight:15}}
+                    onClick={()=>{
+                      this.setState({showEmoji:!this.state.showEmoji})
+                      this.fixCarousel()
+                    }}
+                    role='img'
+                    aria-label='emoji'
+                  >😀</span>,
+                  <span key='2' onClick={()=>this.handleSubmit()}>发送</span>
+              ]}
+            ></InputItem>
+          </List>
+          {this.state.showEmoji?
+            <Grid
+            data={emoji}
+            columnNum={9}
+            carouselMaxRow={4}
+            isCarousel={true}
+            onClick={el=>{
+              this.setState(
+                {text:this.state.text+el.text}
+              )
+            }}
+          />:null}
+        </div>
+      </div>
+    )
+  }
+}
+
+export default Chat
+
+
+接着尝试对输入框focus事件监听来改变其position的值, 并对其使用scrollIntoView()方法, 但是在移动端还是没有完全修复之前提到的问题;
+
+修改chat.js;
+……
+updateDimensions1(){
+    setTimeout(()=>{
+      document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
+      document.getElementsByClassName('stick-footer')[0].scrollIntoView()
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+    },300)
+  }
+  updateDimensions2(){
+    document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+    setTimeout(()=>{
+      if(document.getElementsByClassName('chatContent')[0])
+        document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },this.chatmsgsLength*100)
+    //监听由聚焦输入框后移动端软键盘的弹出;
+    setTimeout(()=>{
+      if(document.getElementsByClassName('stick-footer')[0]){
+        document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
+        document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+      }
+    },500)
+  }
+  componentWillUnmount(){
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+    //聊天输入框未发送消息草稿保存
+    const chatDraft = this.state.text
+    this.props.saveDraftMsg(to, chatDraft)
+    //移除监听由聚焦输入框后移动端软键盘的弹出;
+    document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
+    document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
+  }
+……
+
+上例中需要注意的是, 使用addEventListener方法绑定focus/blur方法必须传入第三个参数为true, 因为这两种监听不支持冒泡, 需要通过捕获阶段来触发, 另外在执行
+removeEventListener方法时同样需要传入第三个参数为true; 
+支持冒泡的事件是focusin和focusout; 对于同时支持这4个事件的浏览器，事件执行顺序为focusin > focus > focusout > blur ; 
+
+参考:
+https://www.cnblogs.com/wangyihong/p/7514304.html (移动端软键盘监听（弹出，收起），及影响定位布局的问题)
+https://segmentfault.com/a/1190000003942014 (focus /focusin /focusout /blur 事件区别)
+
+
+研究后, 发现了这个移动端软键盘弹出引发显示问题的一种修复方法:
+在移动端, 当用户focus在输入框时, 对.stick-footer和.chatContent的位置进行调整, 使得软键盘的高度不会覆盖到这两个元素(这里暂时只能保证iPhone7p中适配), 将.chatContent元素滚动条设置到了最底端(保证用户可以查看当前最新的消息), 并且禁用了页面中的touchmove事件, 因为软键盘的弹出会导致整个页面在header/footer无法固定的情况下可以上下滚动(对整个页面使用overflow:hidden, position:fixed等方式无效), 所以只能通过禁用touchmove事件来防止页面的滚动; 而由于在调整了软键盘弹出时元素的位置的情况下header/footer都能够显示在正确的位置, 所以这里禁用了touchmove事件后用户体验得到了较大提升;
+当然在输入框blur时, 由于软键盘会自动收起, 所以这里会将之前调整了位置的.stick-footer和.chatContent元素还原, 并且停止对touchmove事件的禁用;
+
+修改chat.js;
+……
+  preHandler(e){
+    e.preventDefault()
+  }
+  updateDimensions1(thisComponent){
+    setTimeout(()=>{
+      document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
+      document.getElementsByClassName('stick-footer')[0].scrollIntoView()
+      document.getElementsByClassName('stick-footer')[0].style.bottom = '258px'
+      document.getElementsByClassName('chatContent')[0].style.bottom = '300px'
+      document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+      document.addEventListener('touchmove', thisComponent.preHandler, false)
+    },300)
+  }
+  updateDimensions2(thisComponent){
+    setTimeout(()=>{ //这里使用setTimout是因为
+      document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+      document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
+      document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+      document.removeEventListener('touchmove', thisComponent.preHandler, false)
+    },200)
+  }
+  componentDidMount(){
+    this.props.getMsgList()
+    if(!this.props.chat.listenerset){
+      this.props.recvMsg()
+      this.props.listenerSet()
+    }
+    setTimeout(()=>{
+      if(document.getElementsByClassName('chatContent')[0])
+        document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },this.chatmsgsLength*100)
+    //移动端时, 监听由聚焦输入框后引发的软键盘弹出, 然后进行一些对应的处理;
+    if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
+      let timer = setInterval(()=>{
+        if(document.getElementsByClassName('stick-footer')[0]){
+          document.getElementsByClassName('stick-footer')[0].addEventListener("focus", ()=>{this.updateDimensions1(this)},true)
+          document.getElementsByClassName('stick-footer')[0].addEventListener("blur", ()=>{this.updateDimensions2(this)},true)
+          clearInterval(timer)
+        }
+      },200)
+    }
+  }
+  componentWillUnmount(){
+    const to = this.props.match.params.user
+    this.props.readMsg(to)
+    //聊天输入框未发送消息草稿保存
+    const chatDraft = this.state.text
+    this.props.saveDraftMsg(to, chatDraft)
+    //移除监听聚焦输入框后移动端软键盘的弹出;
+    document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
+    document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
+  }
+……
+  whenFocusOnInput(){
+    setTimeout(()=>{
+      // document.documentElement.scrollTop = 10000 //for chrome
+      // document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+      document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
+    },0)
+    if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
+      if(this.state.showEmoji)
+        document.getElementsByClassName('emojiBtn')[0].click()
+    }
+  }
+……
+    <div className='stick-footer'>
+          <List>
+            <InputItem
+              placeholder='请输入'
+              value={this.state.text}
+              onChange={v=>{
+                this.setState({text:v})
+              }}
+              onFocus = {
+                v=>{
+                this.whenFocusOnInput()
+              }}
+              extra={[<span 
+                    key='1'
+                    style={{marginRight:15}}
+                    className = 'emojiBtn'
+                    onClick={()=>{
+                      if(!this.state.showEmoji){
+                        setTimeout(()=>{ //这里使用setTimeout是因为之前在updateDimensions2这个onblur事件的执行函数中对.chatContent元素设置了bottom为45px, 这里需要保证在其之后执行;
+                          document.getElementsByClassName('chatContent')[0].style.bottom = '223px'
+                          document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+                        },201)
+                      }else{
+                        document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+                      }
+                      this.setState({showEmoji:!this.state.showEmoji})
+                      this.fixCarousel()
+                    }}
+                    role='img'
+                    aria-label='emoji'
+                  >😀</span>,
+                  <span key='2' onClick={()=>this.handleSubmit()}>发送</span>
+              ]}
+            ></InputItem>
+          </List>
+……
+
+需要注意的是, 上例中在updateDimensions2方法中使用了setTimeout是因为当用户点击发送或者emoji按钮时会先触发blur事件(因为click事件要经历mousedown和mouseup才会触发, 而blur事件相当于在mousedown阶段就会触发), 而blur事件的处理函数会对相关元素的位置进行调整, 所以就无法触发接下来的点击事件了, 
+解决方法:
+(1)如果click事件比blur事件早触发就没有问题了, 所以可以给blur事件加一个时间（延迟触发）,如：setTimeout(fn, 250);
+(2)添加mouseover，mouseout ; 前者删除blur事件，后者添加回来; 鼠标在click执行之前先执行了mouseover事件, 所以就不会触发blur事件了, 点击完成后, mouseout再把blur添加回来就行了; 相当于不让点击指定按钮这个动作触发blur;
+
+参考:
+https://www.zhihu.com/question/29623049 (如何解决blur事件和click事件的冲突)
+
+上例中还解决了当emoji表情选项框弹出后会覆盖部分聊天消息内容的问题, 这里使用了和之前处理输入框focus事件类似的解决方法(通过this.state.showEmoji判断表情选择框是否弹出, 如果弹出就强制调整.chatContent元素的位置), 并且当用户focus输入框时会自动将已弹出的表情选择框关闭, 当表情选择框被关闭后恢复.chatContent元素的位置;
+
+
+其它参考:
+https://blog.csdn.net/peter_qyq/article/details/53034467 (使用navigator.userAgent 来判断浏览器类型)
+http://www.caihaibo.cn/devpro/webfront/3938.html (禁用与启用手机端页面的 touchmove 事件)
+
+
+![](./dev_memo_img/187.png)
+
+![](./dev_memo_img/188.png)
+
+![](./dev_memo_img/189.png)
+
+
+
+heroku:
+https://songjiuchongesna.herokuapp.com/login
+
+
 
 
 

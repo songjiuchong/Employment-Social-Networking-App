@@ -78,5 +78,9 @@ User who is a 'Boss' can only chat with other 'Genius' users, and will be able t
 
 ![](./README_img/13.png)
 
+![](./README_img/14.png)
 
+![](./README_img/15.png)
+
+![](./README_img/16.png)
 
