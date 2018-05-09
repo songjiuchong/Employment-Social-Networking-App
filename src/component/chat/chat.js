@@ -219,8 +219,10 @@ class Chat extends React.Component{
 										className = 'emojiBtn'
 										onClick={()=>{
 											if(!this.state.showEmoji){
-												document.getElementsByClassName('chatContent')[0].style.bottom = '223px'
-												document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+												setTimeout(()=>{ //这里使用setTimeout是因为之前在updateDimensions2这个onblur事件的执行函数中对.chatContent元素设置了bottom为45px, 这里需要保证在其之后执行;
+													document.getElementsByClassName('chatContent')[0].style.bottom = '223px'
+													document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+												},201)
 											}else{
 												document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
 											}
