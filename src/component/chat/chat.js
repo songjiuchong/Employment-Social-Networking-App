@@ -27,16 +27,26 @@ class Chat extends React.Component{
 		if(msgDraft)
 			this.state.text = msgDraft
 	}
-	updateDimensions1(){
+	preHandler(e){
+		e.preventDefault()
+	}
+	updateDimensions1(thisComponent){
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
 			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
-			document.documentElement.scrollTop = 10000 //for chrome
-			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			document.getElementsByClassName('stick-footer')[0].style.bottom = '258px'
+			document.getElementsByClassName('chatContent')[0].style.bottom = '300px'
+			document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+			document.addEventListener('touchmove', thisComponent.preHandler, false)
 		},300)
 	}
-	updateDimensions2(){
-		document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+	updateDimensions2(thisComponent){
+		setTimeout(()=>{ //这里使用setTimout是因为blur事件会先于click事件触发, 在改变了元素位置后就无法触发接下去的相关click事件了, 所以需要让click事件先触发;
+			document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+			document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
+			document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+			document.removeEventListener('touchmove', thisComponent.preHandler, false)
+		},200)
 	}
 	componentDidMount(){
 		this.props.getMsgList()
@@ -48,13 +58,16 @@ class Chat extends React.Component{
 			if(document.getElementsByClassName('chatContent')[0])
 				document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},this.chatmsgsLength*100)
-		//监听由聚焦输入框后移动端软键盘的弹出;
-		setTimeout(()=>{
-			if(document.getElementsByClassName('stick-footer')[0]){
-				document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
-				document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
-			}
-		},500)
+		//移动端时, 监听由聚焦输入框后引发的软键盘弹出, 然后进行一些对应的处理;
+		if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
+			let timer = setInterval(()=>{
+				if(document.getElementsByClassName('stick-footer')[0]){
+					document.getElementsByClassName('stick-footer')[0].addEventListener("focus", ()=>{this.updateDimensions1(this)},true)
+					document.getElementsByClassName('stick-footer')[0].addEventListener("blur", ()=>{this.updateDimensions2(this)},true)
+					clearInterval(timer)
+				}
+			},200)
+		}
 	}
 	componentWillUnmount(){
 		const to = this.props.match.params.user
@@ -62,7 +75,7 @@ class Chat extends React.Component{
 		//聊天输入框未发送消息草稿保存
 		const chatDraft = this.state.text
 		this.props.saveDraftMsg(to, chatDraft)
-		//移除监听由聚焦输入框后移动端软键盘的弹出;
+		//移除监听聚焦输入框后移动端软键盘的弹出;
 		document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
 		document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
 	}
@@ -87,6 +100,10 @@ class Chat extends React.Component{
 			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},0)
+		if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
+			if(this.state.showEmoji)
+				document.getElementsByClassName('emojiBtn')[0].click()
+		}
 	}
 	//修正antd-mobile的Grid组件Carousel的问题
 	fixCarousel(){
@@ -199,7 +216,16 @@ class Chat extends React.Component{
 							extra={[<span 
 										key='1'
 										style={{marginRight:15}}
+										className = 'emojiBtn'
 										onClick={()=>{
+											if(!this.state.showEmoji){
+												setTimeout(()=>{ //这里使用setTimeout是因为之前在updateDimensions2这个onblur事件的执行函数中对.chatContent元素设置了bottom为45px, 这里需要保证在其之后执行;
+													document.getElementsByClassName('chatContent')[0].style.bottom = '223px'
+													document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+												},201)
+											}else{
+												document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+											}
 											this.setState({showEmoji:!this.state.showEmoji})
 											this.fixCarousel()
 										}}
