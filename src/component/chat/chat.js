@@ -56,13 +56,15 @@ class Chat extends React.Component{
 			if(document.getElementsByClassName('chatContent')[0])
 				document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},this.chatmsgsLength*100)
-		//监听由聚焦输入框后移动端软键盘的弹出;
-		setTimeout(()=>{
-			if(document.getElementsByClassName('stick-footer')[0]){
-				document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
-				document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
-			}
-		},500)
+		//移动端时, 监听由聚焦输入框后引发的软键盘弹出, 然后进行一些对应的处理;
+		if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
+			setTimeout(()=>{
+				if(document.getElementsByClassName('stick-footer')[0]){
+					document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
+					document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+				}
+			},300)
+		}
 	}
 	componentWillUnmount(){
 		const to = this.props.match.params.user
@@ -70,7 +72,7 @@ class Chat extends React.Component{
 		//聊天输入框未发送消息草稿保存
 		const chatDraft = this.state.text
 		this.props.saveDraftMsg(to, chatDraft)
-		//移除监听由聚焦输入框后移动端软键盘的弹出;
+		//移除监听聚焦输入框后移动端软键盘的弹出;
 		document.getElementsByClassName('stick-footer')[0].removeEventListener("focus", this.updateDimensions1,true)
 		document.getElementsByClassName('stick-footer')[0].removeEventListener("blur", this.updateDimensions2,true)
 	}
