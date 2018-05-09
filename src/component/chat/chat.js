@@ -30,21 +30,23 @@ class Chat extends React.Component{
 	preHandler(e){
 		e.preventDefault()
 	}
-	updateDimensions1(){
+	updateDimensions1(that){
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
 			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
 			document.getElementsByClassName('stick-footer')[0].style.bottom = '258px'
 			document.getElementsByClassName('chatContent')[0].style.bottom = '300px'
 			document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
-			document.addEventListener('touchmove', this.preHandler, false)
+			console.log(that)
+			document.addEventListener('touchmove', that.preHandler, false)
 		},300)
 	}
-	updateDimensions2(){
+	updateDimensions2(that){
 		document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
 		document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
-		document.getElementsByClassName('chatContent')[0].style.bottom = '0'
-		document.removeEventListener('touchmove', this.preHandler, false)
+		document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+		console.log(that)
+		document.removeEventListener('touchmove', that.preHandler, false)
 	}
 	componentDidMount(){
 		this.props.getMsgList()
@@ -61,8 +63,8 @@ class Chat extends React.Component{
 			let timer = setInterval(()=>{
 				console.log(1)
 				if(document.getElementsByClassName('stick-footer')[0]){
-					document.getElementsByClassName('stick-footer')[0].addEventListener("focus", this.updateDimensions1,true)
-					document.getElementsByClassName('stick-footer')[0].addEventListener("blur", this.updateDimensions2,true)
+					document.getElementsByClassName('stick-footer')[0].addEventListener("focus", ()=>{this.updateDimensions1(this)},true)
+					document.getElementsByClassName('stick-footer')[0].addEventListener("blur", ()=>{this.updateDimensions2(this)},true)
 					clearInterval(timer)
 				}
 			},200)
