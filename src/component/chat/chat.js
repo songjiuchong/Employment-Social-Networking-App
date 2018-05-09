@@ -215,6 +215,7 @@ class Chat extends React.Component{
 										onClick={()=>{
 											this.setState({showEmoji:!this.state.showEmoji})
 											this.fixCarousel()
+											document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
 										}}
 										role='img'
 										aria-label='emoji'
