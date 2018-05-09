@@ -21,7 +21,7 @@
 	padding:45px 5px;
 }
 
-#chat-page .chat-me, #chat-page .chat-who{
+#chat-page .chat-me .am-list-content, #chat-page .chat-who .am-list-content{
 	min-height: 20px;	
 }
 #chat-page .chat-me .am-list-extra{
