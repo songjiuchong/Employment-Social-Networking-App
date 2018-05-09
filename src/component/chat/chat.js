@@ -27,16 +27,24 @@ class Chat extends React.Component{
 		if(msgDraft)
 			this.state.text = msgDraft
 	}
+	preHandler(e){
+		e.preventDefault()
+	}
 	updateDimensions1(){
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
 			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
-			document.documentElement.scrollTop = 10000 //for chrome
-			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+			document.getElementsByClassName('stick-footer')[0].style.bottom = '258px'
+			document.getElementsByClassName('chatContent')[0].style.bottom = '300px'
+			document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
+			document.addEventListener('touchmove', this.preHandler, false)
 		},300)
 	}
 	updateDimensions2(){
 		document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+		document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
+		document.getElementsByClassName('chatContent')[0].style.bottom = '0'
+		document.removeEventListener('touchmove', this.preHandler, false)
 	}
 	componentDidMount(){
 		this.props.getMsgList()
