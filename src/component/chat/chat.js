@@ -30,23 +30,23 @@ class Chat extends React.Component{
 	preHandler(e){
 		e.preventDefault()
 	}
-	updateDimensions1(that){
+	updateDimensions1(thisComponent){
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
 			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
 			document.getElementsByClassName('stick-footer')[0].style.bottom = '258px'
 			document.getElementsByClassName('chatContent')[0].style.bottom = '300px'
 			document.getElementsByClassName('chatContent')[0].scrollTo(0,10000)
-			console.log(that)
-			document.addEventListener('touchmove', that.preHandler, false)
+			document.addEventListener('touchmove', thisComponent.preHandler, false)
 		},300)
 	}
-	updateDimensions2(that){
-		document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
-		document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
-		document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
-		console.log(that)
-		document.removeEventListener('touchmove', that.preHandler, false)
+	updateDimensions2(thisComponent){
+		setTimeout(()=>{
+			document.getElementsByClassName('stick-footer')[0].style.position = 'fixed'
+			document.getElementsByClassName('stick-footer')[0].style.bottom = '0'
+			document.getElementsByClassName('chatContent')[0].style.bottom = '45px'
+			document.removeEventListener('touchmove', thisComponent.preHandler, false)
+		},200)
 	}
 	componentDidMount(){
 		this.props.getMsgList()
@@ -61,7 +61,6 @@ class Chat extends React.Component{
 		//移动端时, 监听由聚焦输入框后引发的软键盘弹出, 然后进行一些对应的处理;
 		if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
 			let timer = setInterval(()=>{
-				console.log(1)
 				if(document.getElementsByClassName('stick-footer')[0]){
 					document.getElementsByClassName('stick-footer')[0].addEventListener("focus", ()=>{this.updateDimensions1(this)},true)
 					document.getElementsByClassName('stick-footer')[0].addEventListener("blur", ()=>{this.updateDimensions2(this)},true)
