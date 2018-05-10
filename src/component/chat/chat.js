@@ -29,6 +29,7 @@ class Chat extends React.Component{
 	}
 	preHandler(e){
 		e.preventDefault()
+		document.getElementsByClassName('stick-footer')[0].blur()
 	}
 	updateDimensions1(thisComponent){
 		setTimeout(()=>{
