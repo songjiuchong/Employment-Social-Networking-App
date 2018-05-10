@@ -28,9 +28,8 @@ class Chat extends React.Component{
 			this.state.text = msgDraft
 	}
 	preHandler(e){
-		document.getElementsByClassName('stick-footer')[0].blur()
 		e.preventDefault()
-		console.log(e)
+		document.getElementsByClassName('stick-footer')[0].getElementsByTagName('input')[0].blur()
 	}
 	updateDimensions1(thisComponent){
 		setTimeout(()=>{
