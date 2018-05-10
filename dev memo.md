@@ -11051,6 +11051,8 @@ https://segmentfault.com/a/1190000003942014 (focus /focusin /focusout /blur 事�
 当然在输入框blur时, 由于软键盘会自动收起, 所以这里会将之前调整了位置的.stick-footer和.chatContent元素还原, 并且停止对touchmove事件的禁用;
 需要注意的是, 这里模仿了微信中软键盘弹出后用户滑动页面时的效果: 一旦有滑动的动作就让输入框blur(滑动动作本身不会生效); 还需要注意的是, 这里必须对input元素本身而非其父元素执行blur()方法才会生效;
 
+需要注意的是, 这里对.stick-footer元素focus和blur事件的监听(updateDimensions1,updateDimensions2这两个执行函数)仅针对于移动端, 在PC端只通过了InputItem组件自身的onFocus方法指定了输入框focus事件的监听函数: whenFocusOnInput 来调整.chatContent元素的滚动轴位置; 
+
 修改chat.js;
 ……
   preHandler(e){
