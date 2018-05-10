@@ -10738,6 +10738,18 @@ index.css;
 
 上面的修改会让原本在chat页面整体上出现的纵向滚动条变为只在.chatContent元素中出现, 但是并没有修复移动端软键盘覆盖页面底部内容的问题, 并且虽然滚动条移到了.chatContent元素中, 在软键盘出现的情况下页面做为一个整体还是可以被纵向滚动, 所以fixed header/footer位置仍旧无法一直固定;
 
+上面由于对.chatContent元素单独设置了overflow-y: scroll, 所以需要添加-webkit-overflow-scrolling: touch 属性才能让ios移动端设备保持滑动的’惯性’; 
+
+-webkit-overflow-scrolling: auto  |  touch;  //这个属性控制元素在移动设备上是否使用滚动回弹效果;
+auto： 普通滚动，当手指从触摸屏上移开，滚动立即停止
+touch：滚动回弹效果，当手指从触摸屏上移开，内容会保持一段时间的滚动效果，继续滚动的速度和持续的时间和滚动手势的强烈程度成正比。同时也会创建一个新的堆栈上下文;
+
+需要注意的是, 不存在单独的 overflow-scrolling 属性;
+
+关于-webkit-overflow-scrolling属性与ios滚动的效果问题, 可以参考:
+https://www.cnblogs.com/wuyinghong/p/7450041.html?utm_source=debugrun&utm_medium=referral
+https://www.cnblogs.com/xiahj/p/8036419.html
+
 很显然在不同的移动设备上, 软键盘弹出(大多数情况下与随之造成的屏幕resize有关)引发的与页面滚动条和fixed样式有关的问题没有一个统一的解决方案, 这里尝试使用iScroll.js来解决这个的问题;
 
 安装iscroll:
@@ -10747,7 +10759,7 @@ $ npm install react-iscroll —save
 参考:
 https://github.com/cubiq/iscroll (iscroll官方github)
 http://wiki.jikexueyuan.com/project/iscroll-5/gettingstart.html (中文API)
-https://davidwalsh.name/iphone-scrollbars (css when use iscroll)
+https://davidwalsh.name/iphone-scrollbars (css sets when use iscroll)
 https://github.com/schovi/react-iscroll (react-iscroll 官方github)
 
 
@@ -11046,6 +11058,8 @@ https://segmentfault.com/a/1190000003942014 (focus /focusin /focusout /blur 事�
     document.getElementsByClassName('stick-footer')[0].getElementsByTagName('input')[0].blur()
   }
   updateDimensions1(thisComponent){
+    if(this.state.showEmoji)
+        document.getElementsByClassName('emojiBtn')[0].click()
     setTimeout(()=>{
       document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
       document.getElementsByClassName('stick-footer')[0].scrollIntoView()
@@ -11101,10 +11115,6 @@ https://segmentfault.com/a/1190000003942014 (focus /focusin /focusout /blur 事�
       // document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
       document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
     },0)
-    if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
-      if(this.state.showEmoji)
-        document.getElementsByClassName('emojiBtn')[0].click()
-    }
   }
 ……
     <div className='stick-footer'>
@@ -11152,11 +11162,18 @@ https://segmentfault.com/a/1190000003942014 (focus /focusin /focusout /blur 事�
 参考:
 https://www.zhihu.com/question/29623049 (如何解决blur事件和click事件的冲突)
 
-上例中还解决了当emoji表情选项框弹出后会覆盖部分聊天消息内容的问题, 这里使用了和之前处理输入框focus事件类似的解决方法(通过this.state.showEmoji判断表情选择框是否弹出, 如果弹出就强制调整.chatContent元素的位置), 并且当用户focus输入框时会自动将已弹出的表情选择框关闭, 当表情选择框被关闭后恢复.chatContent元素的位置;
+
+上例中还解决了当emoji表情选项框弹出后会覆盖部分聊天消息内容的问题, 这里使用了和之前处理输入框focus事件类似的解决方法通过this.state.showEmoji判断表情选择框是否弹出, 如果弹出就强制调整.chatContent元素的位置, 当用户将表情选择框关闭后会恢复.chatContent元素的位置; 
+并且当用户focus输入框时会自动将已弹出的表情选择框关闭, 这是为了避免移动端软键盘与表情选择框同时出现的情况(因为用户体验会受影响);
+由于当用户打开表情选择框的同时会触发blur事件(也就是说, 这种情况下是不会出现软键盘与表情选择框同时出现的情况的), 所以需要对其引发的位置调整设置延迟以达到先让blur事件执行函数先执行(将.stick-footer和.chatContent元素位置调整完之后), 再将.chatContent元素重新调整位置的目的;
+
+上述设计达到的效果是: 表情选择框在打开的状态下输入框一定不会有聚焦, 在输入框有聚焦的情况下表情选择框一定是关闭的;
+
+需要注意的是, 在某个元素上手动执行.click()方法是不会触发设置在其它元素上的blur事件的, 手动触发的元素交互事件都是相对独立的, 所以不会造成连锁反应;
 
 
 其它参考:
-https://blog.csdn.net/peter_qyq/article/details/53034467 (使用navigator.userAgent 来判断浏览器类型)
+https://blog.csdn.net/peter_qyq/article/details/53034467 (使用navigator.userAgent来判断PC/移动端和浏览器类型)
 http://www.caihaibo.cn/devpro/webfront/3938.html (禁用与启用手机端页面的 touchmove 事件)
 
 

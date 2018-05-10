@@ -32,6 +32,8 @@ class Chat extends React.Component{
 		document.getElementsByClassName('stick-footer')[0].getElementsByTagName('input')[0].blur()
 	}
 	updateDimensions1(thisComponent){
+		if(this.state.showEmoji)
+				document.getElementsByClassName('emojiBtn')[0].click()
 		setTimeout(()=>{
 			document.getElementsByClassName('stick-footer')[0].style.position = 'absolute'
 			document.getElementsByClassName('stick-footer')[0].scrollIntoView()
@@ -101,10 +103,6 @@ class Chat extends React.Component{
 			// document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 			document.getElementsByClassName('chatContent')[0].scrollTop = 10000 //for both chrome&safari
 		},0)
-		if(navigator.userAgent.indexOf("Android")>0 || navigator.userAgent.indexOf("iPhone")>0 || navigator.userAgent.indexOf("iPad")>0){
-			if(this.state.showEmoji)
-				document.getElementsByClassName('emojiBtn')[0].click()
-		}
 	}
 	//修正antd-mobile的Grid组件Carousel的问题
 	fixCarousel(){
