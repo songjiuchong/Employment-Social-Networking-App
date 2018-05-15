@@ -11192,5 +11192,76 @@ https://songjiuchongesna.herokuapp.com/login
 
 
 
+关于react native/react 中组件的ref属性;
+
+ref是react native中组件的一个特殊属性, 可以理解为当组建被渲染后指向这个定义了ref属性组件本身的一个引用; 所以通过ref属性可以获取这个组件已经创建的实例;
+
+例子1：
+......
+<div>
+<Button onClick={()=>{
+this.setState({refState:this.refs.reftest.state})
+}}>
+获取RefTest组建的state
+</Button>
+<RefTest
+ref='reftest'
+/>
+{this.state.refState}
+</div>
+......
+
+需要注意的是, 上例中这种指定组件的ref属性为一个字符串的方式之后可能会被废弃, 所以尽量使用react官方推荐的回调函数的形式(例子2);
+
+
+例子2：
+......
+<div>
+<Button onClick={()=>{
+this.setState({refState:this.reftest})
+}}>
+获取RefTest组建的state
+</Button>
+<RefTest
+ref={reftest=>this.reftest=reftest.state}
+/>
+{this.state.refState}
+</div>
+......
+
+上例中, ref={reftest=>this.reftest=reftest.state} 这样的指定方式是正确的(虽然不是最优形式), 但是点击button按钮后会报错:
+Cannot read property 'state' of null
+原因之后会分析;
+
+在react中有三种情况会触发一个组件ref属性设置的回调函数:
+<1>组件装载后, 回调函数被立即执行, 回调函数的参数为该组件的具体实例; 
+<2>组件卸载后; 回调函数会被立即执行, 此时回调函数参数为null, 这是为了防止内存泄漏;
+<3>ref改变后; 回调函数会被执行两次, 第一次传递给回调函数的参数为null(这一步是在clean up旧的ref属性), 第二次将传递组件的具体实例给回调函数(这一步是在set up更新后的ref属性); 
+
+如果不想让react在每次组件更新时以这样的方式执行两遍ref属性对应的回调函数(这也是例子2中点击按钮后会报错的原因), 那么就尽量不要给ref属性设置: 行内函数, 箭头函数, 或者虽然将ref指向了一个在组件class中声明的函数但是通过声明行内函数, 如: this.functionName.bind(this)这样的形式绑定了this, 因为以上的这几种指定方式每次都会返回一个全新的函数给ref属性, 所以正确的方式是在组件类中指定回调函数并且在constructor中调用绑定this, 这样的话react就会在每次组件update时认为ref属性没有改变就不会再次执行回调函数了;
+
+
+react官方对ref属性设置的声明:
+
+Caveats(警告) with callback refs
+If the ref callback is defined as an inline function, it will get called twice during updates, first with null and then again with the DOM element. This is because a new instance of the function is created with each render, so React needs to clear the old ref and set up the new one. You can avoid this by defining the ref callback as a bound method on the class, but note that it shouldn’t matter in most cases
+
+https://reactjs.org/docs/refs-and-the-dom.html#caveats-with-callback-refs 
+
+
+参考:
+https://blog.csdn.net/liangklfang/article/details/72858295 (重要, react中ref属性的使用)
+https://segmentfault.com/q/1010000011734384 (update设置了ref属性的组件会执行两次回调函数, 并且第一次传递给回调函数的参数为null的问题)
+
+
+实际上可以为一个普通html元素或者一个react组件添加ref属性, 但是不能对一个无状态组件(函数式组件)设置ref属性(传入回调函数的参数为null), 因为无状态组件是没有实例的;
+对于普通的html元素而言ref传递给其设置的回调函数的参数为这个DOM元素本身, 对于react组件而言参数是这个组件的实例;
+另外, 不管ref设置的值是回调函数还是字符串, 都可以通过ReactDOM.findDOMNode(ref)来获取组件挂载后真正的dom节点; 
+
+需要注意的是, ref从一定程度上增加了组件之间的耦合性, 所以如果可以用props来处理的情况尽量不要用ref来处理; 
+在使用ref时不用担心会导致内存泄露的问题, react会自动在组件卸载时将ref属性的内容销毁;
+
+
+更多关于react native相关的内容可以参考: '关于移动端App 与 React Native;'笔记;
 
 
