@@ -25,6 +25,14 @@ class Login extends React.Component{
 	handleLogin(){
 		this.props.login(this.props.state)
 	}
+	
+	componentDidMount(){
+    	document.getElementsByTagName('body')[0].style.backgroundColor = 'black'
+    }
+    componentWillUnmount(){
+    	document.getElementsByTagName('body')[0].style.backgroundColor = '#0000000f'
+    }
+
 	render(){
 		return (
 			<div>

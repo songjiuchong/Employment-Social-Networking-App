@@ -48,7 +48,7 @@ class User extends React.Component{
 					title={this.props.user}
 					message={this.props.type=='boss' ? this.props.company:null}
 				/>
-				<List renderHeader={()=>'简介'}>
+				<List renderHeader={()=>'个人简介'}>
 					<List.Item
 						multipleLine
 					>

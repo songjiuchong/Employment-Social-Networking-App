@@ -18,10 +18,16 @@ class Register extends React.Component{
 	}
 	componentDidMount(){
 		this.props.handleChange('type','genius')
+		document.getElementsByTagName('body')[0].style.backgroundColor = 'black'
 	}
 	handleRegister(){
 		this.props.register(this.props.state)
 	}
+
+    componentWillUnmount(){
+    	document.getElementsByTagName('body')[0].style.backgroundColor = '#0000000f'
+    }
+
 	render(){
 		const RadioItem = Radio.RadioItem
 		return (

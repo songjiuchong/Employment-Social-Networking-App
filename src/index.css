@@ -1,9 +1,27 @@
-
+body {
+	background-color: #0000000f;
+}
+.logo-container img{
+	width:80%;
+}
+.am-tab-bar-bar{
+	background-color: #faf6f5f2;
+}
+.am-list-header{
+	color: #000000;
+    font-size: 15px;
+    font-weight: bold;
+}
+.am-tab-bar-tab-title{
+	color: black;
+}
 .error-msg{
 	color:#f50;
 	padding-left: 10px;
 }
-
+.am-navbar{
+	background-color: #cd3b0c;
+}
 .fixed-header.am-navbar{
 	position: fixed;
 	top:0;
