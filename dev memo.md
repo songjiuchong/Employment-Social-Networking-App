@@ -11192,6 +11192,96 @@ https://songjiuchongesna.herokuapp.com/login
 
 
 
+试图自行解决:
+SSR首屏渲染, login/register页面logo无法显示问题;
+
+由于这个问题只在使用了SSR时才会出现, 所以可以认定是server.js在使用renderToNodeStream解析项目首页时在处理, 如:
+<img src={require('./job.png')} alt=""/>
+
+这样使用require解析某个图片文件路径时与不使用SSR直接由webpack来加载模块时行为不一致所造成的;
+
+
+![](./dev_memo_img/190.png)
+
+![](./dev_memo_img/191.png)
+
+通过上图可以发现:
+
+node.js默认使用require加载某个图片文件路径的解析方法会返回一个类似上例中第一张图中img元素src指定的图片路径, 因为此时server.js的执行是不经过webpack的, 所以不会使用webpack中设置的对组件加载的配置, 而在项目的config/webpack.config.dev.js和config/webpack.config.prod.js中设置了:
+
+     {
+            exclude: [/\.(js|jsx|mjs)$/, /\.html$/, /\.json$/],
+            loader: require.resolve('file-loader'),
+            options: {
+              name: 'static/media/[name].[hash:8].[ext]',
+            },
+          },
+
+所以在通过webpack编译打包后的文件中会指定类似上例中第二张图中img元素src指定的图片路径;
+
+那么解决方法就是让server.js在使用renderToNodeStream方法render首页信息时也去使用类似webpack中设置的对加载图片文件的相关规则;
+
+关于webpack引入图片作为模块的规则可以参考 ‘webpack note’笔记中: ‘6.loader;’的’(3)Image loader;’ 相关内容;
+
+
+通过研究后发现有两种解决办法:
+
+(1)在login/register首页加载后让logo组件update一次, 也就说虽然首页加载时img元素的src还是无效的, 但是由于logo组件需要update, 那么就会去使用bundle js中的内容重新渲染logo组件, 那么此时src就是有效的了; 不过显然这种方式不是最好的解决方法;
+
+(2)目前react在server端进行SSR时, 使用renderToString/renderToNodeStream 方法加载相应模块并生成首页页面的过程使用的是当前执行server.js的node环境, 也就是说, 如果这里执行server.js使用的命令为:
+PORT=9093 NODE_ENV=test nodemon --exec babel-node server/server.js
+
+那么server.js就会通过.babelrc中的配置去加载模块, 同样renderToString/renderToNodeStream 方法也会使用相同的配置去生成react首页页面的内容, 那么由于login/register页面中的logo组件的require方法需要webpack中设置的file-loader的支持, 而这里执行server.js不会去读取webpack的设置, 所以只能通过配置babel 然后使用babel-node执行server.js来达到这个目的, 那么如何在babel中配置file-loader呢?
+这里找到了一个babel的插件可以满足这个需求:
+https://github.com/sheerun/babel-plugin-file-loader (github)
+https://www.npmjs.com/package/babel-plugin-file-loader (npm)
+
+这个babel插件的官方描述是:
+Like webpack's file-loader, but on server side. Allows for production-grade require('./file.png')
+
+
+安装babel-plugin-file-loader;
+
+$ npm install babel-plugin-file-loader --save
+
+
+修改.babelrc;
+
+{
+    "presets": [
+      "env",
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "import",
+        {
+          "libraryName": "antd-mobile",
+          "style": "css"
+        }
+      ],
+      [
+        "transform-decorators-legacy"
+      ],
+      [
+        "file-loader",
+        {
+          "name": "static/media/[name].[hash:8].[ext]",
+          "extensions": ["png", "jpg", "jpeg", "gif", "svg"],
+          "publicPath": "/",
+          "outputPath": ""
+        }
+      ]
+    ]
+}
+
+需要注意的是, 如果不指定publicPath属性为’/‘, 那么默认情况下, 上例通过require方法转换后的资源地址为: /public/static/media/…..
+
+
+这样就解决了SSR首屏渲染, login/register页面logo无法显示问题;
+
+
+
 关于react native/react 中组件的ref属性;
 
 ref是react native中组件的一个特殊属性, 可以理解为当组建被渲染后指向这个定义了ref属性组件本身的一个引用; 所以通过ref属性可以获取这个组件已经创建的实例;
