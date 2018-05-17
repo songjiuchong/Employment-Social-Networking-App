@@ -51,6 +51,7 @@ The purpose of using Employment-Social-Networking-App:
 
 Users of this App can sign in as a Boss or a Genius. You can simply consider 'Boss' as a recruiter or empolyer of a certain company who want to hire someone meets the requirements via this App, and of cause the type of 'Genius' makes you the applicant or candidate who are looking for a job and ready to share your resume with all the 'Bosses' for any potential openings.
 User who is a 'Boss' can only chat with other 'Genius' users, and will be able to read profiles of all the registered 'Genius' and vice versa.
+And the most sophisticated part of this App is 'real time chat', apart from all the necessary Live chat functionalities, it even has additional functions like: calculate the number of unread/read messages, remove selected chat sessions from msg list, save unsent message as draft...
 
 ![](./README_img/1.png)
 
