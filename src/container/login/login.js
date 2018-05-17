@@ -23,6 +23,11 @@ class Login extends React.Component{
 		this.whenBlurOnInput = this.whenBlurOnInput.bind(this)
 		this.getRefEle = this.getRefEle.bind(this)
 	}
+	preHandler(e){
+		e.preventDefault()
+		document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[0].blur()
+		document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[1].blur()
+	}
 	whenFocusOnInput(){
 		this.inFocus = true
 		if(!this.hasFocused){
@@ -33,6 +38,7 @@ class Login extends React.Component{
 				this.refEle.style.bottom = '267px'
 			},200)
 			this.hasFocused = true
+			document.addEventListener('touchmove', this.preHandler, false)
 		}
 	}
 	whenBlurOnInput(){
@@ -42,6 +48,7 @@ class Login extends React.Component{
 				this.refEle.style.position = 'block'
 				this.refEle.style.bottom = '0'
 				this.hasFocused = false
+				document.removeEventListener('touchmove', this.preHandler, false)
 			}
 		},300)
 	}

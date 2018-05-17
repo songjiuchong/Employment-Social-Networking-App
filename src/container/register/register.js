@@ -22,6 +22,12 @@ class Register extends React.Component{
 		this.whenFocusOnInput = this.whenFocusOnInput.bind(this)
 		this.whenBlurOnInput = this.whenBlurOnInput.bind(this)
 	}
+	preHandler(e){
+		e.preventDefault()
+		document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[0].blur()
+		document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[1].blur()
+		document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[2].blur()
+	}
 	whenFocusOnInput(){
 		this.inFocus = true
 		if(!this.hasFocused){
@@ -32,6 +38,7 @@ class Register extends React.Component{
 				this.refEle.style.bottom = '267px'
 			},200)
 			this.hasFocused = true
+			document.addEventListener('touchmove', this.preHandler, false)
 		}
 	}
 	whenBlurOnInput(){
@@ -41,6 +48,7 @@ class Register extends React.Component{
 				this.refEle.style.position = 'block'
 				this.refEle.style.bottom = '0'
 				this.hasFocused = false
+				document.removeEventListener('touchmove', this.preHandler, false)
 			}
 		},300)
 	}
@@ -50,8 +58,10 @@ class Register extends React.Component{
 		}
 	}
 	componentDidMount(){
-		document.documentElement.scrollTop = 10000 //for chrome
-		document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		setTimeout(()=>{
+			document.documentElement.scrollTop = 10000 //for chrome
+			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		},150)	
 		this.props.handleChange('type','genius')
 		document.getElementsByTagName('body')[0].style.backgroundColor = 'black'
 	}
