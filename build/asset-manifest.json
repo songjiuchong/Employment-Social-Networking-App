@@ -1,17 +1,11 @@
 {
-  "main.css": "static/css/main.024b5599.css",
-  "main.css.map": "static/css/main.024b5599.css.map",
-  "main.js": "static/js/main.375df1ae.js",
-  "main.js.map": "static/js/main.375df1ae.js.map",
+  "main.css": "static/css/main.c77c5c3f.css",
+  "main.css.map": "static/css/main.c77c5c3f.css.map",
+  "main.js": "static/js/main.4a1c3454.js",
+  "main.js.map": "static/js/main.4a1c3454.js.map",
   "static/media/default.png": "static/media/default.030eb72b.png",
   "static/media/fox.png": "static/media/fox.684b6fd4.png",
-  "static/media/fox1.png": "static/media/fox1.684b6fd4.png",
-  "static/media/fox2.png": "static/media/fox2.684b6fd4.png",
-  "static/media/fox3.png": "static/media/fox3.684b6fd4.png",
-  "static/media/fox4.png": "static/media/fox4.684b6fd4.png",
+  "static/media/fox3.png": "static/media/fox3.5d76c853.png",
   "static/media/rabbit.png": "static/media/rabbit.70be06e4.png",
-  "static/media/rabbit1.png": "static/media/rabbit1.70be06e4.png",
-  "static/media/rabbit2.png": "static/media/rabbit2.70be06e4.png",
-  "static/media/rabbit3.png": "static/media/rabbit3.70be06e4.png",
-  "static/media/rabbit4.png": "static/media/rabbit4.70be06e4.png"
+  "static/media/rabbit2.png": "static/media/rabbit2.f620dbc1.png"
 }

@@ -22,7 +22,6 @@ class NavLinkBar extends React.Component{
 		this.refForUpdate = this.refForUpdate.bind(this)
 	}
 	refForUpdate(ref){
-		console.log(ref)
 		if(ref && ref.props.title == '牛人'){
 			this.shouldUpdateRef = ref
 			const unSelectedUri = ref.props.icon.uri
@@ -37,7 +36,7 @@ class NavLinkBar extends React.Component{
 	componentDidMount(){
 		//如果处于遍历中首个被渲染的牛人图标的url不是使用data URL方法设置的, 说明server端在SSR时并没有正确解析require方法中传入的路径, 并且组件的update也未能更新元素的url属性, 所以这里手动修复;
 		if(document.getElementsByClassName('am-tab-bar-tab-image')[0].src.indexOf('data:image/png;base64')<0){
-			//当首屏加载'/me'页面后, 执行bundle js时根本不会去render boss图标, 所以不会触发相应的refForUpdate方法, 也就不会给this.shouldUpdateUri赋值了, 这里设置了硬编码来解决这种情况;
+			//当首屏加载'/me'页面后, 执行bundle js时有可能会出现不触发boss图标组件相应refForUpdate方法的情况, 这种情况下也就不会给this.shouldUpdateUri赋值了, 所以这里设置了硬编码来解决这种情况;
 			if(this.shouldUpdateUri){
 				document.getElementsByClassName('am-tab-bar-tab-image')[0].src = this.shouldUpdateUri
 			}else{
