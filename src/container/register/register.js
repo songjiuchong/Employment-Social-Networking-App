@@ -23,13 +23,13 @@ class Register extends React.Component{
 		this.whenBlurOnInput = this.whenBlurOnInput.bind(this)
 	}
 	whenFocusOnInput(){
+		this.inFocus = true
 		if(!this.hasFocused){
 			document.documentElement.scrollTop = 10000 //for chrome
 			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 			setTimeout(()=>{
 				this.refEle.style.position = 'relative'
 				this.refEle.style.bottom = '267px'
-				this.inFocus = true
 			},200)
 			this.hasFocused = true
 		}
