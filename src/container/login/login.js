@@ -22,12 +22,18 @@ class Login extends React.Component{
 		this.getRefEle = this.getRefEle.bind(this)
 	}
 	whenFocusOnInput(){
-		this.refEle.style.position = 'relative'
-		this.refEle.style.bottom = '321px'
+		document.documentElement.scrollTop = 10000 //for chrome
+		document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		setTimeout(()=>{
+			this.refEle.style.position = 'relative'
+			this.refEle.style.bottom = '267px'
+		},200)
 	}
 	whenBlurOnInput(){
-		this.refEle.style.position = 'block'
-		this.refEle.style.bottom = '0'
+		setTimeout(()=>{
+			this.refEle.style.position = 'block'
+			this.refEle.style.bottom = '0'
+		},200)
 	}
 	getRefEle(ref){
 		if(ref){
@@ -43,6 +49,8 @@ class Login extends React.Component{
 	}
 	
 	componentDidMount(){
+		document.documentElement.scrollTop = 10000 //for chrome
+		document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
     	document.getElementsByTagName('body')[0].style.backgroundColor = 'black'
     }
     componentWillUnmount(){

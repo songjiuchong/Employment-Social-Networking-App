@@ -21,12 +21,18 @@ class Register extends React.Component{
 		this.whenBlurOnInput = this.whenBlurOnInput.bind(this)
 	}
 	whenFocusOnInput(){
-		this.refEle.style.position = 'relative'
-		this.refEle.style.bottom = '263px'
+		document.documentElement.scrollTop = 10000 //for chrome
+		document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+		setTimeout(()=>{
+			this.refEle.style.position = 'relative'
+			this.refEle.style.bottom = '263px'
+		},200)
 	}
 	whenBlurOnInput(){
-		this.refEle.style.position = 'block'
-		this.refEle.style.bottom = '0'
+		setTimeout(()=>{
+			this.refEle.style.position = 'block'
+			this.refEle.style.bottom = '0'
+		},200)
 	}
 	getRefEle(ref){
 		if(ref){
@@ -34,6 +40,8 @@ class Register extends React.Component{
 		}
 	}
 	componentDidMount(){
+		document.documentElement.scrollTop = 10000 //for chrome
+		document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 		this.props.handleChange('type','genius')
 		document.getElementsByTagName('body')[0].style.backgroundColor = 'black'
 	}
