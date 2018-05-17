@@ -11192,7 +11192,7 @@ https://songjiuchongesna.herokuapp.com/login
 
 
 
-试图自行解决:
+试图解决:
 SSR首屏渲染, login/register页面logo无法显示问题;
 
 由于这个问题只在使用了SSR时才会出现, 所以可以认定是server.js在使用renderToNodeStream解析项目首页时在处理, 如:
@@ -11268,8 +11268,7 @@ $ npm install babel-plugin-file-loader --save
         {
           "name": "static/media/[name].[hash:8].[ext]",
           "extensions": ["png", "jpg", "jpeg", "gif", "svg"],
-          "publicPath": "/",
-          "outputPath": ""
+          "publicPath": "/"
         }
       ]
     ]
@@ -11277,8 +11276,77 @@ $ npm install babel-plugin-file-loader --save
 
 需要注意的是, 如果不指定publicPath属性为’/‘, 那么默认情况下, 上例通过require方法转换后的资源地址为: /public/static/media/…..
 
+而上例中没有设置的outputPath属性会使用’/public’做为默认地址, 根据github中作者的描述:
+Tells where to put static files. By default it's "/public".
+This path is relative to the root of project.
 
-这样就解决了SSR首屏渲染, login/register页面logo无法显示问题;
+这个路径应该是相对于项目的根目录的, 但是使用后发现是在使用了require(xxx.png)的模块文件的同级按照name属性指定路径复制一份图片, 目前还不知道如何设置才能让babel-plugin-file-loader不去执行copy图片的操作;
+
+![](./dev_memo_img/192.png)
+
+https://github.com/sheerun/babel-plugin-file-loader/issues/3
+
+
+目前这种方法确实解决了SSR首屏渲染, login/register页面logo无法显示问题;
+
+不过需要注意的是, 如果要做到每个通过SSR首屏渲染的页面中图片都能正常显示, 就需要将所有图片的加载方式改为类似logo模块中:
+<img src={require('./job.png')} alt=""/>
+这样的方式;
+
+
+补充:
+1.url-loader是对file-loader的上层封装;
+
+比如webpack中对图片的加载器配置:
+{test: /\.(png|jpg)$/, loader: 'url-loader?limit=8192'}
+
+这样在小于8K的图片将直接以base64的形式内联在代码中, 可以减少一次http请求;
+
+
+
+除了上面修复的首屏渲染login/register页面时logo组件生成的img元素的url这个问题之外, 当首屏渲染页面中包含dashboard组件的NavLinkBar时, 第一个被渲染的boss图标的url也会发生被解析错误的问题(并且使用babel-plugin-file-loader插件也无法解决这个SSR的问题);
+
+![](./dev_memo_img/193.png)
+
+这里的修复方式采取手动修复:
+
+修改navlinkbar.js;
+……
+  constructor(props){
+    super(props)
+    this.shouldUpdateRef = null
+    this.shouldUpdateUri = ''
+    this.refForUpdate = this.refForUpdate.bind(this)
+  }
+  refForUpdate(ref){
+    if(ref && ref.props.title == '牛人'){
+      this.shouldUpdateRef = ref
+      const unSelectedUri = ref.props.icon.uri
+      const selectedUri = ref.props.selectedIcon.uri
+      if(ref.props.selected){
+        this.shouldUpdateUri = selectedUri
+      }else{
+        this.shouldUpdateUri = unSelectedUri
+      }
+    }
+  }
+  componentDidUpdate(){
+    //如果处于遍历中首个被渲染的牛人图标的url不是使用data URL方法设置的, 说明server端在SSR时并没有正确解析require方法中传入的路径, 并且组件的update也未能更新元素的url属性, 所以这里手动修复;
+    if(document.getElementsByClassName('am-tab-bar-tab-image')[0].src.indexOf('data:image/png;base64')<0){
+      document.getElementsByClassName('am-tab-bar-tab-image')[0].src = this.shouldUpdateUri
+    }
+  }
+……
+    return (
+      <div className='fixed-bottom'>
+      <TabBar tintColor="black">
+        {navList.map(v=>(
+          <TabBar.Item 
+            ref={this.refForUpdate}
+            badge={v.path=='/msg'?this.props.unread:0}
+……
+
+上例中, 在TabBar.Item组件第一次render后就获取到了解析为data URL的src属性了, 说明webpack对require方法的解析没有问题, 但是在服务器端SSR时对这些TabBar.Item组件中的icon设置的src都是无效的, 只能在首屏加载后重新执行bundle js内容来更新页面中组件时才能再次获取到正确的img src, 同样, 对于之前还未使用babel-plugin-file-loader插件时显示错误的logo组件来说, SSR也未能正确解析logo img的src; 这里可以得出一个结论, 当页面首屏加载完成后会去执行bundle js中的内容并且按照react首次加载页面的流程去重新渲染页面, 但是很显然并非完全重新渲染(不然就不会发生img src无效的问题), react在这种情况下会通过某种方式对比将要被加载的内容和当前首屏已存在内容之间的区别, 然后决定哪些组件会被当成第一次被加载时一样重新渲染, 而另一些它认为在首屏渲染中已经完成且无需更新的内容就不会再去重新渲染了, logo组件就是被react认为无需重新渲染的其中之一, 所以其img的src没有被重置, 而理论上NavLinkBar组件中的图标都会被重新加载渲染(因为除了boss图标, 其它两个图标在首屏之后会重新正确显示), 但是由于某些原因只有boss图标没有被重新正确渲染, 所以这里我们才会采取手动解决的方法;
 
 
 
