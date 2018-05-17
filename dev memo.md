@@ -11291,7 +11291,8 @@ https://github.com/sheerun/babel-plugin-file-loader/issues/3
 
 不过需要注意的是, 如果要做到每个通过SSR首屏渲染的页面中图片都能正常显示, 就需要将所有图片的加载方式改为类似logo模块中:
 <img src={require('./job.png')} alt=""/>
-这样的方式;
+
+这样的方式, 目前只更新了一些重要的首屏渲染页面, 所以当首屏渲染bossinfo/geniusinfo页面时, 头像选择表中的图片还是会存在地址的问题;
 
 
 补充:
@@ -11304,7 +11305,7 @@ https://github.com/sheerun/babel-plugin-file-loader/issues/3
 
 
 
-除了上面修复的首屏渲染login/register页面时logo组件生成的img元素的url这个问题之外, 当首屏渲染页面中包含dashboard组件的NavLinkBar时, 第一个被渲染的boss图标的url也会发生被解析错误的问题(并且使用babel-plugin-file-loader插件也无法解决这个SSR的问题);
+除了上面修复的首屏渲染login/register页面时logo组件生成的img元素的url这个问题之外, 当首屏渲染页面中包含dashboard组件的NavLinkBar时, 会出现第一个被渲染的boss图标的url被解析错误的问题(并且使用babel-plugin-file-loader插件也无法在服务器端正确解析三个图标的路径);
 
 ![](./dev_memo_img/193.png)
 
@@ -11312,10 +11313,11 @@ https://github.com/sheerun/babel-plugin-file-loader/issues/3
 
 修改navlinkbar.js;
 ……
-  constructor(props){
+    constructor(props){
     super(props)
     this.shouldUpdateRef = null
     this.shouldUpdateUri = ''
+    this.shouldUpdateUriHardCoded = require('./img/boss.png')
     this.refForUpdate = this.refForUpdate.bind(this)
   }
   refForUpdate(ref){
@@ -11330,10 +11332,16 @@ https://github.com/sheerun/babel-plugin-file-loader/issues/3
       }
     }
   }
-  componentDidUpdate(){
+  componentDidMount(){
     //如果处于遍历中首个被渲染的牛人图标的url不是使用data URL方法设置的, 说明server端在SSR时并没有正确解析require方法中传入的路径, 并且组件的update也未能更新元素的url属性, 所以这里手动修复;
     if(document.getElementsByClassName('am-tab-bar-tab-image')[0].src.indexOf('data:image/png;base64')<0){
-      document.getElementsByClassName('am-tab-bar-tab-image')[0].src = this.shouldUpdateUri
+      //当首屏加载'/me'页面后, 执行bundle js时有可能会出现不触发boss图标组件相应refForUpdate方法的情况, 这种情况下也就不会给this.shouldUpdateUri赋值了, 所以这里设置了硬编码来解决这种情况;
+      if(this.shouldUpdateUri){
+        document.getElementsByClassName('am-tab-bar-tab-image')[0].src = this.shouldUpdateUri
+      }else{
+        document.getElementsByClassName('am-tab-bar-tab-image')[0].src = this.shouldUpdateUriHardCoded
+      }
+      
     }
   }
 ……
@@ -11346,7 +11354,85 @@ https://github.com/sheerun/babel-plugin-file-loader/issues/3
             badge={v.path=='/msg'?this.props.unread:0}
 ……
 
-上例中, 在TabBar.Item组件第一次render后就获取到了解析为data URL的src属性了, 说明webpack对require方法的解析没有问题, 但是在服务器端SSR时对这些TabBar.Item组件中的icon设置的src都是无效的, 只能在首屏加载后重新执行bundle js内容来更新页面中组件时才能再次获取到正确的img src, 同样, 对于之前还未使用babel-plugin-file-loader插件时显示错误的logo组件来说, SSR也未能正确解析logo img的src; 这里可以得出一个结论, 当页面首屏加载完成后会去执行bundle js中的内容并且按照react首次加载页面的流程去重新渲染页面, 但是很显然并非完全重新渲染(不然就不会发生img src无效的问题), react在这种情况下会通过某种方式对比将要被加载的内容和当前首屏已存在内容之间的区别, 然后决定哪些组件会被当成第一次被加载时一样重新渲染, 而另一些它认为在首屏渲染中已经完成且无需更新的内容就不会再去重新渲染了, logo组件就是被react认为无需重新渲染的其中之一, 所以其img的src没有被重置, 而理论上NavLinkBar组件中的图标都会被重新加载渲染(因为除了boss图标, 其它两个图标在首屏之后会重新正确显示), 但是由于某些原因只有boss图标没有被重新正确渲染, 所以这里我们才会采取手动解决的方法;
+上例中, 在TabBar.Item组件第一次render后就获取到了解析为data URL的src属性了, 说明webpack对require方法的解析没有问题, 但是在服务器端SSR时对这些TabBar.Item组件中的icon设置的src都是无效的, 只能在首屏加载后重新执行bundle js内容后更新页面中组件时才能再次获取到正确的img src; 
+这里可以得出一个假设, 当页面首屏在浏览器渲染完成后会去接着执行bundle js中的内容并且按照react首次加载页面的流程去重新render所有组件并生产一颗新的虚拟树(或者说它在render组件的过程中会通过某种方式根据首屏中已存在的组件来决定这次render中哪些组件是属于新加载的, 哪些是属于update的, 也就是说可能首屏加载的页面也存在一颗已创建的虚拟树让react来对比), 但是很显然react并不会去根据新生成虚拟树的内容更新当前的页面(或者说它会通过某种对比方式只在页面中更新它认为需要更新的元素, 不然就不会发生img src无效的问题), 接着react在会将所有首屏中存在组件的事件监听函数添加到对应的页面元素上, 同时还会执行所有当前存在组件的componentDidMount方法(因为这些操作在服务器SSR中无法执行); 
+理论上NavLinkBar组件中的图标在首屏渲染后都会被重新渲染(因为除了boss图标, 其它两个图标在首屏之后会重新正确显示), 但是由于某些原因只有boss图标没有被重新渲染, 所以这里我们才会采取手动解决的方法;
+另外, 上例中声明的:
+this.shouldUpdateUriHardCoded = require('./img/boss.png')
+
+会在服务器端SSR时被babel-plugin-file-loader插件解析为: /static/media/boss.fb187c61.png, 而在项目的这个位置已经生成了这样的一个图片的拷贝, 所以如果出现了首屏渲染后boss图片地址不正确的情况也可以在第一时间通过navlinkbar组件的componentDidMount方法来更新一个正确的路径(无论是否是data url格式的路径);
+
+
+
+这里还顺便修复了一下移动端访问login/register页面focus在输入框时弹出软键盘遮挡输入框的问题;
+
+修改register.js(login.js修改方式类似);
+……
+constructor(props){
+    super(props)
+    this.refEle = null
+    this.hasFocused = false //经过交互操作后最终页面稳定状态下是否有输入框处于focus状态, 这个属性将决定下次有输入框被focus时是否会执行位置调整的操作;
+    this.inFocus = false  //在onBlur事件触发后会被立即置false, 并且等待300ms后再判断是否有onFoucs事件再次将其置true, 如果有则不执行onBlur相关位置调整, 如果没有则执行位置调整并将hasFocused状态置false;
+    this.handleRegister = this.handleRegister.bind(this)
+    this.getRefEle = this.getRefEle.bind(this)
+    this.whenFocusOnInput = this.whenFocusOnInput.bind(this)
+    this.whenBlurOnInput = this.whenBlurOnInput.bind(this)
+  }
+  preHandler(e){
+    e.preventDefault()
+    document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[0].blur()
+    document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[1].blur()
+    document.getElementsByClassName('am-list-body')[0].getElementsByTagName('input')[2].blur()
+  }
+  whenFocusOnInput(){
+    this.inFocus = true
+    if(!this.hasFocused){
+      document.documentElement.scrollTop = 10000 //for chrome
+      document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
+      setTimeout(()=>{
+        this.refEle.style.position = 'relative'
+        this.refEle.style.bottom = '240px'
+      },200)
+      this.hasFocused = true
+      document.addEventListener('touchmove', this.preHandler, false)
+    }
+  }
+  whenBlurOnInput(){
+    this.inFocus  = false
+    setTimeout(()=>{
+      if(!this.inFocus){
+        this.refEle.style.position = 'block'
+        this.refEle.style.bottom = '0'
+        this.hasFocused = false
+        document.removeEventListener('touchmove', this.preHandler, false)
+      }
+    },300)
+  }
+  getRefEle(ref){
+    if(ref){
+      this.refEle = ref
+    }
+  }
+……
+<InputItem 
+            onChange={v=>this.props.handleChange('user',v)}
+            onFocus = {v=>this.whenFocusOnInput()}
+            onBlur = {v=>this.whenBlurOnInput()}
+          >用户名</InputItem>
+          <WhiteSpace />
+          <InputItem type='password' 
+            onChange={v=>this.props.handleChange('pwd',v)}
+            onFocus = {v=>this.whenFocusOnInput()}
+            onBlur = {v=>this.whenBlurOnInput()}
+          >密码</InputItem>
+          <WhiteSpace />
+          <InputItem 
+            type='password' 
+            onChange={v=>this.props.handleChange('repeatpwd',v)}
+            onFocus = {v=>this.whenFocusOnInput()}
+            onBlur = {v=>this.whenBlurOnInput()}
+          >确认密码</InputItem>
+……
 
 
 

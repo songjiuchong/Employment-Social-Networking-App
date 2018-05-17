@@ -35,7 +35,7 @@ class Register extends React.Component{
 			document.getElementsByTagName("body")[0].scrollTop = 10000 //for safari
 			setTimeout(()=>{
 				this.refEle.style.position = 'relative'
-				this.refEle.style.bottom = '267px'
+				this.refEle.style.bottom = '240px'
 			},200)
 			this.hasFocused = true
 			document.addEventListener('touchmove', this.preHandler, false)
