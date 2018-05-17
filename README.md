@@ -84,3 +84,27 @@ User who is a 'Boss' can only chat with other 'Genius' users, and will be able t
 
 ![](./README_img/16.png)
 
+
+
+UX updated in online branch !!!
+
+
+
+![](./README_img/17.png)
+
+![](./README_img/18.png)
+
+![](./README_img/19.png)
+
+![](./README_img/20.png)
+
+![](./README_img/21.png)
+
+![](./README_img/22.png)
+
+![](./README_img/23.png)
+
+![](./README_img/24.png)
+
+
+
