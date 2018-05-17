@@ -1,5 +1,9 @@
 # Employment-Social-Networking-App
 
+
+This branch is created from master branch for the purpose of deploying the project to heroku cloud server(using mLab cloud mongoDB), so the configs set here are only for matching the requirements of deployment.
+
+
 tech-stack for developing Employment-Social-Networking-App(check package.json for details):
 
 
@@ -79,4 +83,28 @@ User who is a 'Boss' can only chat with other 'Genius' users, and will be able t
 ![](./README_img/15.png)
 
 ![](./README_img/16.png)
+
+
+
+UX updated in online branch !!!
+
+
+
+![](./README_img/17.png)
+
+![](./README_img/18.png)
+
+![](./README_img/19.png)
+
+![](./README_img/20.png)
+
+![](./README_img/21.png)
+
+![](./README_img/22.png)
+
+![](./README_img/23.png)
+
+![](./README_img/24.png)
+
+
 
