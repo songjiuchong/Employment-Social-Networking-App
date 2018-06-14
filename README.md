@@ -20,7 +20,7 @@ mongodb3.4
 
 
 Developing tool:
-webpack, webpack-dev-server, eslint, jest, babel...
+create-react-app, webpack, webpack-dev-server, eslint, jest, babel...
 
 
 Performance optimization:
